@@ -587,8 +587,8 @@ function tryEvolve(side) {
 function update(dt) {
   if (G.over) return;
 
-  // ciclo día/noche
-  dayCycleTime = (dayCycleTime + dt) % DAY_CYCLE_DURATION;
+  // [COMENTADO] ciclo día/noche — siempre de día por ahora
+  // dayCycleTime = (dayCycleTime + dt) % DAY_CYCLE_DURATION;
 
   // oro pasivo (base + aldeanos con mejora)
   G.player.gold += (PASSIVE_GOLD + G.player.villagers * (VILLAGER_GOLD + G.player.villagerLvl * 2)) * dt;
@@ -892,7 +892,7 @@ function render(paused) {
   for (const p of G.projectiles) p.draw();
   for (const f of G.floats) f.draw();
 
-  drawDayFilter();
+  // drawDayFilter();  // [COMENTADO] clima desactivado
 
   if (paused) {
     ctx.fillStyle = "rgba(0,0,0,.45)";
