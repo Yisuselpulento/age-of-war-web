@@ -452,14 +452,15 @@ canvas {
   .bb-ico { font-size: 8px; }
 
   #bottom-panel { flex-wrap: wrap; min-height: 130px; align-items: flex-start; }
-  #cards-area { width: 100%; overflow-x: auto; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); padding: 4px 6px; gap: 4px; }
+  #cards-area { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); padding: 4px 6px; gap: 4px; }
+  #cards-area::-webkit-scrollbar { display: none; }
   .card { width: 80px; padding: 4px; border-radius: 8px; border-width: 1px; flex-shrink: 0; }
   .card .thumb { height: 32px; }
   .card .thumb img { max-height: 32px; max-width: 60px; }
   .card .name { font-size: 10px; }
   .card .cost { font-size: 9px; }
   .card .stats { font-size: 8px; }
-  .card .key { font-size: 8px; top: 2px; left: 3px; }
+  .card .key { display: none; }
 
   #upg-panel { min-width: 0; flex: 1; padding: 4px 6px; gap: 3px; border-right: 1px solid rgba(255,255,255,.06); }
   .upg-group { padding: 3px 4px; gap: 2px; }
