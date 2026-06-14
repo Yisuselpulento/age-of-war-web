@@ -6,7 +6,7 @@
 const AGES = ["cave", "medival", "knight", "miltary", "future"];
 const AGE_NAMES = ["Edad de Piedra", "Medieval", "Caballeros", "Era Militar", "Futuro"];
 const UNIT_TYPES = ["melee", "range", "tank"];
-const UNIT_NAMES = { melee: "Cuerpo a cuerpo", range: "A distancia", tank: "Tanque" };
+const UNIT_NAMES = { melee: "Melee", range: "Range", tank: "Tank" };
 const ANIMS = ["walk", "attack", "die", "idle"];
 
 // Orientación nativa de cada sprite (true = mira a la derecha)
@@ -47,6 +47,7 @@ const STATS = [
   },
 ];
 
+let paused = false;
 const EVOLVE_COST = [400, 1000, 2000, 3500]; // xp para pasar de edad i a i+1
 const BASE_HP = 2000;
 const BASE_DMG_MULT = 2.5; // las unidades pegan más fuerte a la base
@@ -870,7 +871,7 @@ function drawTowers(side) {
   }
 }
 
-function render() {
+function render(paused) {
   drawBackground();
   drawBase("player");
   drawBase("enemy");
@@ -883,6 +884,19 @@ function render() {
   for (const f of G.floats) f.draw();
 
   drawDayFilter();
+
+  if (paused) {
+    ctx.fillStyle = "rgba(0,0,0,.45)";
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#f7c948";
+    ctx.font = "bold 48px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("⏸ PAUSA", W / 2, H / 2);
+    ctx.font = "18px sans-serif";
+    ctx.fillStyle = "#a0aec0";
+    ctx.fillText("Presiona ⏸ para reanudar", W / 2, H / 2 + 50);
+  }
 }
 
 // ---- Bucle principal -------------------------------------------------
@@ -892,8 +906,8 @@ function loop(ts) {
   const dt = Math.min(0.05, (ts - last) / 1000 || 0);
   last = ts;
   if (!document.getElementById("game").classList.contains("hidden")) {
-    update(dt);
-    render();
+    if (!paused) update(dt);
+    render(paused);
     syncUI();
   }
   requestAnimationFrame(loop);
@@ -905,7 +919,6 @@ const elXpText = document.getElementById("xptext");
 const elXpFill = document.getElementById("xpfill");
 const elAge = document.getElementById("ageName");
 const elEvolve = document.getElementById("evolveBtn");
-const shop = document.getElementById("shop");
 const overlay = document.getElementById("overlay");
 const diffWrap = document.getElementById("diffWrap");
 const hpBars = {
@@ -921,28 +934,29 @@ function updateHpBar(side) {
 }
 
 // ---- Panel de economía / torres (jugador) ----------------------------
-const econBarEl = document.getElementById("econ-bar");
-econBarEl.addEventListener("click", (e) => {
+document.getElementById("econ-section").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  if (b.dataset.act === "villager")  playerVillager();
+  else if (b.dataset.act === "villagerupg") playerVillagerUpg();
+  econSig = "";
+});
+document.getElementById("tower-section").addEventListener("click", (e) => {
   const b = e.target.closest("[data-act]");
   if (!b) return;
   const slot = +b.dataset.slot;
-  switch (b.dataset.act) {
-    case "villager":  playerVillager(); break;
-    case "villagerupg": playerVillagerUpg(); break;
-    case "buyslot":   playerBuySlot(); break;
-    case "buytower":  playerBuyTower(slot); break;
-    case "upg":       playerUpgTower(slot); break;
-    case "sell":      playerSellTower(slot); break;
-  }
-  econSig = ""; // forzar refresco inmediato
+  if (b.dataset.act === "buyslot")   playerBuySlot();
+  else if (b.dataset.act === "buytower")  playerBuyTower(slot);
+  else if (b.dataset.act === "upg")       playerUpgTower(slot);
+  else if (b.dataset.act === "sell")      playerSellTower(slot);
+  econSig = "";
 });
 
 let econSig = "";
 function renderEcon() {
   const p = G.player, g = p.gold;
   const income = PASSIVE_GOLD + p.villagers * (VILLAGER_GOLD + p.villagerLvl * 2);
-  const aff = (c) => (g >= c ? 1 : 0); // bit de asequibilidad
-  // firma: solo cambia con estructura o cuando algo pasa a ser (in)asequible
+  const aff = (c) => (g >= c ? 1 : 0);
   let sig = p.age + "|" + p.villagers + "|" + p.villagerLvl + "|" + p.slots + "|" +
     p.towers.map((t) => (t ? t.lvl : "_")).join(",");
 
@@ -958,57 +972,55 @@ function renderEcon() {
   if (sig === econSig) return;
   econSig = sig;
 
-  let html = `<span class="lbl">💰${income}/s</span>`;
+  // Econ section (villagers)
+  let econHtml = `<span class="lbl">💰${income}/s</span>`;
   if (p.villagers >= MAX_VILLAGERS) {
-    html += `<button disabled>👷 Máx</button>`;
+    econHtml += `<div><button disabled>👷 Máx</button></div>`;
   } else {
-    html += `<button data-act="villager" ${g < vc ? "disabled" : ""}>👷${vc}🪙 ${p.villagers}/${MAX_VILLAGERS}</button>`;
+    econHtml += `<div><button data-act="villager" ${g < vc ? "disabled" : ""}>👷${vc}🪙 ${p.villagers}/${MAX_VILLAGERS}</button></div>`;
   }
   if (p.villagers > 0) {
     const vc2 = villagerLvlCost(p.villagerLvl);
     const killBonus = p.villagerLvl * VILLAGER_KILL_BONUS;
     const vIncome = VILLAGER_GOLD + p.villagerLvl * 2;
     if (p.villagerLvl >= MAX_VILLAGER_LVL) {
-      html += `<button disabled>👑 +${vIncome}/s +${killBonus}/kill</button>`;
+      econHtml += `<div><button disabled>👑 +${vIncome}/s +${killBonus}/kill</button></div>`;
     } else {
-      html += `<button data-act="villagerupg" ${g < vc2 ? "disabled" : ""}>⬆+${vIncome}/s +${killBonus}/k ${vc2}🪙</button>`;
+      econHtml += `<div><button data-act="villagerupg" ${g < vc2 ? "disabled" : ""}>⬆+${vIncome}/s +${killBonus}/k ${vc2}🪙</button></div>`;
     }
   }
-  html += `<span class="lbl">🗼${p.slots}/${MAX_SLOTS}</span>`;
+  document.getElementById("econ-section").innerHTML = econHtml;
+
+  // Tower section (right)
+  let twrHtml = `<span class="lbl">🗼${p.slots}/${MAX_SLOTS}</span>`;
   for (let i = 0; i < MAX_SLOTS; i++) {
     if (i < p.slots) {
       const t = p.towers[i];
       if (t) {
         let tag = `<span class="tag">Lv${t.lvl}`;
         if (t.lvl < MAX_TOWER_LVL) {
-          tag += `<button data-act="upg" data-slot="${i}" ${g < towerUpgCost(p.age, t.lvl) ? "disabled" : ""}>▲${towerUpgCost(p.age, t.lvl)}</button>`;
+          tag += `<button class="inc" data-act="upg" data-slot="${i}" ${g < towerUpgCost(p.age, t.lvl) ? "disabled" : ""}>▲${towerUpgCost(p.age, t.lvl)}</button>`;
         }
         tag += `<button class="sell" data-act="sell" data-slot="${i}">✕${towerSellValue(t, p.age)}</button></span>`;
-        html += tag;
+        twrHtml += tag;
       } else {
         const c = towerBuyCost(p.age);
-        html += `<button data-act="buytower" data-slot="${i}" ${g < c ? "disabled" : ""}>🗼${c}🪙</button>`;
+        twrHtml += `<div><button data-act="buytower" data-slot="${i}" ${g < c ? "disabled" : ""}>🗼${c}🪙</button></div>`;
       }
     } else if (i === p.slots && p.slots < MAX_SLOTS) {
       const c = SLOT_COST[p.slots];
-      html += `<button data-act="buyslot" ${g < c ? "disabled" : ""}>➕${c}🪙</button>`;
+      twrHtml += `<div><button data-act="buyslot" ${g < c ? "disabled" : ""}>➕${c}🪙</button></div>`;
       break;
     }
   }
-  econBarEl.innerHTML = html;
+  document.getElementById("tower-section").innerHTML = twrHtml;
 }
 
 let shopCards = [];
 function buildShop() {
-  shop.innerHTML = "";
+  const cardsDiv = document.getElementById("cards-area");
+  cardsDiv.innerHTML = "";
   shopCards = [];
-
-  // contenedor cards + panel upgrades
-  const row = document.createElement("div");
-  row.id = "shop-row";
-
-  const cardsDiv = document.createElement("div");
-  cardsDiv.id = "cards-area";
 
   UNIT_TYPES.forEach((type, i) => {
     const card = document.createElement("div");
@@ -1029,15 +1041,9 @@ function buildShop() {
     });
   });
 
-  row.appendChild(cardsDiv);
-
-  // panel de upgrades a la derecha
-  const upgPanel = document.createElement("div");
-  upgPanel.id = "upg-panel";
-  const upgTitle = document.createElement("div");
-  upgTitle.className = "upg-panel-title";
-  upgTitle.textContent = "MEJORAS";
-  upgPanel.appendChild(upgTitle);
+  // panel de upgrades
+  const upgPanel = document.getElementById("upg-panel");
+  upgPanel.innerHTML = "";
 
   UNIT_TYPES.forEach((type) => {
     const grp = document.createElement("div");
@@ -1057,9 +1063,6 @@ function buildShop() {
     });
     upgPanel.appendChild(grp);
   });
-
-  row.appendChild(upgPanel);
-  shop.appendChild(row);
 
   refreshShopAge();
 }
@@ -1121,10 +1124,9 @@ function syncUI() {
       btn.disabled = true;
     } else {
       const uc = upgradeCost(p.age, type, stat, l);
-      const short = { dmg: "⚔", hp: "❤", spd: "⚡" };
-      const full = { dmg: "Daño", hp: "Vida", spd: "Vel." };
-      btn.textContent = `${short[stat]}${l+1} ${uc}🪙`;
-      btn.title = `${full[stat]} nivel ${l}/${MAX_UPG} · ${uc}🪙`;
+      const lbl = { dmg: "+ATK", hp: "+HP", spd: "+VeATK" };
+      btn.textContent = `${lbl[stat]} Lv${l+1} ${uc}🪙`;
+      btn.title = `Nivel ${l+1}/${MAX_UPG} · ${uc}🪙`;
       btn.disabled = p.gold < uc;
     }
   });
@@ -1167,6 +1169,9 @@ function startGame() {
   document.getElementById("game").classList.remove("hidden");
   document.getElementById("loading").classList.add("hidden");
   document.getElementById("debugBtn").classList.remove("hidden");
+  pauseBtn.classList.remove("hidden");
+  paused = false;
+  pauseBtn.textContent = "⏸";
   resetGame();
   G.mode = "ai";
   if (!loopRunning) { loopRunning = true; requestAnimationFrame(loop); }
@@ -1178,6 +1183,7 @@ function startOnlineGame() {
   document.getElementById("game").classList.remove("hidden");
   document.getElementById("loading").classList.add("hidden");
   document.getElementById("debugBtn").classList.add("hidden");
+  pauseBtn.classList.add("hidden");
   diffWrap.classList.add("hidden");
   resetGame();
   G.mode = "online";
@@ -1197,6 +1203,14 @@ document.getElementById("menuBtn").addEventListener("click", () => {
   G.mode = "ai"; // evitar que onclose dispare endGame
   if (ws) { ws.close(); ws = null; }
   showMenu();
+});
+
+// botón de pausa
+const pauseBtn = document.getElementById("pauseBtn");
+pauseBtn.addEventListener("click", () => {
+  paused = !paused;
+  pauseBtn.textContent = paused ? "▶" : "⏸";
+  pauseBtn.title = paused ? "Reanudar" : "Pausar";
 });
 
 // selector de dificultad (reinicia la partida al cambiar)
@@ -1234,6 +1248,13 @@ window.addEventListener("keydown", (e) => {
   else if (e.key === "c") playerUpgrade("tank", "spd");
   else if (e.key === "v" || e.key === "V") playerVillager();
   else if (e.key === "b" || e.key === "B") playerVillagerUpg();
+  else if (e.key === "p" || e.key === "P" || e.key === "Escape") {
+    if (G.mode === "ai" && !document.getElementById("game").classList.contains("hidden")) {
+      paused = !paused;
+      pauseBtn.textContent = paused ? "▶" : "⏸";
+      pauseBtn.title = paused ? "Reanudar" : "Pausar";
+    }
+  }
 });
 
 // ---- Menú principal --------------------------------------------------
@@ -1248,12 +1269,14 @@ document.getElementById("btn-vs-online").addEventListener("click", () => {
   document.getElementById("online-buttons").classList.remove("hidden");
   document.getElementById("room-waiting").classList.add("hidden");
   document.getElementById("room-join").classList.add("hidden");
+  diffWrap.classList.add("hidden");
 });
 
 document.getElementById("btn-online-back").addEventListener("click", () => {
   if (ws) { ws.close(); ws = null; }
   document.getElementById("online-menu").classList.add("hidden");
   document.getElementById("main-menu").classList.remove("hidden");
+  diffWrap.classList.remove("hidden");
 });
 
 document.getElementById("btn-create").addEventListener("click", () => {
