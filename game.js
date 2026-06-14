@@ -1237,6 +1237,11 @@ document.getElementById("btn-create").addEventListener("click", () => {
   ws.onopen = () => {
     ws.send(JSON.stringify({ type: "create_room" }));
   };
+  ws.onerror = (err) => {
+    console.error("WS error", err);
+    document.getElementById("room-code-display").textContent = "Error de conexión";
+    document.getElementById("room-code-display").style.color = "#fc8181";
+  };
   ws.onmessage = (e) => {
     let msg;
     try { msg = JSON.parse(e.data); } catch { return; }
