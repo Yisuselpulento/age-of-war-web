@@ -974,44 +974,45 @@ function renderEcon() {
 
   // Econ section (villagers)
   let econHtml = `<span class="lbl">💰${income}/s</span>`;
+  econHtml += `<div class="econ-card">`;
   if (p.villagers >= MAX_VILLAGERS) {
-    econHtml += `<div><button disabled>👷 Máx</button></div>`;
+    econHtml += `<button disabled>👷 Máx</button>`;
   } else {
-    econHtml += `<div><button data-act="villager" ${g < vc ? "disabled" : ""}>👷${vc}🪙 ${p.villagers}/${MAX_VILLAGERS}</button></div>`;
+    econHtml += `<button data-act="villager" ${g < vc ? "disabled" : ""}>👷${vc}🪙 ${p.villagers}/${MAX_VILLAGERS}</button>`;
   }
   if (p.villagers > 0) {
     const vc2 = villagerLvlCost(p.villagerLvl);
     const killBonus = p.villagerLvl * VILLAGER_KILL_BONUS;
     const vIncome = VILLAGER_GOLD + p.villagerLvl * 2;
     if (p.villagerLvl >= MAX_VILLAGER_LVL) {
-      econHtml += `<div><button disabled>👑 +${vIncome}/s +${killBonus}/kill</button></div>`;
+      econHtml += `<button disabled>👑 +${vIncome}/s +${killBonus}/kill</button>`;
     } else {
-      econHtml += `<div><button data-act="villagerupg" ${g < vc2 ? "disabled" : ""}>⬆+${vIncome}/s +${killBonus}/k ${vc2}🪙</button></div>`;
+      econHtml += `<button data-act="villagerupg" ${g < vc2 ? "disabled" : ""}>⬆+${vIncome}/s +${killBonus}/k ${vc2}🪙</button>`;
     }
   }
+  econHtml += `</div>`;
   document.getElementById("econ-section").innerHTML = econHtml;
 
   // Tower section (right)
   let twrHtml = `<span class="lbl">🗼${p.slots}/${MAX_SLOTS}</span>`;
-  for (let i = 0; i < MAX_SLOTS; i++) {
-    if (i < p.slots) {
-      const t = p.towers[i];
-      if (t) {
-        let tag = `<span class="tag">Lv${t.lvl}`;
-        if (t.lvl < MAX_TOWER_LVL) {
-          tag += `<button class="inc" data-act="upg" data-slot="${i}" ${g < towerUpgCost(p.age, t.lvl) ? "disabled" : ""}>▲${towerUpgCost(p.age, t.lvl)}</button>`;
-        }
-        tag += `<button class="sell" data-act="sell" data-slot="${i}">✕${towerSellValue(t, p.age)}</button></span>`;
-        twrHtml += tag;
-      } else {
-        const c = towerBuyCost(p.age);
-        twrHtml += `<div><button data-act="buytower" data-slot="${i}" ${g < c ? "disabled" : ""}>🗼${c}🪙</button></div>`;
+  for (let i = 0; i < p.slots; i++) {
+    twrHtml += `<div class="twr-card">`;
+    const t = p.towers[i];
+    if (t) {
+      twrHtml += `<span>Lv${t.lvl}</span>`;
+      if (t.lvl < MAX_TOWER_LVL) {
+        twrHtml += `<button class="inc" data-act="upg" data-slot="${i}" ${g < towerUpgCost(p.age, t.lvl) ? "disabled" : ""}>▲${towerUpgCost(p.age, t.lvl)}</button>`;
       }
-    } else if (i === p.slots && p.slots < MAX_SLOTS) {
-      const c = SLOT_COST[p.slots];
-      twrHtml += `<div><button data-act="buyslot" ${g < c ? "disabled" : ""}>➕${c}🪙</button></div>`;
-      break;
+      twrHtml += `<button class="sell" data-act="sell" data-slot="${i}">✕${towerSellValue(t, p.age)}</button>`;
+    } else {
+      const c = towerBuyCost(p.age);
+      twrHtml += `<button data-act="buytower" data-slot="${i}" ${g < c ? "disabled" : ""}>🗼${c}🪙</button>`;
     }
+    twrHtml += `</div>`;
+  }
+  if (p.slots < MAX_SLOTS) {
+    const c = SLOT_COST[p.slots];
+    twrHtml += `<div class="twr-card"><button data-act="buyslot" ${g < c ? "disabled" : ""}>➕${c}🪙</button></div>`;
   }
   document.getElementById("tower-section").innerHTML = twrHtml;
 }
