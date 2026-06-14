@@ -87,16 +87,67 @@ function netSend(action) {
 }
 
 function handleOpponentAction(action) {
+  const e = G.enemy;
   switch (action.type) {
-    case "spawn": trySpawn("enemy", action.unitType); break;
-    case "upgrade": tryUpgrade("enemy", action.unitType, action.stat); break;
-    case "evolve": tryEvolve("enemy"); break;
-    case "villager": tryVillager("enemy"); break;
-    case "villagerupg": tryVillagerUpgrade("enemy"); break;
-    case "tower_buy": tryBuyTower("enemy", action.slot); break;
-    case "tower_upg": tryUpgradeTower("enemy", action.slot, action.kind); break;
-    case "tower_sell": trySellTower("enemy", action.slot); break;
-    case "buy_slot": tryBuySlot("enemy"); break;
+    case "spawn": {
+      const s = STATS[e.age][action.unitType];
+      e.gold -= s.cost; e.cd[action.unitType] = SPAWN_CD;
+      G.units.push(new Unit("enemy", e.age, action.unitType));
+      break;
+    }
+    case "upgrade": {
+      const lvl = e.upg[action.unitType][action.stat];
+      e.gold -= upgradeCost(e.age, action.unitType, action.stat, lvl);
+      e.upg[action.unitType][action.stat] = lvl + 1;
+      break;
+    }
+    case "evolve": {
+      if (e.age < AGES.length - 1) {
+        e.xp -= EVOLVE_COST[e.age];
+        e.age++;
+        e.baseHp = 2000 + e.age * 800;
+      }
+      break;
+    }
+    case "villager": {
+      e.gold -= villagerCost(e.villagers);
+      e.villagers++;
+      break;
+    }
+    case "villagerupg": {
+      e.gold -= villagerLvlCost(e.villagerLvl);
+      e.villagerLvl++;
+      break;
+    }
+    case "tower_buy": {
+      e.gold -= towerBuyCost(e.age);
+      e.towers[action.slot] = { dmgLvl: 1, spdLvl: 0, cd: 0 };
+      break;
+    }
+    case "tower_upg": {
+      const t = e.towers[action.slot];
+      if (!t) break;
+      if (action.kind === "dmg") {
+        e.gold -= towerDmgCost(e.age, t.dmgLvl);
+        t.dmgLvl++;
+      } else {
+        e.gold -= towerSpdCost(e.age, t.spdLvl);
+        t.spdLvl++;
+      }
+      break;
+    }
+    case "tower_sell": {
+      const t = e.towers[action.slot];
+      if (!t) break;
+      e.gold += towerSellValue(t, e.age);
+      e.towers[action.slot] = null;
+      break;
+    }
+    case "buy_slot": {
+      e.gold -= SLOT_COST[e.slots];
+      e.slots++;
+      break;
+    }
   }
 }
 
