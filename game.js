@@ -3,8 +3,10 @@
    Age of War — versión web (HTML5 Canvas)
    ============================================================ */
 
-const AGES = ["cave", "medival", "knight", "miltary", "future"];
-const AGE_NAMES = ["Edad de Piedra", "Medieval", "Caballeros", "Era Militar", "Futuro"];
+// Nota: índices 1 y 2 intercambiados (la 2ª edad usa sprites de caballero y la 3ª
+// los medievales), manteniendo la progresión de stats por índice.
+const AGES = ["cave", "knight", "medival", "miltary", "future"];
+const AGE_NAMES = ["Edad de Piedra", "Caballeros", "Medieval", "Era Militar", "Futuro"];
 const UNIT_TYPES = ["melee", "range", "tank"];
 const UNIT_NAMES = { melee: "Melee", range: "Range", tank: "Tank" };
 const ANIMS = ["walk", "attack", "die", "idle"];
@@ -307,14 +309,16 @@ const ENEMY_BASE_X = WORLD_W - 90;
 
 // ---- Cámara ----------------------------------------------------------
 let BW = 1280, BH = 540;       // tamaño del buffer del canvas (px reales)
-let camX = 0;                  // desplazamiento de cámara (en unidades de mundo)
+let camX = 0, camY = 0;        // desplazamiento de cámara (unidades de mundo)
 let camScale = 1;              // px de buffer por unidad de mundo
-let viewW = WORLD_W;           // ancho de mundo visible
+let viewW = WORLD_W, viewH = WORLD_H; // mundo visible
 let pxToWorld = 1;             // unidades de mundo por px CSS (para drag)
 
 function clampCam() {
-  if (viewW >= WORLD_W) camX = (WORLD_W - viewW) / 2; // mundo centrado, sin scroll
-  else camX = Math.max(0, Math.min(camX, WORLD_W - viewW));
+  camX = Math.max(0, Math.min(camX, Math.max(0, WORLD_W - viewW)));
+  // vertical: anclar para que el suelo/unidades queden cerca del borde inferior
+  const desiredY = GROUND_Y + 40 - viewH;
+  camY = Math.max(0, Math.min(WORLD_H - viewH, Math.max(0, desiredY)));
 }
 
 function resizeCanvas() {
@@ -325,9 +329,11 @@ function resizeCanvas() {
   BH = Math.max(1, Math.round(cssH * dpr));
   if (CV.width !== BW) CV.width = BW;
   if (CV.height !== BH) CV.height = BH;
-  camScale = BH / WORLD_H;
+  // "cover" del mundo: llena el canvas sin huecos (recorta el lado sobrante)
+  camScale = Math.max(BW / WORLD_W, BH / WORLD_H);
   viewW = BW / camScale;
-  pxToWorld = WORLD_H / cssH; // 1 px CSS = pxToWorld unidades de mundo
+  viewH = BH / camScale;
+  pxToWorld = dpr / camScale; // 1 px CSS = pxToWorld unidades de mundo
   clampCam();
 }
 window.addEventListener("resize", resizeCanvas);
@@ -868,17 +874,18 @@ function runAI(dt) {
 
 // ---- Render ----------------------------------------------------------
 function drawBackground() {
-  // imagen única que cubre toda la vista (sin duplicar y sin franjas vacías)
-  const left = camX;
+  // imagen única que cubre el MUNDO (1280x540), anclada abajo: el primer plano
+  // queda al ras del suelo/HUD y se ve menos "expandida". La cámara muestra una
+  // parte de ella (sin duplicar y sin huecos).
   const img = IMG["assets/bg/wallpaper.png"] || IMG["assets/bg/background.png"];
   if (img) {
-    const scale = Math.max(viewW / img.width, WORLD_H / img.height); // cover
+    const scale = Math.max(WORLD_W / img.width, WORLD_H / img.height); // cover del mundo
     const w = img.width * scale, h = img.height * scale;
-    const dx = left + (viewW - w) / 2;
-    const dy = (WORLD_H - h) / 2;
+    const dx = (WORLD_W - w) / 2;
+    const dy = WORLD_H - h; // anclar al fondo
     ctx.drawImage(img, dx, dy, w, h);
   } else {
-    ctx.fillStyle = "#3a4d6b"; ctx.fillRect(left, 0, viewW, WORLD_H);
+    ctx.fillStyle = "#3a4d6b"; ctx.fillRect(0, 0, WORLD_W, WORLD_H);
   }
 }
 
@@ -939,7 +946,7 @@ function render(paused) {
   ctx.clearRect(0, 0, BW, BH);
 
   // transformación de cámara: mundo -> buffer
-  ctx.setTransform(camScale, 0, 0, camScale, -camX * camScale, 0);
+  ctx.setTransform(camScale, 0, 0, camScale, -camX * camScale, -camY * camScale);
 
   drawBackground();
   drawBase("player");

@@ -316,7 +316,7 @@ canvas {
   gap: 6px;
   padding: 8px 12px;
   border-right: 1px solid rgba(255,255,255,.06);
-  min-width: 200px;
+  min-width: 300px;
   justify-content: center;
 }
 .upg-group {
@@ -339,10 +339,10 @@ canvas {
 }
 .upg-pbtn {
   flex: 1;
-  padding: 5px 4px;
-  font-size: 11px;
+  padding: 8px 8px;
+  font-size: 12px;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.2;
   text-align: center;
   border: none;
   border-radius: 6px;
@@ -351,7 +351,7 @@ canvas {
   color: #fff;
   box-shadow: 0 2px 0 #143245;
   white-space: normal;       /* permite 2 líneas, no se corta el texto */
-  min-width: 56px;
+  min-width: 84px;
   transition: background .1s;
 }
 .upg-pbtn:hover:not(:disabled) { background: linear-gradient(180deg, #3a85aa 0%, #256380 100%); }
