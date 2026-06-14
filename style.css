@@ -419,3 +419,58 @@ canvas {
 /* ── Pause button ───────────────────────────────────────────── */
 #pauseBtn { background: linear-gradient(180deg, #2f6f8f 0%, #1d4860 100%); box-shadow: 0 3px 0 #143245; font-size: 18px; padding: 4px 10px !important; border: none; border-radius: 6px; cursor: pointer; color: #fff; transition: background .1s; }
 #pauseBtn:hover { background: linear-gradient(180deg, #3a85aa 0%, #256380 100%); }
+
+/* ── Responsive: móvil ──────────────────────────────────────── */
+@media (max-width: 767px) {
+  #main-menu, #online-menu { width: 340px; padding: 24px 16px; }
+  .menu-title { font-size: 28px; }
+  .menu-btn { width: 100%; padding: 14px 20px; font-size: 16px; }
+  .room-code { font-size: 40px; letter-spacing: 6px; }
+  .box { padding: 24px 20px; min-width: 0; }
+  .box h1 { font-size: 24px; }
+  .box button { padding: 10px 16px; font-size: 14px; }
+
+  #topbar { flex-wrap: wrap; gap: 4px; padding: 2px 6px; font-size: 12px; }
+  .stat { font-size: 12px; }
+  .ic { font-size: 13px; }
+  .xpwrap { max-width: 120px; }
+  .xpbar { height: 6px; }
+  .diff { padding: 2px 5px; font-size: 10px; }
+  .difflbl { font-size: 9px; }
+  #evolveBtn { padding: 4px 8px; font-size: 11px; }
+  #debugBtn { display: none !important; }
+  #pauseBtn { font-size: 14px; padding: 2px 6px !important; }
+
+  #day-indicator { top: 36px; }
+  #day-bar { width: 100px; height: 4px; }
+
+  .basebar { top: 44px; width: 140px; height: 14px; }
+  .basebar.player { left: 8px; }
+  .basebar.enemy  { right: 8px; }
+  .bb-frame { width: 80px; height: 8px; }
+  .bb-label { font-size: 9px; }
+  .bb-ico { font-size: 8px; }
+
+  #bottom-panel { flex-wrap: wrap; min-height: 130px; align-items: flex-start; }
+  #cards-area { width: 100%; overflow-x: auto; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); padding: 4px 6px; gap: 4px; }
+  .card { width: 80px; padding: 4px; border-radius: 8px; border-width: 1px; flex-shrink: 0; }
+  .card .thumb { height: 32px; }
+  .card .thumb img { max-height: 32px; max-width: 60px; }
+  .card .name { font-size: 10px; }
+  .card .cost { font-size: 9px; }
+  .card .stats { font-size: 8px; }
+  .card .key { font-size: 8px; top: 2px; left: 3px; }
+
+  #upg-panel { min-width: 0; flex: 1; padding: 4px 6px; gap: 3px; border-right: 1px solid rgba(255,255,255,.06); }
+  .upg-group { padding: 3px 4px; gap: 2px; }
+  .upg-group-name { width: 28px; font-size: 9px; }
+  .upg-pbtn { padding: 3px 2px; font-size: 9px; }
+
+  #econ-section { min-width: 0; flex: 1; padding: 4px 6px; font-size: 10px; border-right: 1px solid rgba(255,255,255,.06); }
+  #econ-section button { padding: 3px 6px; font-size: 9px; }
+  #econ-section .econ-card { padding: 3px 4px; }
+
+  #tower-section { min-width: 0; flex: 1; padding: 4px 6px; font-size: 10px; }
+  #tower-section button { padding: 2px 6px; font-size: 9px; }
+  #tower-section .twr-card { padding: 2px 4px; gap: 2px; }
+}
