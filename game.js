@@ -94,46 +94,55 @@ function handleOpponentAction(action) {
 
 // Wrappers que envían la acción al oponente en modo online
 function playerSpawn(type) {
+  if (paused) return;
   const ok = trySpawn("player", type);
   if (ok && G.mode === "online") netSend({ type: "spawn", unitType: type });
   return ok;
 }
 function playerUpgrade(type, stat) {
+  if (paused) return;
   const ok = tryUpgrade("player", type, stat);
   if (ok && G.mode === "online") netSend({ type: "upgrade", unitType: type, stat });
   return ok;
 }
 function playerEvolve() {
+  if (paused) return;
   const ok = tryEvolve("player");
   if (ok && G.mode === "online") netSend({ type: "evolve" });
   return ok;
 }
 function playerVillager() {
+  if (paused) return;
   const ok = tryVillager("player");
   if (ok && G.mode === "online") netSend({ type: "villager" });
   return ok;
 }
 function playerVillagerUpg() {
+  if (paused) return;
   const ok = tryVillagerUpgrade("player");
   if (ok && G.mode === "online") netSend({ type: "villagerupg" });
   return ok;
 }
 function playerBuySlot() {
+  if (paused) return;
   const ok = tryBuySlot("player");
   if (ok && G.mode === "online") netSend({ type: "buy_slot" });
   return ok;
 }
 function playerBuyTower(slot) {
+  if (paused) return;
   const ok = tryBuyTower("player", slot);
   if (ok && G.mode === "online") netSend({ type: "tower_buy", slot });
   return ok;
 }
 function playerUpgTower(slot) {
+  if (paused) return;
   const ok = tryUpgradeTower("player", slot);
   if (ok && G.mode === "online") netSend({ type: "tower_upg", slot });
   return ok;
 }
 function playerSellTower(slot) {
+  if (paused) return;
   const ok = trySellTower("player", slot);
   if (ok && G.mode === "online") netSend({ type: "tower_sell", slot });
   return ok;
