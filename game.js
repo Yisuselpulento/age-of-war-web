@@ -55,6 +55,7 @@ const SPEED_MULT = 1.5; // multiplicador global de velocidad de unidades
 const DMG_MULT = 1.5;   // multiplicador global de daño (ritmo de combate)
 const PASSIVE_GOLD = 14;       // oro/seg pasivo
 const SPAWN_CD = 0.8;          // s entre spawns
+const PLAYER_PASSIVE_XP = 5;   // xp/seg pasivo para el jugador (evoluciona por tiempo)
 const AI_PASSIVE_XP = 6;        // xp/seg pasivo para la IA
 
 // ---- Config multijugador online ----------------------------------------
@@ -296,10 +297,64 @@ function frames(age, u, anim) {
 // ---- Geometría -------------------------------------------------------
 const CV = document.getElementById("cv");
 const ctx = CV.getContext("2d");
-const W = CV.width, H = CV.height;
-const GROUND_Y = H - 135;
+// Mundo lógico (el campo de batalla). El canvas se ajusta a la pantalla y se
+// recorre con la cámara. WORLD_W define cuán separadas están las bases.
+const WORLD_W = 1280, WORLD_H = 540;
+const W = WORLD_W, H = WORLD_H; // alias para código de gameplay
+const GROUND_Y = WORLD_H - 135;
 const PLAYER_BASE_X = 90;
-const ENEMY_BASE_X = W - 90;
+const ENEMY_BASE_X = WORLD_W - 90;
+
+// ---- Cámara ----------------------------------------------------------
+let BW = 1280, BH = 540;       // tamaño del buffer del canvas (px reales)
+let camX = 0;                  // desplazamiento de cámara (en unidades de mundo)
+let camScale = 1;              // px de buffer por unidad de mundo
+let viewW = WORLD_W;           // ancho de mundo visible
+let pxToWorld = 1;             // unidades de mundo por px CSS (para drag)
+
+function clampCam() {
+  if (viewW >= WORLD_W) camX = (WORLD_W - viewW) / 2; // mundo centrado, sin scroll
+  else camX = Math.max(0, Math.min(camX, WORLD_W - viewW));
+}
+
+function resizeCanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cssW = CV.clientWidth || 1280;
+  const cssH = CV.clientHeight || 540;
+  BW = Math.max(1, Math.round(cssW * dpr));
+  BH = Math.max(1, Math.round(cssH * dpr));
+  if (CV.width !== BW) CV.width = BW;
+  if (CV.height !== BH) CV.height = BH;
+  camScale = BH / WORLD_H;
+  viewW = BW / camScale;
+  pxToWorld = WORLD_H / cssH; // 1 px CSS = pxToWorld unidades de mundo
+  clampCam();
+}
+window.addEventListener("resize", resizeCanvas);
+
+// Arrastre de cámara (mouse + touch)
+let dragging = false, dragStartX = 0, camStart = 0;
+function camPointerDown(clientX) { dragging = true; dragStartX = clientX; camStart = camX; }
+function camPointerMove(clientX) {
+  if (!dragging) return;
+  camX = camStart - (clientX - dragStartX) * pxToWorld;
+  clampCam();
+}
+function camPointerUp() { dragging = false; }
+
+CV.addEventListener("mousedown", (e) => camPointerDown(e.clientX));
+window.addEventListener("mousemove", (e) => camPointerMove(e.clientX));
+window.addEventListener("mouseup", camPointerUp);
+CV.addEventListener("touchstart", (e) => { if (e.touches[0]) camPointerDown(e.touches[0].clientX); }, { passive: true });
+CV.addEventListener("touchmove", (e) => {
+  if (e.touches[0]) { camPointerMove(e.touches[0].clientX); e.preventDefault(); }
+}, { passive: false });
+window.addEventListener("touchend", camPointerUp);
+CV.addEventListener("wheel", (e) => {
+  camX += (e.deltaX || e.deltaY) * pxToWorld;
+  clampCam();
+  e.preventDefault();
+}, { passive: false });
 
 // ---- Entidades -------------------------------------------------------
 class Unit {
@@ -593,6 +648,9 @@ function update(dt) {
   // oro pasivo (base + aldeanos con mejora)
   G.player.gold += (PASSIVE_GOLD + G.player.villagers * (VILLAGER_GOLD + G.player.villagerLvl * 2)) * dt;
   G.enemy.gold += (PASSIVE_GOLD + G.enemy.villagers * VILLAGER_GOLD) * dt;
+  // xp pasivo del jugador (evoluciona con el tiempo, como la IA)
+  G.player.xp += PLAYER_PASSIVE_XP * dt;
+  if (G.mode === "online") G.enemy.xp += PLAYER_PASSIVE_XP * dt;
   for (const t of UNIT_TYPES) {
     if (G.player.cd[t] > 0) G.player.cd[t] -= dt;
     if (G.enemy.cd[t] > 0) G.enemy.cd[t] -= dt;
@@ -743,8 +801,8 @@ function advanceAnim(u, dt, anim, loop) {
 const DIFF = {
   easy:   { income: 0.65, maxUnits: 5,  spawnMin: 1.8, evolveChance: 0.25, upgChance: 0.00, xpMult: 0.8 },
   medium: { income: 0.90, maxUnits: 8,  spawnMin: 1.1, evolveChance: 0.55, upgChance: 0.15, xpMult: 1.0 },
-  hard:   { income: 1.45, maxUnits: 13, spawnMin: 0.6, evolveChance: 0.85, upgChance: 0.50, xpMult: 1.5 },
-  extreme:{ income: 2.20, maxUnits: 20, spawnMin: 0.3, evolveChance: 1.00, upgChance: 0.80, xpMult: 2.5 },
+  hard:   { income: 1.25, maxUnits: 11, spawnMin: 0.7, evolveChance: 0.80, upgChance: 0.40, xpMult: 1.25 },
+  extreme:{ income: 2.00, maxUnits: 18, spawnMin: 0.35, evolveChance: 1.00, upgChance: 0.80, xpMult: 2.2 },
 };
 let difficulty = "medium";
 
@@ -810,23 +868,18 @@ function runAI(dt) {
 
 // ---- Render ----------------------------------------------------------
 function drawBackground() {
-  const wallpaper = IMG["assets/bg/wallpaper.png"];
-  if (wallpaper) {
-    const scale = Math.max(W / wallpaper.width, H / wallpaper.height);
-    const w = wallpaper.width * scale, h = wallpaper.height * scale;
-    ctx.drawImage(wallpaper, (W - w) / 2, H - h, w, h);
+  // imagen única que cubre toda la vista (sin duplicar y sin franjas vacías)
+  const left = camX;
+  const img = IMG["assets/bg/wallpaper.png"] || IMG["assets/bg/background.png"];
+  if (img) {
+    const scale = Math.max(viewW / img.width, WORLD_H / img.height); // cover
+    const w = img.width * scale, h = img.height * scale;
+    const dx = left + (viewW - w) / 2;
+    const dy = (WORLD_H - h) / 2;
+    ctx.drawImage(img, dx, dy, w, h);
   } else {
-    const bg = IMG["assets/bg/background.png"];
-    if (bg) {
-      const scale = Math.max(W / bg.width, H / bg.height);
-      const w = bg.width * scale, h = bg.height * scale;
-      ctx.drawImage(bg, (W - w) / 2, H - h, w, h);
-    } else {
-      ctx.fillStyle = "#3a4d6b"; ctx.fillRect(0, 0, W, H);
-    }
+    ctx.fillStyle = "#3a4d6b"; ctx.fillRect(left, 0, viewW, WORLD_H);
   }
-  ctx.fillStyle = "rgba(40,30,20,.45)";
-  ctx.fillRect(0, GROUND_Y + 4, W, H - GROUND_Y);
 }
 
 function drawBase(side) {
@@ -881,6 +934,13 @@ function drawTowers(side) {
 }
 
 function render(paused) {
+  // limpiar todo el buffer
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, BW, BH);
+
+  // transformación de cámara: mundo -> buffer
+  ctx.setTransform(camScale, 0, 0, camScale, -camX * camScale, 0);
+
   drawBackground();
   drawBase("player");
   drawBase("enemy");
@@ -892,19 +952,19 @@ function render(paused) {
   for (const p of G.projectiles) p.draw();
   for (const f of G.floats) f.draw();
 
-  // drawDayFilter();  // [COMENTADO] clima desactivado
-
+  // overlay de pausa en espacio de pantalla
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (paused) {
     ctx.fillStyle = "rgba(0,0,0,.45)";
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(0, 0, BW, BH);
     ctx.fillStyle = "#f7c948";
-    ctx.font = "bold 48px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("⏸ PAUSA", W / 2, H / 2);
-    ctx.font = "18px sans-serif";
+    ctx.font = `bold ${Math.round(BH * 0.09)}px sans-serif`;
+    ctx.fillText("⏸ PAUSA", BW / 2, BH / 2);
+    ctx.font = `${Math.round(BH * 0.035)}px sans-serif`;
     ctx.fillStyle = "#a0aec0";
-    ctx.fillText("Presiona ⏸ para reanudar", W / 2, H / 2 + 50);
+    ctx.fillText("Presiona ⏸ para reanudar", BW / 2, BH / 2 + BH * 0.09);
   }
 }
 
@@ -1113,7 +1173,9 @@ function syncUI() {
   updateHpBar("enemy");
   renderEcon();
 
-  elEvolve.disabled = !(p.age < AGES.length - 1 && p.xp >= EVOLVE_COST[p.age]);
+  const canEvolve = p.age < AGES.length - 1 && p.xp >= EVOLVE_COST[p.age];
+  elEvolve.disabled = !canEvolve;
+  elEvolve.classList.toggle("ready", canEvolve);
   if (p.age >= AGES.length - 1) elEvolve.textContent = "⬆ Edad máxima";
   // fase del día
   dayFillEl.style.width = ((dayCycleTime / DAY_CYCLE_DURATION) * 100) + "%";
@@ -1132,12 +1194,12 @@ function syncUI() {
     const stat = btn.dataset.stat;
     const l = p.upg[type][stat];
     if (l >= MAX_UPG) {
-      btn.textContent = "★MÁX";
+      btn.innerHTML = "★MÁX";
       btn.disabled = true;
     } else {
       const uc = upgradeCost(p.age, type, stat, l);
       const lbl = { dmg: "+ATK", hp: "+HP", spd: "+VEL" };
-      btn.textContent = `${lbl[stat]} Lv${l+1} ${uc}🪙`;
+      btn.innerHTML = `${lbl[stat]} L${l+1}<br>${uc}🪙`;
       btn.title = `Nivel ${l+1}/${MAX_UPG} · ${uc}🪙`;
       btn.disabled = p.gold < uc;
     }
@@ -1163,6 +1225,7 @@ function resetGame() {
   G.units = []; G.projectiles = []; G.floats = []; G.over = false;
   G.mode = "ai";
   lastAge = -1; econSig = ""; dayCycleTime = 0;
+  camX = 0; clampCam();
   overlay.classList.add("hidden");
 }
 
@@ -1186,6 +1249,7 @@ function startGame() {
   pauseBtn.textContent = "⏸";
   resetGame();
   G.mode = "ai";
+  requestAnimationFrame(resizeCanvas); // el canvas ya es visible
   if (!loopRunning) { loopRunning = true; requestAnimationFrame(loop); }
 }
 
@@ -1199,16 +1263,64 @@ function startOnlineGame() {
   diffWrap.classList.add("hidden");
   resetGame();
   G.mode = "online";
+  document.getElementById("restartBtn").disabled = false;
+  requestAnimationFrame(resizeCanvas);
   if (!loopRunning) { loopRunning = true; requestAnimationFrame(loop); }
+}
+
+// Procesa mensajes de juego comunes a host y guest. Devuelve true si lo manejó.
+function handleNetGameMsg(msg) {
+  switch (msg.type) {
+    case "game_start":
+      G.mode = "online";
+      startOnlineGame();
+      return true;
+    case "opponent_action":
+      if (!G.over) handleOpponentAction(msg.action);
+      return true;
+    case "opponent_won":
+      if (!G.over) {
+        endGame(false);
+        document.getElementById("overMsg").textContent = "Tu base fue destruida.";
+      }
+      return true;
+    case "opponent_rematch":
+      if (G.over) document.getElementById("overMsg").textContent = "El oponente quiere revancha. ¡Pulsa Jugar de nuevo!";
+      return true;
+    case "rematch_failed":
+      document.getElementById("overMsg").textContent = "No se pudo: el oponente ya no está.";
+      document.getElementById("restartBtn").disabled = true;
+      return true;
+    case "opponent_disconnected":
+      if (!G.over) {
+        endGame(true);
+        document.getElementById("overMsg").textContent = "El oponente se desconectó.";
+      } else {
+        document.getElementById("restartBtn").disabled = true;
+      }
+      return true;
+  }
+  return false;
 }
 
 // ---- Eventos ---------------------------------------------------------
 elEvolve.addEventListener("click", () => playerEvolve());
 
 document.getElementById("restartBtn").addEventListener("click", () => {
-  overlay.classList.add("hidden");
-  if (G.mode === "ai") startGame();
-  else startOnlineGame();
+  if (G.mode === "ai") {
+    overlay.classList.add("hidden");
+    startGame();
+  } else {
+    // online: pedir revancha coordinada; se reinicia al recibir game_start
+    if (ws && ws.readyState === 1) {
+      ws.send(JSON.stringify({ type: "rematch" }));
+      document.getElementById("overMsg").textContent = "Esperando revancha del oponente…";
+      document.getElementById("restartBtn").disabled = true;
+    } else {
+      overlay.classList.add("hidden");
+      showMenu();
+    }
+  }
 });
 document.getElementById("menuBtn").addEventListener("click", () => {
   overlay.classList.add("hidden");
@@ -1308,6 +1420,7 @@ document.getElementById("btn-create").addEventListener("click", () => {
   ws.onmessage = (e) => {
     let msg;
     try { msg = JSON.parse(e.data); } catch { return; }
+    if (handleNetGameMsg(msg)) return;
     switch (msg.type) {
       case "room_created":
         document.getElementById("room-code-display").textContent = msg.code;
@@ -1315,19 +1428,6 @@ document.getElementById("btn-create").addEventListener("click", () => {
         break;
       case "opponent_joined":
         document.getElementById("room-status-text").textContent = "¡Oponente conectado!";
-        break;
-      case "game_start":
-        G.mode = "online";
-        startOnlineGame();
-        break;
-      case "opponent_disconnected":
-        if (!G.over) {
-          endGame(true);
-          document.getElementById("overMsg").textContent = "El oponente se desconectó.";
-        }
-        break;
-      case "opponent_action":
-        if (!G.over) handleOpponentAction(msg.action);
         break;
       case "error":
         alert(msg.message);
@@ -1374,23 +1474,11 @@ document.getElementById("btn-join-confirm").addEventListener("click", () => {
   ws.onmessage = (e) => {
     let msg;
     try { msg = JSON.parse(e.data); } catch { return; }
+    if (handleNetGameMsg(msg)) return;
     switch (msg.type) {
       case "joined":
         document.getElementById("room-code-display").textContent = "🎮 Conectado";
         document.getElementById("room-code-display").style.color = "#68d391";
-        break;
-      case "game_start":
-        G.mode = "online";
-        startOnlineGame();
-        break;
-      case "opponent_disconnected":
-        if (!G.over) {
-          endGame(true);
-          document.getElementById("overMsg").textContent = "El oponente se desconectó.";
-        }
-        break;
-      case "opponent_action":
-        if (!G.over) handleOpponentAction(msg.action);
         break;
       case "error":
         document.getElementById("join-error").textContent = msg.message;

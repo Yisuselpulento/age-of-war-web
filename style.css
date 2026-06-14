@@ -172,6 +172,9 @@ canvas {
 }
 .stat { font-size: 15px; font-weight: 700; white-space: nowrap; }
 .ic { font-size: 16px; }
+/* oro más grande y destacado */
+#gold { font-size: 24px; color: #ffd866; text-shadow: 0 1px 3px #000; }
+.stat:first-child .ic { font-size: 22px; }
 .xpwrap { flex: 1; max-width: 260px; }
 .xplabel { font-size: 11px; opacity: .7; margin-bottom: 2px; }
 .xpbar { height: 10px; background: #2d3748; border-radius: 5px; overflow: hidden; }
@@ -185,14 +188,26 @@ canvas {
 .diff.active { background: #2f6f8f; border-color: #2f6f8f; color: #fff; }
 .diff:hover { border-color: #f7c948; }
 #evolveBtn {
-  padding: 6px 16px; font-size: 13px; font-weight: 700;
-  border: none; border-radius: 6px; background: #2f6f8f; color: #fff; cursor: pointer; white-space: nowrap;
+  padding: 9px 22px; font-size: 17px; font-weight: 800;
+  border: none; border-radius: 8px; background: #2f6f8f; color: #fff; cursor: pointer; white-space: nowrap;
+  transition: background .15s;
 }
 #evolveBtn:disabled { background: #3a3f4a; color: #888; cursor: not-allowed; }
+/* listo para evolucionar: resalta y pulsa para llamar la atención */
+#evolveBtn.ready {
+  background: linear-gradient(180deg, #ffd866 0%, #e8852e 100%);
+  color: #2a1a00;
+  animation: evolveReady 0.9s ease-in-out infinite;
+}
+@keyframes evolveReady {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,216,102,.7); transform: scale(1); }
+  50%      { box-shadow: 0 0 14px 4px rgba(255,216,102,.9); transform: scale(1.06); }
+}
 #debugBtn { background: #5a3a7d; box-shadow: 0 3px 0 #36264d; font-size: 18px; padding: 4px 10px !important; }
 
-/* ── Fase del día ───────────────────────────────────────────── */
-#day-indicator {
+/* ── Fase del día (desactivado) ─────────────────────────────── */
+#day-indicator { display: none; }
+#day-indicator-off {
   position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
   z-index: 8;
 }
@@ -208,23 +223,24 @@ canvas {
 /* ── Barras de vida de base ─────────────────────────────────── */
 .basebar {
   position: absolute;
-  top: 60px;
-  width: 200px;
-  height: 18px;
+  top: 62px;
+  width: 280px;
+  height: 28px;
   z-index: 6;
   display: flex;
   align-items: center;
   pointer-events: none;
 }
 .basebar.player { left: 20px; }
-.basebar.enemy  { right: 20px; }
+.basebar.enemy  { right: 20px; justify-content: flex-end; }
 .bb-frame {
   position: relative;
-  width: 120px; height: 12px;
+  width: 190px; height: 20px;
   background: #1a1e2a;
-  border: 1px solid #4a5568;
-  border-radius: 4px;
+  border: 1.5px solid #4a5568;
+  border-radius: 6px;
   overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,.4);
 }
 .bb-fill {
   height: 100%; width: 100%;
@@ -240,11 +256,12 @@ canvas {
   background: repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0px, rgba(255,255,255,.04) 8px, transparent 8px, transparent 16px);
 }
 .bb-label {
-  margin: 0 6px;
-  font-size: 12px; font-weight: 700; white-space: nowrap;
-  display: flex; align-items: center; gap: 4px;
+  margin: 0 8px;
+  font-size: 15px; font-weight: 700; white-space: nowrap;
+  display: flex; align-items: center; gap: 5px;
+  text-shadow: 0 1px 3px #000;
 }
-.bb-ico { color: #68d391; font-size: 10px; }
+.bb-ico { color: #68d391; font-size: 13px; }
 .bb-txt { color: #e8edf5; }
 
 /* ── Panel inferior unificado ────────────────────────────────── */
@@ -322,20 +339,19 @@ canvas {
 }
 .upg-pbtn {
   flex: 1;
-  padding: 6px 4px;
+  padding: 5px 4px;
   font-size: 11px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.15;
+  text-align: center;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   background: linear-gradient(180deg, #2f6f8f 0%, #1d4860 100%);
   color: #fff;
   box-shadow: 0 2px 0 #143245;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
+  white-space: normal;       /* permite 2 líneas, no se corta el texto */
+  min-width: 56px;
   transition: background .1s;
 }
 .upg-pbtn:hover:not(:disabled) { background: linear-gradient(180deg, #3a85aa 0%, #256380 100%); }
@@ -437,21 +453,24 @@ canvas {
   .xpbar { height: 6px; }
   .diff { padding: 2px 5px; font-size: 10px; }
   .difflbl { font-size: 9px; }
-  #evolveBtn { padding: 4px 8px; font-size: 11px; }
+  #evolveBtn { padding: 6px 12px; font-size: 14px; }
+  #gold { font-size: 18px; }
+  .stat:first-child .ic { font-size: 17px; }
   #debugBtn { display: none !important; }
   #pauseBtn { font-size: 14px; padding: 2px 6px !important; }
 
   #day-indicator { top: 36px; }
   #day-bar { width: 100px; height: 4px; }
 
-  .basebar { top: 44px; width: 140px; height: 14px; }
+  .basebar { top: 46px; width: 175px; height: 22px; }
   .basebar.player { left: 8px; }
   .basebar.enemy  { right: 8px; }
-  .bb-frame { width: 80px; height: 8px; }
-  .bb-label { font-size: 9px; }
-  .bb-ico { font-size: 8px; }
+  .bb-frame { width: 110px; height: 15px; }
+  .bb-label { font-size: 12px; }
+  .bb-ico { font-size: 10px; }
 
-  #bottom-panel { flex-wrap: wrap; min-height: 130px; align-items: flex-start; }
+  canvas { min-height: 34vh; }
+  #bottom-panel { flex-wrap: wrap; min-height: 0; max-height: 52vh; overflow-y: auto; align-items: flex-start; }
   #cards-area { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); padding: 4px 6px; gap: 4px; }
   #cards-area::-webkit-scrollbar { display: none; }
   .card { width: 80px; padding: 4px; border-radius: 8px; border-width: 1px; flex-shrink: 0; }

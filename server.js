@@ -109,9 +109,29 @@ wss.on("connection", (ws) => {
         if (!roomCode) return;
         const room = rooms.get(roomCode);
         if (!room) return;
+        // resetear flags de revancha al terminar
+        room.hostReady = false; room.guestReady = false;
         const target = isHost ? room.guest : room.host;
         if (target && target.readyState === 1) {
-          target.send(JSON.stringify({ type: "opponent_disconnected" }));
+          target.send(JSON.stringify({ type: "opponent_won" }));
+        }
+        break;
+      }
+
+      case "rematch": {
+        if (!roomCode) return;
+        const room = rooms.get(roomCode);
+        if (!room || !room.host || !room.guest) {
+          ws.send(JSON.stringify({ type: "rematch_failed" }));
+          return;
+        }
+        if (isHost) room.hostReady = true; else room.guestReady = true;
+        const opp = isHost ? room.guest : room.host;
+        if (opp && opp.readyState === 1) opp.send(JSON.stringify({ type: "opponent_rematch" }));
+        if (room.hostReady && room.guestReady) {
+          room.hostReady = false; room.guestReady = false;
+          room.host.send(JSON.stringify({ type: "game_start", side: "player" }));
+          room.guest.send(JSON.stringify({ type: "game_start", side: "enemy" }));
         }
         break;
       }
