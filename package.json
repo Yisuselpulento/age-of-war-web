@@ -1,0 +1,12 @@
+{
+  "name": "age-of-war-web",
+  "version": "1.0.0",
+  "description": "Age of War - Web Game with Online Multiplayer",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}

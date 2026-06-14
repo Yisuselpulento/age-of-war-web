@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Age of War — Web</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Menú principal -->
+<div id="main-menu">
+  <h1 class="menu-title">⚔ AGE OF WAR ⚔</h1>
+  <div class="menu-buttons">
+    <button id="btn-vs-ia" class="menu-btn">🤖 VS IA (Local)</button>
+    <button id="btn-vs-online" class="menu-btn">🌐 VS Online</button>
+  </div>
+  <p class="menu-footer">Selecciona modo de juego</p>
+</div>
+
+<!-- Submenú online -->
+<div id="online-menu" class="hidden">
+  <h2 class="menu-title" id="online-title">🔄 Multijugador</h2>
+  <div class="menu-buttons" id="online-buttons">
+    <button id="btn-create" class="menu-btn">🆕 Crear Partida</button>
+    <button id="btn-join" class="menu-btn">🔗 Unirse a Partida</button>
+    <button id="btn-online-back" class="menu-btn back-btn">⬅ Volver</button>
+  </div>
+  <div id="room-waiting" class="hidden">
+    <p class="room-code-label">Comparte este código:</p>
+    <p id="room-code-display" class="room-code">------</p>
+    <p id="room-status-text" class="room-status">Esperando oponente…</p>
+  </div>
+  <div id="room-join" class="hidden">
+    <p class="room-code-label">Introduce el código:</p>
+    <input type="text" id="join-code-input" maxlength="4" class="join-input" placeholder="EJ: X7K9" autocomplete="off">
+    <button id="btn-join-confirm" class="menu-btn">✅ Unirse</button>
+    <p id="join-error" class="join-error hidden">Código inválido</p>
+  </div>
+</div>
+
+<div id="game" class="hidden">
+  <canvas id="cv" width="1280" height="540"></canvas>
+
+  <!-- Barra superior -->
+  <div id="topbar">
+    <div class="stat"><span class="ic">🪙</span><span id="gold">0</span></div>
+    <div class="xpwrap">
+      <div class="xplabel">XP <span id="xptext">0/0</span></div>
+      <div class="xpbar"><div id="xpfill"></div></div>
+    </div>
+    <div class="stat" id="ageName">Edad de Piedra</div>
+    <div id="diffWrap">
+      <span class="difflbl">IA:</span>
+      <button class="diff" data-d="easy">Fácil</button>
+      <button class="diff active" data-d="medium">Medio</button>
+      <button class="diff" data-d="hard">Difícil</button>
+      <button class="diff" data-d="extreme">Extremo</button>
+    </div>
+    <button id="evolveBtn" disabled>⬆ Evolucionar</button>
+    <button id="debugBtn" title="Test: oro + XP">🧪</button>
+  </div>
+
+  <!-- Indicador de fase del día -->
+  <div id="day-indicator">
+    <div id="day-bar"><div id="day-fill"></div></div>
+  </div>
+
+  <!-- Barras de vida de las bases -->
+  <div class="basebar player" id="hpPlayer">
+    <div class="bb-frame">
+      <div class="bb-fill"></div>
+      <div class="bb-shine"></div>
+      <div class="bb-grid"></div>
+    </div>
+    <div class="bb-label"><span class="bb-ico">⬢</span><span class="bb-txt">2000</span></div>
+  </div>
+  <div class="basebar enemy" id="hpEnemy">
+    <div class="bb-frame">
+      <div class="bb-fill"></div>
+      <div class="bb-shine"></div>
+      <div class="bb-grid"></div>
+    </div>
+    <div class="bb-label"><span class="bb-txt">2000</span><span class="bb-ico">⬢</span></div>
+  </div>
+
+  <!-- Panel inferior unificado -->
+  <div id="bottom-panel">
+    <div id="econ-bar"></div>
+    <div id="shop"></div>
+  </div>
+
+  <!-- Overlay fin de juego -->
+  <div id="overlay" class="hidden">
+    <div class="box">
+      <h1 id="overTitle">Victoria</h1>
+      <p id="overMsg"></p>
+      <button id="restartBtn">Jugar de nuevo</button>
+      <button id="menuBtn">Menú principal</button>
+    </div>
+  </div>
+
+  <div id="loading">Cargando assets…</div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
