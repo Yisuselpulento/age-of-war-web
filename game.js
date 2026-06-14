@@ -60,7 +60,7 @@ const AI_PASSIVE_XP = 6;        // xp/seg pasivo para la IA
 // WS_HOST: null → auto (usa location.host, funciona en localhost:3000)
 //          o pon la URL de tu servidor WebSocket, ej:
 //          "wss://age-of-war-server.onrender.com"
-const WS_HOST = null;
+const WS_HOST = "wss://age-of-war-web.onrender.com";
 
 function wsUrl() {
   if (WS_HOST) return WS_HOST;
