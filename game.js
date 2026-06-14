@@ -1041,14 +1041,32 @@ function render(paused) {
   }
 }
 
-// ---- Bucle principal -------------------------------------------------
+// ---- Bucle principal (timestep fijo 1/60) ----------------------------
+const FIXED_DT = 1 / 60;
+let acc = 0;
 let last = 0;
 let loopRunning = false;
+let syncTimer = 0;
 function loop(ts) {
-  const dt = Math.min(0.05, (ts - last) / 1000 || 0);
+  const dt = Math.min(0.1, (ts - last) / 1000 || 0);
   last = ts;
   if (!document.getElementById("game").classList.contains("hidden")) {
-    if (!paused) update(dt);
+    if (!paused) {
+      acc += dt;
+      if (acc > 0.1) acc = 0.1;
+      while (acc >= FIXED_DT) {
+        update(FIXED_DT);
+        acc -= FIXED_DT;
+      }
+      // host envía sync de vida de bases cada 2 segundos
+      if (G.mode === "online" && isSyncHost) {
+        syncTimer += dt;
+        if (syncTimer >= 2) {
+          syncTimer = 0;
+          ws.send(JSON.stringify({ type: "sync", playerBaseHp: G.player.baseHp, enemyBaseHp: G.enemy.baseHp }));
+        }
+      }
+    }
     render(paused);
     syncUI();
   }
@@ -1312,6 +1330,7 @@ function resetGame() {
   lastAge = -1; econSig = ""; dayCycleTime = 0;
   camX = 0; clampCam();
   overlay.classList.add("hidden");
+  acc = 0; syncTimer = 0;
 }
 
 function showMenu() {
@@ -1356,12 +1375,23 @@ function startOnlineGame() {
   if (!loopRunning) { loopRunning = true; requestAnimationFrame(loop); }
 }
 
+let isSyncHost = false; // quien recibe game_start con side:"player" es el host
+
 // Procesa mensajes de juego comunes a host y guest. Devuelve true si lo manejó.
 function handleNetGameMsg(msg) {
   switch (msg.type) {
     case "game_start":
       G.mode = "online";
+      isSyncHost = msg.side === "player";
+      acc = 0;
+      syncTimer = 0;
       startOnlineGame();
+      return true;
+    case "sync":
+      if (!G.over && !isSyncHost) {
+        G.player.baseHp = msg.enemyBaseHp;
+        G.enemy.baseHp = msg.playerBaseHp;
+      }
       return true;
     case "opponent_action":
       if (!G.over) handleOpponentAction(msg.action);

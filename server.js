@@ -105,6 +105,17 @@ wss.on("connection", (ws) => {
         break;
       }
 
+      case "sync": {
+        if (!roomCode) return;
+        const room = rooms.get(roomCode);
+        if (!room) return;
+        const target = isHost ? room.guest : room.host;
+        if (target && target.readyState === 1) {
+          target.send(JSON.stringify({ type: "sync", playerBaseHp: msg.playerBaseHp, enemyBaseHp: msg.enemyBaseHp }));
+        }
+        break;
+      }
+
       case "game_over": {
         if (!roomCode) return;
         const room = rooms.get(roomCode);
