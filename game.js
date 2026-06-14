@@ -67,6 +67,11 @@ const AI_PASSIVE_XP = 6;        // xp/seg pasivo para la IA
 const WS_HOST = "wss://age-of-war-web.onrender.com";
 
 function wsUrl() {
+  // en desarrollo local, conectar al server local (no al de producción)
+  if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+    const proto = location.protocol === "https:" ? "wss:" : "ws:";
+    return proto + "//" + location.host;
+  }
   if (WS_HOST) return WS_HOST;
   const proto = location.protocol === "https:" ? "wss:" : "ws:";
   return proto + "//" + location.host;
@@ -669,7 +674,8 @@ function update(dt) {
 
   // oro pasivo (base + aldeanos con mejora)
   G.player.gold += (PASSIVE_GOLD + G.player.villagers * (VILLAGER_GOLD + G.player.villagerLvl * 2)) * dt;
-  G.enemy.gold += (PASSIVE_GOLD + G.enemy.villagers * VILLAGER_GOLD) * dt;
+  const enemyInc = PASSIVE_GOLD + G.enemy.villagers * (VILLAGER_GOLD + G.enemy.villagerLvl * 2);
+  G.enemy.gold += enemyInc * dt;
   // xp pasivo del jugador (evoluciona con el tiempo, como la IA)
   G.player.xp += PLAYER_PASSIVE_XP * dt;
   if (G.mode === "online") G.enemy.xp += PLAYER_PASSIVE_XP * dt;
