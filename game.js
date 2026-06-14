@@ -56,6 +56,18 @@ const PASSIVE_GOLD = 14;       // oro/seg pasivo
 const SPAWN_CD = 0.8;          // s entre spawns
 const AI_PASSIVE_XP = 6;        // xp/seg pasivo para la IA
 
+// ---- Config multijugador online ----------------------------------------
+// WS_HOST: null → auto (usa location.host, funciona en localhost:3000)
+//          o pon la URL de tu servidor WebSocket, ej:
+//          "wss://age-of-war-server.onrender.com"
+const WS_HOST = null;
+
+function wsUrl() {
+  if (WS_HOST) return WS_HOST;
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  return proto + "//" + location.host;
+}
+
 // ---- Conexión multijugador -------------------------------------------
 let ws = null; // WebSocket
 
@@ -1135,7 +1147,8 @@ function startGame() {
   document.getElementById("main-menu").classList.add("hidden");
   document.getElementById("online-menu").classList.add("hidden");
   document.getElementById("game").classList.remove("hidden");
-  document.getElementById("loading").classList.add("hidden"); // ya no se usa
+  document.getElementById("loading").classList.add("hidden");
+  document.getElementById("debugBtn").classList.remove("hidden");
   resetGame();
   G.mode = "ai";
   if (!loopRunning) { loopRunning = true; requestAnimationFrame(loop); }
@@ -1146,6 +1159,7 @@ function startOnlineGame() {
   document.getElementById("online-menu").classList.add("hidden");
   document.getElementById("game").classList.remove("hidden");
   document.getElementById("loading").classList.add("hidden");
+  document.getElementById("debugBtn").classList.add("hidden");
   diffWrap.classList.add("hidden");
   resetGame();
   G.mode = "online";
@@ -1230,13 +1244,11 @@ document.getElementById("btn-create").addEventListener("click", () => {
   document.getElementById("room-code-display").textContent = "Conectando…";
   document.getElementById("room-code-display").style.color = "#a0aec0";
 
-  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  ws = new WebSocket(protocol + "//" + location.host);
+  ws = new WebSocket(wsUrl());
   ws.onopen = () => {
     ws.send(JSON.stringify({ type: "create_room" }));
   };
-  ws.onerror = (err) => {
-    console.error("WS error", err);
+  ws.onerror = () => {
     document.getElementById("room-code-display").textContent = "Error de conexión";
     document.getElementById("room-code-display").style.color = "#fc8181";
   };
@@ -1302,8 +1314,7 @@ document.getElementById("btn-join-confirm").addEventListener("click", () => {
   document.getElementById("room-code-display").textContent = "Uniéndose a " + code + "…";
   document.getElementById("room-code-display").style.color = "#a0aec0";
 
-  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  ws = new WebSocket(protocol + "//" + location.host);
+  ws = new WebSocket(wsUrl());
   ws.onopen = () => {
     ws.send(JSON.stringify({ type: "join_room", code }));
   };

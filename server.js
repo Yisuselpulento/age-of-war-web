@@ -17,6 +17,12 @@ const MIME = {
 };
 
 const httpServer = http.createServer((req, res) => {
+  // health check para Render
+  if (req.url === "/health") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ status: "ok" }));
+    return;
+  }
   let url = req.url.split("?")[0];
   if (url === "/") url = "/index.html";
   const filePath = path.join(__dirname, url);
