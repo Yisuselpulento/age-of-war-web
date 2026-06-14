@@ -982,7 +982,8 @@ function renderEcon() {
   econSig = sig;
 
   // Econ section (villagers)
-  let econHtml = `<span class="lbl">💰${income}/s</span>`;
+  let econHtml = `<div style="font-size:11px;color:#718096;margin-bottom:2px">🏘 Village</div>`;
+  econHtml += `<span class="lbl">💰${income}/s</span>`;
   econHtml += `<div class="econ-card">`;
   if (p.villagers >= MAX_VILLAGERS) {
     econHtml += `<button disabled>👷 Máx</button>`;
@@ -1003,7 +1004,8 @@ function renderEcon() {
   document.getElementById("econ-section").innerHTML = econHtml;
 
   // Tower section (right)
-  let twrHtml = `<span class="lbl">🗼${p.slots}/${MAX_SLOTS}</span>`;
+  let twrHtml = `<div style="font-size:11px;color:#718096;margin-bottom:2px">🏰 Tower</div>`;
+  twrHtml += `<span class="lbl">🗼${p.slots}/${MAX_SLOTS}</span>`;
   for (let i = 0; i < p.slots; i++) {
     twrHtml += `<div class="twr-card">`;
     const t = p.towers[i];
@@ -1134,7 +1136,7 @@ function syncUI() {
       btn.disabled = true;
     } else {
       const uc = upgradeCost(p.age, type, stat, l);
-      const lbl = { dmg: "+ATK", hp: "+HP", spd: "+VeATK" };
+      const lbl = { dmg: "+ATK", hp: "+HP", spd: "+VEL" };
       btn.textContent = `${lbl[stat]} Lv${l+1} ${uc}🪙`;
       btn.title = `Nivel ${l+1}/${MAX_UPG} · ${uc}🪙`;
       btn.disabled = p.gold < uc;
@@ -1162,7 +1164,6 @@ function resetGame() {
   G.mode = "ai";
   lastAge = -1; econSig = ""; dayCycleTime = 0;
   overlay.classList.add("hidden");
-  diffWrap.classList.remove("hidden");
 }
 
 function showMenu() {
@@ -1180,6 +1181,7 @@ function startGame() {
   document.getElementById("loading").classList.add("hidden");
   document.getElementById("debugBtn").classList.remove("hidden");
   pauseBtn.classList.remove("hidden");
+  diffWrap.classList.remove("hidden");
   paused = false;
   pauseBtn.textContent = "⏸";
   resetGame();
