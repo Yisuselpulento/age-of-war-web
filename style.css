@@ -204,6 +204,25 @@ canvas {
   50%      { box-shadow: 0 0 14px 4px rgba(255,216,102,.9); transform: scale(1.06); }
 }
 #debugBtn { background: #5a3a7d; box-shadow: 0 3px 0 #36264d; font-size: 18px; padding: 4px 10px !important; }
+#configBtn { background: #2d3748; font-size: 18px; padding: 4px 10px; border: none; border-radius: 6px; cursor: pointer; color: #fff; }
+#configBtn:hover { background: #3a4660; }
+
+/* Panel de configuración */
+#config-panel {
+  position: absolute; top: 46px; right: 10px; z-index: 30;
+  width: 230px; padding: 14px;
+  background: #1a202c; border: 1px solid #4a5568; border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.cfg-title { font-size: 15px; font-weight: 700; color: #f7c948; }
+.cfg-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; }
+#muteBtn {
+  padding: 6px 12px; font-size: 13px; font-weight: 700; cursor: pointer;
+  border: 1px solid #4a5568; border-radius: 6px; background: #2f6f8f; color: #fff;
+}
+#muteBtn.muted { background: #8f3a3a; }
+#volSlider { flex: 1; max-width: 110px; cursor: pointer; accent-color: #f7c948; }
 
 /* ── Fase del día (desactivado) ─────────────────────────────── */
 #day-indicator { display: none; }
@@ -469,9 +488,22 @@ canvas {
   .bb-label { font-size: 12px; }
   .bb-ico { font-size: 10px; }
 
-  canvas { min-height: 34vh; }
-  #bottom-panel { flex-wrap: wrap; min-height: 0; max-height: 52vh; overflow-y: auto; align-items: flex-start; }
-  #cards-area { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); padding: 4px 6px; gap: 4px; }
+  canvas { min-height: 30vh; }
+  /* panel inferior: columna apilada con scroll vertical (todo accesible) */
+  #bottom-panel {
+    flex: 0 0 auto;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    min-height: 0;
+    max-height: 48vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #bottom-panel::-webkit-scrollbar { width: 6px; }
+  #bottom-panel::-webkit-scrollbar-thumb { background: #3a4150; border-radius: 3px; }
+
+  #cards-area { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); padding: 4px 6px; gap: 4px; flex-shrink: 0; }
   #cards-area::-webkit-scrollbar { display: none; }
   .card { width: 80px; padding: 4px; border-radius: 8px; border-width: 1px; flex-shrink: 0; }
   .card .thumb { height: 32px; }
@@ -481,16 +513,16 @@ canvas {
   .card .stats { font-size: 8px; }
   .card .key { display: none; }
 
-  #upg-panel { width: 100%; min-width: 0; padding: 4px 8px; gap: 3px; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); }
-  .upg-group { padding: 4px 6px; gap: 3px; }
-  .upg-group-name { width: 36px; font-size: 11px; }
-  .upg-pbtn { padding: 5px 4px; font-size: 10px; }
+  #upg-panel { width: 100%; min-width: 0; padding: 6px 8px; gap: 4px; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); flex-shrink: 0; }
+  .upg-group { padding: 4px 6px; gap: 4px; }
+  .upg-group-name { width: 42px; font-size: 11px; }
+  .upg-pbtn { padding: 7px 4px; font-size: 11px; }
 
+  /* Village y Tower apilados a lo ancho (fáciles de tocar) */
   #econ-section,
-  #tower-section { min-width: 0; flex: 1; padding: 4px 6px; font-size: 10px; }
-  #econ-section { border-right: 1px solid rgba(255,255,255,.06); }
-  #econ-section button { padding: 4px 8px; font-size: 10px; }
-  #econ-section .econ-card { padding: 3px 4px; }
-  #tower-section button { padding: 3px 6px; font-size: 10px; }
-  #tower-section .twr-card { padding: 2px 4px; gap: 2px; }
+  #tower-section { width: 100%; min-width: 0; flex: none; padding: 6px 10px; font-size: 12px; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); flex-shrink: 0; }
+  #econ-section button { padding: 7px 10px; font-size: 12px; }
+  #econ-section .econ-card { padding: 5px 6px; }
+  #tower-section button { padding: 6px 10px; font-size: 12px; }
+  #tower-section .twr-card { padding: 4px 6px; gap: 4px; }
 }

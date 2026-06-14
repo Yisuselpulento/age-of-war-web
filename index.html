@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Age of War — Web</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 
@@ -90,7 +90,21 @@
     </div>
     <button id="evolveBtn" disabled>⬆ Evolucionar</button>
     <button id="pauseBtn" title="Pausar" class="hidden">⏸</button>
+    <button id="configBtn" title="Configuración">⚙</button>
     <button id="debugBtn" title="Test: oro + XP">🧪</button>
+  </div>
+
+  <!-- Panel de configuración -->
+  <div id="config-panel" class="hidden">
+    <div class="cfg-title">⚙ Configuración</div>
+    <div class="cfg-row">
+      <span>🎵 Música</span>
+      <button id="muteBtn">🔊 On</button>
+    </div>
+    <div class="cfg-row">
+      <span>Volumen</span>
+      <input id="volSlider" type="range" min="0" max="100" value="45">
+    </div>
   </div>
 
   <div id="bottom-panel">
@@ -102,7 +116,8 @@
 
 </div>
 <div id="loading">Cargando assets…</div>
+<audio id="bgm" src="assets/audio/theme.mp3" loop preload="auto"></audio>
 
-<script src="game.js"></script>
+<script src="game.js?v=7"></script>
 </body>
 </html>
