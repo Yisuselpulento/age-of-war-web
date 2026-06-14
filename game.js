@@ -1114,7 +1114,6 @@ function endGame(win) {
 }
 
 function resetGame() {
-  if (G.mode === "online" && ws) { ws.close(); ws = null; }
   G.player = freshSide(250);
   G.enemy = freshSide(200);
   G.units = []; G.projectiles = []; G.floats = []; G.over = false;
@@ -1125,6 +1124,7 @@ function resetGame() {
 }
 
 function showMenu() {
+  if (ws) { ws.close(); ws = null; }
   document.getElementById("game").classList.add("hidden");
   document.getElementById("main-menu").classList.remove("hidden");
   document.getElementById("online-menu").classList.add("hidden");
@@ -1146,9 +1146,7 @@ function startOnlineGame() {
   document.getElementById("online-menu").classList.add("hidden");
   document.getElementById("game").classList.remove("hidden");
   document.getElementById("loading").classList.add("hidden");
-  // ocultar selector de dificultad en online
   diffWrap.classList.add("hidden");
-  G.mode = "online";
   resetGame();
   G.mode = "online";
   if (!loopRunning) { loopRunning = true; requestAnimationFrame(loop); }
@@ -1164,8 +1162,8 @@ document.getElementById("restartBtn").addEventListener("click", () => {
 });
 document.getElementById("menuBtn").addEventListener("click", () => {
   overlay.classList.add("hidden");
+  G.mode = "ai"; // evitar que onclose dispare endGame
   if (ws) { ws.close(); ws = null; }
-  resetGame();
   showMenu();
 });
 
