@@ -219,33 +219,51 @@ const IMG = {}; // cache de imágenes por ruta
 const ASSET_V = "6"; // versión de assets (cache-busting); subir al regenerar sprites
 let manifest = null;
 
-function loadImage(src) {
+function loadImage(src, retries) {
   return new Promise((res) => {
     const im = new Image();
     im.onload = () => res(im);
-    im.onerror = () => res(null);
+    im.onerror = () => {
+      if (retries > 0) {
+        const img = new Image();
+        img.onload = () => res(img);
+        img.onerror = () => res(null);
+        img.src = src;
+      } else {
+        res(null);
+      }
+    };
     im.src = src;
   });
 }
 
+async function batchLoad(paths, concurrency) {
+  const results = [];
+  for (let i = 0; i < paths.length; i += concurrency) {
+    const batch = paths.slice(i, i + concurrency);
+    const chunk = await Promise.all(batch.map((p) => loadImage(p + "?v=" + ASSET_V, 2)));
+    for (let j = 0; j < chunk.length; j++) {
+      IMG[paths[i + j]] = chunk[j];
+    }
+  }
+}
+
 async function loadAll() {
   manifest = await fetch("assets/manifest.json?v=" + ASSET_V).then((r) => r.json());
-  const jobs = [];
-  // se cachea bajo la ruta limpia, pero se descarga con ?v= para invalidar caché
-  const reg = (path) => jobs.push(loadImage(path + "?v=" + ASSET_V).then((im) => { IMG[path] = im; }));
+  const paths = [];
 
-  reg("assets/bg/wallpaper.png");
-  reg("assets/bg/background.png");
+  paths.push("assets/bg/wallpaper.png");
+  paths.push("assets/bg/background.png");
   for (const age of AGES) {
-    reg(`assets/bases/${age}/base.png`);
+    paths.push(`assets/bases/${age}/base.png`);
     for (const u of UNIT_TYPES) {
       for (const anim of ANIMS) {
         const n = manifest[age][u][anim] || 0;
-        for (let i = 0; i < n; i++) reg(`assets/units/${age}/${u}/${anim}/${i}.png`);
+        for (let i = 0; i < n; i++) paths.push(`assets/units/${age}/${u}/${anim}/${i}.png`);
       }
     }
   }
-  await Promise.all(jobs);
+  await batchLoad(paths, 20);
 }
 
 // Cache de arrays de frames ya resueltos (se construyen una sola vez).
