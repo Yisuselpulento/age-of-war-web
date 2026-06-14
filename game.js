@@ -1413,8 +1413,9 @@ document.getElementById("btn-join-confirm").addEventListener("click", () => {
 (async function start() {
   await loadAll();
   document.getElementById("loading").classList.add("hidden");
-  // mostramos el menú
-  document.getElementById("main-menu").classList.remove("hidden");
-  // pre-construimos shop para que esté listo
+  // solo mostrar el menú si el juego no ha arrancado ya
+  if (document.getElementById("game").classList.contains("hidden")) {
+    document.getElementById("main-menu").classList.remove("hidden");
+  }
   buildShop();
 })();
