@@ -116,13 +116,19 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  background: #0a0c12;
 }
 
+#canvas-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: #111;
+}
 canvas {
   display: block;
-  flex: 1;
   width: 100%;
-  min-height: 0;
+  height: 100%;
   background: #111;
 }
 
@@ -195,7 +201,7 @@ canvas {
 
 /* ── Fase del día ───────────────────────────────────────────── */
 #day-indicator {
-  position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
   z-index: 8;
 }
 #day-bar {
@@ -210,7 +216,7 @@ canvas {
 /* ── Barras de vida de base ─────────────────────────────────── */
 .basebar {
   position: absolute;
-  top: 60px;
+  top: 36px;
   width: 200px;
   height: 18px;
   z-index: 6;
@@ -257,7 +263,7 @@ canvas {
   width: 100%;
   background: #131722;
   border-top: 1px solid #2d3748;
-  min-height: 170px;
+  min-height: 190px;
   flex-shrink: 0;
 }
 

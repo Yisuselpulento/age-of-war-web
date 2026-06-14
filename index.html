@@ -40,7 +40,6 @@
 </div>
 
 <div id="game" class="hidden">
-  <canvas id="cv" width="1280" height="540"></canvas>
 
   <!-- Barra superior -->
   <div id="topbar">
@@ -62,27 +61,41 @@
     <button id="debugBtn" title="Test: oro + XP">🧪</button>
   </div>
 
-  <!-- Indicador de fase del día -->
-  <div id="day-indicator">
-    <div id="day-bar"><div id="day-fill"></div></div>
-  </div>
+  <div id="canvas-wrap">
+    <canvas id="cv" width="1280" height="540"></canvas>
 
-  <!-- Barras de vida de las bases -->
-  <div class="basebar player" id="hpPlayer">
-    <div class="bb-frame">
-      <div class="bb-fill"></div>
-      <div class="bb-shine"></div>
-      <div class="bb-grid"></div>
+    <!-- Indicador de fase del día -->
+    <div id="day-indicator">
+      <div id="day-bar"><div id="day-fill"></div></div>
     </div>
-    <div class="bb-label"><span class="bb-ico">⬢</span><span class="bb-txt">2000</span></div>
-  </div>
-  <div class="basebar enemy" id="hpEnemy">
-    <div class="bb-frame">
-      <div class="bb-fill"></div>
-      <div class="bb-shine"></div>
-      <div class="bb-grid"></div>
+
+    <!-- Barras de vida de las bases -->
+    <div class="basebar player" id="hpPlayer">
+      <div class="bb-frame">
+        <div class="bb-fill"></div>
+        <div class="bb-shine"></div>
+        <div class="bb-grid"></div>
+      </div>
+      <div class="bb-label"><span class="bb-ico">⬢</span><span class="bb-txt">2000</span></div>
     </div>
-    <div class="bb-label"><span class="bb-txt">2000</span><span class="bb-ico">⬢</span></div>
+    <div class="basebar enemy" id="hpEnemy">
+      <div class="bb-frame">
+        <div class="bb-fill"></div>
+        <div class="bb-shine"></div>
+        <div class="bb-grid"></div>
+      </div>
+      <div class="bb-label"><span class="bb-txt">2000</span><span class="bb-ico">⬢</span></div>
+    </div>
+
+    <!-- Overlay fin de juego -->
+    <div id="overlay" class="hidden">
+      <div class="box">
+        <h1 id="overTitle">Victoria</h1>
+        <p id="overMsg"></p>
+        <button id="restartBtn">Jugar de nuevo</button>
+        <button id="menuBtn">Menú principal</button>
+      </div>
+    </div>
   </div>
 
   <!-- Panel inferior unificado -->
@@ -91,16 +104,6 @@
     <div id="upg-panel"></div>
     <div id="econ-section"></div>
     <div id="tower-section"></div>
-  </div>
-
-  <!-- Overlay fin de juego -->
-  <div id="overlay" class="hidden">
-    <div class="box">
-      <h1 id="overTitle">Victoria</h1>
-      <p id="overMsg"></p>
-      <button id="restartBtn">Jugar de nuevo</button>
-      <button id="menuBtn">Menú principal</button>
-    </div>
   </div>
 
   <div id="loading">Cargando assets…</div>
