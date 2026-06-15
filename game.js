@@ -120,26 +120,24 @@ function handleOpponentAction(action) {
       break;
     }
     case "tower_buy": {
-      e.gold -= towerBuyCost(e.age);
-      e.towers[action.slot] = { dmgLvl: 1, spdLvl: 0, cd: 0 };
+      e.gold -= towerBuyCost(e.age, action.towerType);
+      e.towers[action.slot] = { type: action.towerType, cd: 0, angle: 0, fireAnim: 0, animFrame: 0, animTimer: 0 };
       break;
     }
     case "tower_upg": {
       const t = e.towers[action.slot];
       if (!t) break;
-      if (action.kind === "dmg") {
-        e.gold -= towerDmgCost(e.age, t.dmgLvl);
-        t.dmgLvl++;
-      } else {
-        e.gold -= towerSpdCost(e.age, t.spdLvl);
-        t.spdLvl++;
-      }
+      const lvl = e.towerUpg[action.kind][t.type - 1];
+      e.gold -= towerUpgCost(e.age, t.type, action.kind, lvl);
+      e.towerUpg[action.kind][t.type - 1] = lvl + 1;
       break;
     }
     case "tower_sell": {
       const t = e.towers[action.slot];
       if (!t) break;
-      e.gold += towerSellValue(t, e.age);
+      const d = e.towerUpg.dmg[t.type - 1];
+      const s = e.towerUpg.spd[t.type - 1];
+      e.gold += towerSellValue(t.type, e.age, d, s);
       e.towers[action.slot] = null;
       break;
     }
@@ -188,10 +186,10 @@ function playerBuySlot() {
   if (ok && G.mode === "online") netSend({ type: "buy_slot" });
   return ok;
 }
-function playerBuyTower(slot) {
+function playerBuyTower(slot, towerType) {
   if (paused) return;
-  const ok = tryBuyTower("player", slot);
-  if (ok && G.mode === "online") netSend({ type: "tower_buy", slot });
+  const ok = tryBuyTower("player", slot, towerType);
+  if (ok && G.mode === "online") netSend({ type: "tower_buy", slot, towerType });
   return ok;
 }
 function playerUpgTower(slot, kind) {
@@ -269,26 +267,88 @@ function villagerLvlCost(lvl) { return Math.round(600 * Math.pow(1.85, lvl)); }
 
 // ---- Torres defensivas -----------------------------------------------
 const MAX_SLOTS = 4;
-const MAX_TOWER_DMG = 3;  // 3 sprites de torreta por edad (t1, t2, t3)
-const MAX_TOWER_SPD = 4;
-const SLOT_COST = [0, 400, 900, 1800]; // costo para desbloquear el slot índice 1,2,3
-function towerBuyCost(age) { return Math.round(160 * (age + 1)); }
-function towerDmgCost(age, dmgLvl) { return Math.round(150 * (age + 1) * dmgLvl); }
-function towerSpdCost(age, spdLvl) { return Math.round(130 * (age + 1) * (spdLvl + 1)); }
-function towerStats(age, dmgLvl, spdLvl) {
+const MAX_TOWER_UPG = 4;
+const SLOT_COST = [0, 400, 900, 1800];
+const TOWER_TIERS = [1, 2, 3];
+// Stats base por torre [age][type] según el juego original (projectile_damage, cd, range)
+const TOWER_BASE = [
+  [ // cave
+    { dmg: 15, cd: 1.5, range: 400 },
+    { dmg: 5,  cd: 0.5, range: 300 },
+    { dmg: 40, cd: 2.5, range: 480 },
+  ],
+  [ // knight
+    { dmg: 40, cd: 1.5, range: 400 },
+    { dmg: 60, cd: 1.2, range: 420 },
+    { dmg: 300, cd: 3.5, range: 500 },
+  ],
+  [ // medival
+    { dmg: 60, cd: 1.2, range: 420 },
+    { dmg: 120, cd: 1.5, range: 420 },
+    { dmg: 120, cd: 1.8, range: 480 },
+  ],
+  [ // miltary
+    { dmg: 60, cd: 1.2, range: 420 },
+    { dmg: 120, cd: 1.5, range: 420 },
+    { dmg: 80, cd: 1.0, range: 350 },
+  ],
+  [ // future
+    { dmg: 100, cd: 1.0, range: 420 },
+    { dmg: 50,  cd: 0.4, range: 400 },
+    { dmg: 50,  cd: 0.6, range: 400 },
+  ],
+];
+function towerBuyCost(age, type) {
+  const base = [180, 450, 1000];
+  return Math.round(base[type - 1] * (1 + age * 0.3));
+}
+function towerUpgCost(age, type, kind, lvl) {
+  const baseCost = kind === "dmg" ? 100 : 80;
+  return Math.round(baseCost * (1 + age * 0.4) * type * (lvl + 1));
+}
+function towerStats(age, type, upgDmg, upgSpd) {
+  const b = TOWER_BASE[age][type - 1];
   return {
-    dmg: (12 + 8 * age) * dmgLvl,
-    range: 440,
-    cd: Math.max(0.3, 0.9 * (1 - 0.15 * spdLvl)),
+    dmg: Math.round(b.dmg * DMG_MULT * (1 + age * 0.5) * (1 + 0.3 * upgDmg)),
+    range: b.range,
+    cd: Math.max(0.3, b.cd * (1 - 0.12 * upgSpd)),
   };
 }
-// oro recuperado al vender una torre (50% de lo invertido)
-function towerSellValue(t, age) {
-  let inv = towerBuyCost(age);
-  for (let l = 1; l < t.dmgLvl; l++) inv += towerDmgCost(age, l);
-  for (let l = 0; l < t.spdLvl; l++) inv += towerSpdCost(age, l);
+function towerSellValue(type, age, upgDmg, upgSpd) {
+  let inv = towerBuyCost(age, type);
+  for (let l = 0; l < upgDmg; l++) inv += towerUpgCost(age, type, "dmg", l);
+  for (let l = 0; l < upgSpd; l++) inv += towerUpgCost(age, type, "spd", l);
   return Math.round(inv * 0.5);
 }
+
+// Config de proyectiles por torre (index = age*3 + type-1)
+// Formato: [speed, rotSpeed, offsetY, projectilePath]
+const TOWER_PROJ = [
+  [400, 0,   0,   "towers/cave/t1/cave_turret_1_projectile_01.png"],  // cave 1
+  [300, 200, 0,   "towers/cave/t2/cave_turret_2_projectile.png"],      // cave 2 (gira)
+  [500, 0,   -20, "towers/cave/t3/cave_turret_3_projectile.png"],      // cave 3
+  [1200, 0,  0,   "towers/knight/t1/knight_turret_1_projectile.png"],  // knight 1
+  [500, 150, 0,   "towers/knight/t2/knight_turret_2_projectile.png"],  // knight 2 (gira)
+  [500, 0,   0,   "towers/knight/t3/knight_turret_3_projectile.png"],  // knight 3
+  [1200, 0,  0,   "towers/medival/t1/medival_turret_1_projectile.png"], // medival 1
+  [1200, 0,  0,   "towers/medival/t2/medival_turret_2_projectile.png"], // medival 2
+  [1200, 0,  0,   "towers/medival/t3/medival_turret_3_projectile.png"], // medival 3
+  [1200, 0,  0,   "towers/miltary/t1/miltary_turret_1_projectile.png"], // miltary 1
+  [1200, 0,  0,   "towers/miltary/t2/miltary_turret_2_projectile.png"], // miltary 2
+  [1200, 0,  0,   "towers/miltary/t1/miltary_turret_1_projectile.png"], // miltary 3 (reusa t1)
+  [1200, 0,  0,   "towers/future/t1/future_turret_1_projectile.png"],   // future 1
+  [1200, 0,  0,   "towers/future/t2/future_turret_2_projectile0001.png"], // future 2
+  [1200, 0,  0,   "towers/future/t3/future_turret_3_projectile0001.png"], // future 3
+];
+
+// Número de frames de ataque por torre (age×3 + level-1)
+const TOWER_ATTACK_FRAMES = [
+  32, 10, 55,   // cave 1,2,3
+  99, 99, 77,   // knight 1,2,3
+  45, 80, 80,   // medival 1,2,3
+  45, 40, 40,   // miltary 1,2,3
+  40, 3, 3,     // future 1,2,3
+];
 
 // ---- Carga de assets -------------------------------------------------
 const IMG = {}; // cache de imágenes por ruta
@@ -332,7 +392,15 @@ async function loadAll() {
   paths.push("assets/bg/background.png");
   for (const age of AGES) {
     paths.push(`assets/bases/${age}/base.png`);
-    for (const l of [1, 2, 3]) paths.push(`assets/towers/${age}/t${l}.png`);
+    for (const l of [1, 2, 3]) {
+      paths.push(`assets/towers/${age}/t${l}.png`);
+      const idx = AGES.indexOf(age) * 3 + (l - 1);
+      paths.push(`assets/${TOWER_PROJ[idx][3]}`);
+      const nf = TOWER_ATTACK_FRAMES[idx] || 0;
+      for (let f = 1; f <= nf; f++) {
+        paths.push(`assets/towers/${age}/t${l}/${age}_turret_${l}_attack${String(f).padStart(4, "0")}.png`);
+      }
+    }
     for (const u of UNIT_TYPES) {
       for (const anim of ANIMS) {
         const n = manifest[age][u][anim] || 0;
@@ -503,13 +571,26 @@ class Unit {
 }
 
 class Projectile {
-  constructor(x, y, target, dmg, side) {
+  constructor(x, y, target, dmg, side, projIdx) {
     this.x = x; this.y = y;
     this.target = target;
     this.dmg = dmg;
     this.side = side;
     this.spd = 620;
+    this.rot = 0;
+    this.rotSpd = 0;
+    this.offY = 0;
+    this.texKey = null;
     this.dead = false;
+    if (projIdx !== undefined && projIdx >= 0) {
+      const cfg = TOWER_PROJ[projIdx];
+      if (cfg) {
+        this.spd = cfg[0];
+        this.rotSpd = cfg[1];
+        this.offY = cfg[2];
+        this.texKey = `assets/${cfg[3]}`;
+      }
+    }
   }
   update(dt) {
     if (this.target.dead || this.target.dying) { this.dead = true; return; }
@@ -523,8 +604,26 @@ class Projectile {
     }
     this.x += (dx / dist) * this.spd * dt;
     this.y += (dy / dist) * this.spd * dt;
+    this.rot += this.rotSpd * dt;
   }
   draw() {
+    if (this.texKey) {
+      const im = IMG[this.texKey];
+      if (im) {
+        ctx.save();
+        ctx.translate(this.x, this.y + this.offY);
+        if (this.side === "enemy") ctx.scale(-1, 1);
+        const dx = this.target.x - this.x;
+        const dy = (this.target.y - 40) - this.y + this.offY;
+        const dirAngle = Math.atan2(dy, dx);
+        ctx.rotate(dirAngle + this.rot);
+        const pw = 36, ph = im.height * (pw / im.width);
+        ctx.drawImage(im, -pw / 2, -ph / 2, pw, ph);
+        ctx.restore();
+        return;
+      }
+    }
+    // Fallback círculo genérico
     ctx.fillStyle = this.side === "player" ? "#ffe27a" : "#ff8a6b";
     ctx.beginPath();
     ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
@@ -565,12 +664,14 @@ function freshSide(gold) {
       range: { dmg: 0, hp: 0, spd: 0 },
       tank:  { dmg: 0, hp: 0, spd: 0 },
     },
+    towerUpg: { dmg: [0, 0, 0], spd: [0, 0, 0] },
     villagers: 0,
     villagerLvl: 0,
     slots: 1,
     towers: [null, null, null, null],
     aiTimer: 0,
     aiBuildTimer: 0,
+    spawnCycle: 0,
   };
 }
 const G = {
@@ -663,13 +764,13 @@ function tryBuySlot(side) {
   return true;
 }
 
-function tryBuyTower(side, slot) {
+function tryBuyTower(side, slot, type) {
   const st = G[side];
   if (slot >= st.slots || st.towers[slot]) return false;
-  const cost = towerBuyCost(st.age);
+  const cost = towerBuyCost(st.age, type);
   if (st.gold < cost) return false;
   st.gold -= cost;
-  st.towers[slot] = { dmgLvl: 1, spdLvl: 0, cd: 0 };
+  st.towers[slot] = { type, cd: 0, angle: 0, fireAnim: 0, animFrame: 0, animTimer: 0 };
   return true;
 }
 
@@ -677,26 +778,22 @@ function tryUpgradeTower(side, slot, kind) {
   const st = G[side];
   const t = st.towers[slot];
   if (!t) return false;
-  if (kind === "dmg") {
-    if (t.dmgLvl >= MAX_TOWER_DMG) return false;
-    const cost = towerDmgCost(st.age, t.dmgLvl);
-    if (st.gold < cost) return false;
-    st.gold -= cost; t.dmgLvl++;
-    return true;
-  } else {
-    if (t.spdLvl >= MAX_TOWER_SPD) return false;
-    const cost = towerSpdCost(st.age, t.spdLvl);
-    if (st.gold < cost) return false;
-    st.gold -= cost; t.spdLvl++;
-    return true;
-  }
+  const lvl = st.towerUpg[kind][t.type - 1];
+  if (lvl >= MAX_TOWER_UPG) return false;
+  const cost = towerUpgCost(st.age, t.type, kind, lvl);
+  if (st.gold < cost) return false;
+  st.gold -= cost;
+  st.towerUpg[kind][t.type - 1] = lvl + 1;
+  return true;
 }
 
 function trySellTower(side, slot) {
   const st = G[side];
   const t = st.towers[slot];
   if (!t) return false;
-  st.gold += towerSellValue(t, st.age);
+  const d = st.towerUpg.dmg[t.type - 1];
+  const s = st.towerUpg.spd[t.type - 1];
+  st.gold += towerSellValue(t.type, st.age, d, s);
   st.towers[slot] = null;
   return true;
 }
@@ -849,12 +946,47 @@ function updateTowers(side, frontEnemy, dt) {
     const t = st.towers[i];
     if (!t) continue;
     if (t.cd > 0) t.cd -= dt;
-    if (!frontEnemy || frontEnemy.dying) continue;
-    const ts = towerStats(st.age, t.dmgLvl, t.spdLvl);
+    if (t.fireAnim > 0) {
+      t.fireAnim -= dt;
+    }
+    if (t.fireAnim > 0) {
+      t.animTimer += dt;
+      const projIdx = st.age * 3 + (t.type - 1);
+      const nf = TOWER_ATTACK_FRAMES[projIdx] || 1;
+      const frameDur = 0.15 / nf;
+      if (t.animTimer >= frameDur) {
+        t.animTimer = 0;
+        t.animFrame = (t.animFrame + 1) % nf;
+      }
+    } else {
+      t.animFrame = 0;
+      t.animTimer = 0;
+    }
+
     const p = towerPos(side, i);
-    if (t.cd <= 0 && Math.abs(frontEnemy.x - p.x) <= ts.range) {
-      t.cd = ts.cd;
-      G.projectiles.push(new Projectile(p.x, p.y, frontEnemy, ts.dmg, side));
+    const projIdx = st.age * 3 + (t.type - 1);
+
+    if (!frontEnemy || frontEnemy.dying) {
+      t.angle = 0;
+      continue;
+    }
+
+    const upgDmg = st.towerUpg.dmg[t.type - 1];
+    const upgSpd = st.towerUpg.spd[t.type - 1];
+    const ts = towerStats(st.age, t.type, upgDmg, upgSpd);
+    if (Math.abs(frontEnemy.x - p.x) <= ts.range) {
+      const dy = (frontEnemy.y - 40) - p.y;
+      const dx = Math.abs(frontEnemy.x - p.x);
+      t.angle = Math.max(-0.3, Math.min(0.3, Math.atan2(dy, Math.max(dx, 50))));
+      if (t.cd <= 0) {
+        t.cd = ts.cd;
+        t.fireAnim = 0.15;
+        t.animFrame = 0;
+        t.animTimer = 0;
+        G.projectiles.push(new Projectile(p.x, p.y, frontEnemy, ts.dmg, side, projIdx));
+      }
+    } else {
+      t.angle = 0;
     }
   }
 }
@@ -890,63 +1022,111 @@ function runAI(dt) {
   const D = DIFF[difficulty];
   ai.gold += PASSIVE_GOLD * (D.income - 1) * dt;
   ai.xp += AI_PASSIVE_XP * D.xpMult * dt;
+  // Bonus de oro por edad: más ingresos en edades altas
+  ai.gold += ai.age * 3 * dt;
   ai.aiTimer -= dt;
-
-  if (ai.age < AGES.length - 1 && ai.xp >= EVOLVE_COST[ai.age] && Math.random() < D.evolveChance * dt * 10) {
-    tryEvolve("enemy");
-  }
-
-  if (D.upgChance && Math.random() < D.upgChance * dt * 3) {
-    const t = UNIT_TYPES[(Math.random() * 3) | 0];
-    const stats = ["dmg", "hp", "spd"];
-    const stat = stats[(Math.random() * 3) | 0];
-    const lvl = ai.upg[t][stat];
-    if (lvl < MAX_UPG && ai.gold > upgradeCost(ai.age, t, stat, lvl) * 2.2) tryUpgrade("enemy", t, stat);
-  }
-
-  // inversión en economía y torres
   ai.aiBuildTimer -= dt;
+
+  // ---- EVOLUCIÓN ----
+  if (ai.age < AGES.length - 1 && ai.xp >= EVOLVE_COST[ai.age]) {
+    if (Math.random() < D.evolveChance * dt * 20) tryEvolve("enemy");
+  }
+
+  // ---- MEJORAS ----
+  if (D.upgChance > 0 && Math.random() < D.upgChance * dt * 5 * (1 + ai.age * 0.3)) {
+    const t = UNIT_TYPES[(Math.random() * 3) | 0];
+    const stat = ["dmg", "hp", "spd"][(Math.random() * 3) | 0];
+    const lvl = ai.upg[t][stat];
+    if (lvl < MAX_UPG && ai.gold > upgradeCost(ai.age, t, stat, lvl) * 1.5) {
+      tryUpgrade("enemy", t, stat);
+    }
+  }
+
+  // ---- ECONOMÍA (aldeanos + torres) ----
   if (ai.aiBuildTimer <= 0) {
-    ai.aiBuildTimer = 2 + Math.random() * 2.5;
-    // aldeanos (economía) — todas las dificultades, más en alta
-    if (ai.villagers < MAX_VILLAGERS && ai.gold > villagerCost(ai.villagers) * 2 &&
-        Math.random() < 0.4 + D.upgChance) {
+    ai.aiBuildTimer = 2 + Math.random() * 2;
+
+    if (ai.villagers < MAX_VILLAGERS && ai.gold > villagerCost(ai.villagers) * 1.3) {
       tryVillager("enemy");
-    } else if (D.upgChance > 0) {
-      // torres: comprar / ampliar / mejorar
-      let empty = -1;
-      for (let i = 0; i < ai.slots; i++) if (!ai.towers[i]) { empty = i; break; }
-      if (empty >= 0 && ai.gold > towerBuyCost(ai.age) * 2.5) {
-        tryBuyTower("enemy", empty);
-      } else if (empty < 0 && ai.slots < MAX_SLOTS && ai.gold > SLOT_COST[ai.slots] * 2 &&
-                 Math.random() < D.upgChance) {
-        tryBuySlot("enemy");
-      } else {
-        for (let i = 0; i < ai.slots; i++) {
-          const t = ai.towers[i];
-          if (!t) continue;
-          if (t.dmgLvl < MAX_TOWER_DMG && ai.gold > towerDmgCost(ai.age, t.dmgLvl) * 2.5) {
-            tryUpgradeTower("enemy", i, "dmg"); break;
-          }
-          if (t.spdLvl < MAX_TOWER_SPD && ai.gold > towerSpdCost(ai.age, t.spdLvl) * 2.5) {
-            tryUpgradeTower("enemy", i, "spd"); break;
+    }
+    else if (ai.villagerLvl < MAX_VILLAGER_LVL && ai.villagers >= 3 &&
+             ai.gold > villagerLvlCost(ai.villagerLvl) * 1.5) {
+      tryVillagerUpgrade("enemy");
+    }
+    else if (D.upgChance > 0) {
+      const armySize = G.units.filter(u => u.side === "enemy" && !u.dying).length;
+      if (armySize >= 5) {
+        let empty = -1;
+        for (let i = 0; i < ai.slots; i++) if (!ai.towers[i]) { empty = i; break; }
+        if (empty >= 0) {
+          // Elegir tier según oro disponible
+          let chosenType = 1;
+          if (ai.gold > towerBuyCost(ai.age, 3) * 1.5) chosenType = 3;
+          else if (ai.gold > towerBuyCost(ai.age, 2) * 1.5) chosenType = 2;
+          tryBuyTower("enemy", empty, chosenType);
+        } else if (empty < 0 && ai.slots < MAX_SLOTS && ai.gold > SLOT_COST[ai.slots] * 1.5) {
+          tryBuySlot("enemy");
+        } else {
+          for (let i = 0; i < ai.slots; i++) {
+            const t = ai.towers[i];
+            if (!t) continue;
+            const upgDmg = ai.towerUpg.dmg[t.type - 1];
+            const upgSpd = ai.towerUpg.spd[t.type - 1];
+            if (upgDmg < MAX_TOWER_UPG && ai.gold > towerUpgCost(ai.age, t.type, "dmg", upgDmg) * 1.8) {
+              tryUpgradeTower("enemy", i, "dmg"); break;
+            }
+            if (upgSpd < MAX_TOWER_UPG && ai.gold > towerUpgCost(ai.age, t.type, "spd", upgSpd) * 1.8) {
+              tryUpgradeTower("enemy", i, "spd"); break;
+            }
           }
         }
       }
     }
   }
 
+  // ---- SPAWN ----
   if (ai.aiTimer > 0) return;
-  let own = 0;
-  for (const u of G.units) if (u.side === "enemy" && !u.dying) own++;
-  if (own >= D.maxUnits) { ai.aiTimer = 0.6; return; }
 
-  const order = Math.random() < 0.5 ? ["melee", "range", "tank"] : ["range", "melee", "tank"];
-  let spawned = false;
-  for (const t of order) {
-    if (ai.gold >= STATS[ai.age][t].cost && trySpawn("enemy", t)) { spawned = true; break; }
+  // Contar ejército vivo
+  let mc = 0, rc = 0, tc = 0;
+  for (const u of G.units) {
+    if (u.side === "enemy" && !u.dying) {
+      if (u.type === "melee") mc++;
+      else if (u.type === "range") rc++;
+      else tc++;
+    }
   }
-  ai.aiTimer = spawned ? (D.spawnMin + Math.random() * 0.7) : 0.5;
+  const total = mc + rc + tc;
+  const maxUnits = Math.floor(D.maxUnits * (1 + ai.age * 0.12));
+  if (total >= maxUnits) { ai.aiTimer = 0.5; return; }
+
+  // ---- CICLO DE SPAWN FORZADO (variedad garantizada) ----
+  // Ciclo de 8 spawns: 2 intentos de tank, 2 de range, 4 de melee
+  const cycle = ai.spawnCycle % 8;
+  ai.spawnCycle++;
+
+  let preferred;
+  if (cycle === 0 || cycle === 4) preferred = "tank";
+  else if (cycle === 2 || cycle === 6) preferred = "range";
+  else preferred = "melee";
+
+  // Si no hay ningún tank vivo y estamos cerca de poder comprar uno, ahorrar
+  const tankCost = STATS[ai.age]["tank"].cost;
+  if (tc === 0 && ai.gold >= tankCost * 0.7 && ai.gold < tankCost) {
+    ai.aiTimer = 0.5;
+    return;
+  }
+
+  // Intentar la unidad preferida, sino la más barata disponible
+  let spawned = false;
+  for (const t of [...new Set([preferred, "melee", "range", "tank"])]) {
+    if (ai.gold >= STATS[ai.age][t].cost && trySpawn("enemy", t)) {
+      spawned = true;
+      break;
+    }
+  }
+
+  ai.aiTimer = spawned ? (D.spawnMin + Math.random() * 0.5) : 0.3;
 }
 
 // ---- Render ----------------------------------------------------------
@@ -983,24 +1163,66 @@ function drawBase(side) {
 
 function drawTowers(side) {
   const st = G[side];
-  // las torretas miran a la derecha en el sprite; el jugador (derecha) no se voltea
   const flip = side === "enemy";
   for (let i = 0; i < st.slots; i++) {
     const t = st.towers[i];
     const p = towerPos(side, i);
     if (!t) {
-      // slot vacío: plataforma tenue
       ctx.fillStyle = "rgba(255,255,255,.10)";
       ctx.beginPath(); ctx.ellipse(p.x, p.y + 6, 18, 6, 0, 0, Math.PI * 2); ctx.fill();
       continue;
     }
-    const im = IMG[`assets/towers/${AGES[st.age]}/t${t.dmgLvl}.png`];
-    if (im) {
-      const h = 60, w = im.width * (h / im.height);
+
+    // Escoger sprite base o frame de ataque
+    let im;
+    if (t.fireAnim > 0) {
+      const projIdx = st.age * 3 + (t.type - 1);
+      const frameNum = t.animFrame + 1;
+      im = IMG[`assets/towers/${AGES[st.age]}/t${t.type}/${AGES[st.age]}_turret_${t.type}_attack${String(frameNum).padStart(4, "0")}.png`];
+    }
+    if (!im) im = IMG[`assets/towers/${AGES[st.age]}/t${t.type}.png`];
+    if (!im) continue;
+
+    const baseH = 56 + st.age * 4;
+    let h = baseH;
+    let w = im.width * (h / im.height);
+    if (w > 90) { const r = 90 / w; w = 90; h *= r; }
+    if (w < 40) { const r = 40 / w; w = 40; h *= r; }
+
+    ctx.fillStyle = "rgba(0,0,0,0.2)";
+    ctx.beginPath(); ctx.ellipse(p.x, p.y + 6, w * 0.4, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+    ctx.save();
+    ctx.translate(p.x, p.y - 8);
+    if (flip) ctx.scale(-1, 1);
+    ctx.rotate(flip ? -(t.angle || 0) : (t.angle || 0));
+
+    if (t.fireAnim > 0) {
+      const recoil = -4 * (t.fireAnim / 0.15);
+      ctx.translate(recoil, 0);
+    }
+
+    let sx = 1, sy = 1;
+    if (t.fireAnim > 0.1) { sx = 1.08; sy = 0.92; }
+    ctx.scale(sx, sy);
+
+    ctx.drawImage(im, -w / 2, -h, w, h);
+    ctx.restore();
+
+    if (t.fireAnim > 0) {
+      const dir = side === "player" ? 1 : -1;
+      const tipX = p.x + dir * (w * 0.4 + 6);
+      const tipY = p.y - 8 - h * 0.3 + (t.angle || 0) * 30;
+      const fa = Math.min(1, t.fireAnim / 0.06);
       ctx.save();
-      ctx.translate(p.x, p.y);
-      if (flip) ctx.scale(-1, 1);
-      ctx.drawImage(im, -w / 2, -h + 14, w, h); // anclado por la base
+      ctx.globalAlpha = fa;
+      ctx.shadowColor = "#ffcc00";
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = "#fff8cc";
+      ctx.beginPath(); ctx.arc(tipX, tipY, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.arc(tipX, tipY, 3, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
   }
@@ -1073,6 +1295,100 @@ function loop(ts) {
   requestAnimationFrame(loop);
 }
 
+// ---- Tooltip y popup en canvas ----------------------------------------
+const unitTooltip = document.createElement("div");
+unitTooltip.id = "unit-tooltip";
+unitTooltip.className = "hidden";
+document.getElementById("game").appendChild(unitTooltip);
+
+let towerSellPopup = null;
+function closeTowerSellPopup(e) {
+  if (towerSellPopup && !towerSellPopup.contains(e.target) && e.target !== CV) {
+    towerSellPopup.remove(); towerSellPopup = null;
+    document.removeEventListener("mousedown", closeTowerSellPopup);
+  }
+}
+
+CV.addEventListener("mousemove", (e) => {
+  if (G.over) return;
+  const rect = CV.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (CV.width / rect.width);
+  const my = (e.clientY - rect.top) * (CV.height / rect.height);
+  // Convertir mouse a coordenadas de mundo
+  const wx = mx / camScale + camX;
+  const wy = my / camScale + camY;
+  let closest = null, minDist = 50;
+  for (const u of G.units) {
+    if (u.hp <= 0) continue;
+    const dist = Math.hypot(u.x - wx, (u.y - 50) - wy);
+    if (dist < minDist) { minDist = dist; closest = u; }
+  }
+  if (closest) {
+    const gameEl = document.getElementById("game");
+    const gameRect = gameEl.getBoundingClientRect();
+    unitTooltip.style.left = (e.clientX - gameRect.left + 16) + "px";
+    unitTooltip.style.top = (e.clientY - gameRect.top - 28) + "px";
+    const es = effStats(closest.side, closest.age, closest.type);
+    unitTooltip.innerHTML = `❤${closest.hp.toFixed(0)} ⚔${es.dmg} ⏱${es.spd}s`;
+    unitTooltip.classList.remove("hidden");
+  } else {
+    unitTooltip.classList.add("hidden");
+  }
+});
+
+CV.addEventListener("click", (e) => {
+  if (G.over) return;
+  const rect = CV.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (CV.width / rect.width);
+  const my = (e.clientY - rect.top) * (CV.height / rect.height);
+  // Convertir mouse a coordenadas de mundo
+  const wx = mx / camScale + camX;
+  const wy = my / camScale + camY;
+  const st = G.player;
+  for (let i = 0; i < st.slots; i++) {
+    const t = st.towers[i];
+    if (!t) continue;
+    const p = towerPos("player", i);
+    const cx = p.x, cy = p.y - 8;
+    if (Math.abs(wx - cx) < 50 && Math.abs(wy - cy) < 50) {
+      if (towerSellPopup) { towerSellPopup.remove(); towerSellPopup = null; }
+      const d = st.towerUpg.dmg[t.type - 1];
+      const s = st.towerUpg.spd[t.type - 1];
+      const ts = towerStats(st.age, t.type, d, s);
+      const val = towerSellValue(t.type, st.age, d, s);
+      // Posición del popup en px CSS relativa al contenedor #game
+      const gameEl = document.getElementById("game");
+      const gameRect = gameEl.getBoundingClientRect();
+      const towerBufX = (cx - camX) * camScale;
+      const towerBufY = (cy - camY) * camScale;
+      towerSellPopup = document.createElement("div");
+      towerSellPopup.id = "tower-sell-popup";
+      towerSellPopup.style.left = Math.round(towerBufX * (rect.width / CV.width) + (rect.left - gameRect.left)) + "px";
+      towerSellPopup.style.top = Math.round(towerBufY * (rect.height / CV.height) + (rect.top - gameRect.top) - 50) + "px";
+      towerSellPopup.innerHTML = `
+        <div class="tsp-info">T${t.type} ⚔${ts.dmg} ⏱${ts.cd.toFixed(2)}s</div>
+        <div class="tsp-sell">Vender por ${val}🪙</div>
+        <div class="tsp-btns">
+          <button id="ts-confirm" class="tsp-btn tsp-yes">✔ Vender</button>
+          <button id="ts-cancel" class="tsp-btn tsp-no">✕</button>
+        </div>`;
+      document.getElementById("game").appendChild(towerSellPopup);
+      document.getElementById("ts-confirm").addEventListener("click", () => {
+        playerSellTower(i);
+        if (towerSellPopup) { towerSellPopup.remove(); towerSellPopup = null; }
+        document.removeEventListener("mousedown", closeTowerSellPopup);
+      });
+      document.getElementById("ts-cancel").addEventListener("click", () => {
+        if (towerSellPopup) { towerSellPopup.remove(); towerSellPopup = null; }
+        document.removeEventListener("mousedown", closeTowerSellPopup);
+      });
+      document.removeEventListener("mousedown", closeTowerSellPopup);
+      setTimeout(() => document.addEventListener("mousedown", closeTowerSellPopup), 0);
+      break;
+    }
+  }
+});
+
 // ---- UI --------------------------------------------------------------
 const elGold = document.getElementById("gold");
 const elXpText = document.getElementById("xptext");
@@ -1101,17 +1417,7 @@ document.getElementById("econ-section").addEventListener("click", (e) => {
   else if (b.dataset.act === "villagerupg") playerVillagerUpg();
   econSig = "";
 });
-document.getElementById("tower-section").addEventListener("click", (e) => {
-  const b = e.target.closest("[data-act]");
-  if (!b) return;
-  const slot = +b.dataset.slot;
-  if (b.dataset.act === "buyslot")   playerBuySlot();
-  else if (b.dataset.act === "buytower")  playerBuyTower(slot);
-  else if (b.dataset.act === "upgd")      playerUpgTower(slot, "dmg");
-  else if (b.dataset.act === "upgs")      playerUpgTower(slot, "spd");
-  else if (b.dataset.act === "sell")      playerSellTower(slot);
-  econSig = "";
-});
+
 
 let econSig = "";
 function renderEcon() {
@@ -1119,7 +1425,7 @@ function renderEcon() {
   const income = PASSIVE_GOLD + p.villagers * (VILLAGER_GOLD + p.villagerLvl * 2);
   const aff = (c) => (g >= c ? 1 : 0);
   let sig = p.age + "|" + p.villagers + "|" + p.villagerLvl + "|" + p.slots + "|" +
-    p.towers.map((t) => (t ? t.dmgLvl + "." + t.spdLvl : "_")).join(",");
+    p.towers.map((t) => (t ? t.type + "." + (p.towerUpg.dmg[t.type - 1]) + "." + (p.towerUpg.spd[t.type - 1]) : "_")).join(",");
 
   const vc = villagerCost(p.villagers);
   sig += "|v" + aff(vc);
@@ -1127,9 +1433,17 @@ function renderEcon() {
   for (let i = 0; i < p.slots; i++) {
     const t = p.towers[i];
     if (t) {
-      sig += "|t" + i + (t.dmgLvl < MAX_TOWER_DMG ? aff(towerDmgCost(p.age, t.dmgLvl)) : "x")
-                      + (t.spdLvl < MAX_TOWER_SPD ? aff(towerSpdCost(p.age, t.spdLvl)) : "x");
-    } else sig += "|b" + i + aff(towerBuyCost(p.age));
+      const ud = p.towerUpg.dmg[t.type - 1];
+      const us = p.towerUpg.spd[t.type - 1];
+      sig += "|t" + i + ".t" + t.type + ".d" + ud + ".s" + us
+        + (ud < MAX_TOWER_UPG ? "|ud" + aff(towerUpgCost(p.age, t.type, "dmg", ud)) : "")
+        + (us < MAX_TOWER_UPG ? "|us" + aff(towerUpgCost(p.age, t.type, "spd", us)) : "");
+    } else {
+      const c1 = towerBuyCost(p.age, 1);
+      const c2 = towerBuyCost(p.age, 2);
+      const c3 = towerBuyCost(p.age, 3);
+      sig += "|b" + i + ".c1" + aff(c1) + ".c2" + aff(c2) + ".c3" + aff(c3);
+    }
   }
   if (p.slots < MAX_SLOTS) sig += "|s" + aff(SLOT_COST[p.slots]);
   if (sig === econSig) return;
@@ -1157,41 +1471,11 @@ function renderEcon() {
   econHtml += `</div>`;
   document.getElementById("econ-section").innerHTML = econHtml;
 
-  // Tower section (right)
-  let twrHtml = `<div style="font-size:11px;color:#718096;margin-bottom:2px">🏰 Tower</div>`;
-  twrHtml += `<span class="lbl">🗼${p.slots}/${MAX_SLOTS}</span>`;
-  for (let i = 0; i < p.slots; i++) {
-    twrHtml += `<div class="twr-card">`;
-    const t = p.towers[i];
-    if (t) {
-      twrHtml += `<span>🗼${i + 1}</span>`;
-      if (t.dmgLvl < MAX_TOWER_DMG) {
-        const dc = towerDmgCost(p.age, t.dmgLvl);
-        twrHtml += `<button class="inc" data-act="upgd" data-slot="${i}" ${g < dc ? "disabled" : ""}>⚔${t.dmgLvl}/${MAX_TOWER_DMG} ${dc}🪙</button>`;
-      } else {
-        twrHtml += `<button class="inc" disabled>⚔MÁX</button>`;
-      }
-      if (t.spdLvl < MAX_TOWER_SPD) {
-        const sc = towerSpdCost(p.age, t.spdLvl);
-        twrHtml += `<button class="inc" data-act="upgs" data-slot="${i}" ${g < sc ? "disabled" : ""}>⚡${t.spdLvl}/${MAX_TOWER_SPD} ${sc}🪙</button>`;
-      } else {
-        twrHtml += `<button class="inc" disabled>⚡MÁX</button>`;
-      }
-      twrHtml += `<button class="sell" data-act="sell" data-slot="${i}">✕${towerSellValue(t, p.age)}</button>`;
-    } else {
-      const c = towerBuyCost(p.age);
-      twrHtml += `<button data-act="buytower" data-slot="${i}" ${g < c ? "disabled" : ""}>🗼 ${c}🪙</button>`;
-    }
-    twrHtml += `</div>`;
-  }
-  if (p.slots < MAX_SLOTS) {
-    const c = SLOT_COST[p.slots];
-    twrHtml += `<div class="twr-card"><button data-act="buyslot" ${g < c ? "disabled" : ""}>➕${c}🪙</button></div>`;
-  }
-  document.getElementById("tower-section").innerHTML = twrHtml;
 }
 
 let shopCards = [];
+let towerCards = [];
+let slotBtn = null;
 function buildShop() {
   const cardsDiv = document.getElementById("cards-area");
   cardsDiv.innerHTML = "";
@@ -1216,14 +1500,44 @@ function buildShop() {
     });
   });
 
-  // panel de upgrades
+  // Cards de torres debajo de los guerreros
+  towerCards = [];
+  TOWER_TIERS.forEach((ty) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="key">T${ty}</div>
+      <div class="thumb"><img></div>
+      <div class="name">Torre T${ty}</div>
+      <div class="cost"></div>
+      <div class="stats"></div>`;
+    const img = card.querySelector("img");
+    const age = G.player ? G.player.age : 0;
+    const key = `assets/towers/${AGES[age]}/t${ty}.png`;
+    if (IMG[key]) img.src = IMG[key].src;
+    card.addEventListener("click", () => {
+      const p = G.player;
+      for (let i = 0; i < p.slots; i++) {
+        if (!p.towers[i]) { playerBuyTower(i, ty); break; }
+      }
+    });
+    cardsDiv.appendChild(card);
+    towerCards.push({ el: card, img, ty });
+  });
+
+  // panel de upgrades — unidades + torres lado a lado
   const upgPanel = document.getElementById("upg-panel");
   upgPanel.innerHTML = "";
 
-  UNIT_TYPES.forEach((type) => {
+  // Columna de upgrades de unidades (izquierda)
+  const unitCol = document.createElement("div");
+  unitCol.className = "upg-col";
+  for (let idx = 0; idx < 3; idx++) {
+    const type = UNIT_TYPES[idx];
+    const row = document.createElement("div");
+    row.className = "upg-row";
     const grp = document.createElement("div");
     grp.className = "upg-group";
-    grp.dataset.type = type;
     const lbl = document.createElement("span");
     lbl.className = "upg-group-name";
     lbl.textContent = UNIT_NAMES[type];
@@ -1236,8 +1550,48 @@ function buildShop() {
       btn.addEventListener("click", () => playerUpgrade(type, stat));
       grp.appendChild(btn);
     });
-    upgPanel.appendChild(grp);
-  });
+    row.appendChild(grp);
+    unitCol.appendChild(row);
+  }
+  upgPanel.appendChild(unitCol);
+
+  // Columna de upgrades de torres (derecha)
+  const towerCol = document.createElement("div");
+  towerCol.className = "upg-col";
+  for (let idx = 0; idx < 3; idx++) {
+    const ty = idx + 1;
+    const row = document.createElement("div");
+    row.className = "upg-row";
+    const grp = document.createElement("div");
+    grp.className = "upg-group";
+    const lbl = document.createElement("span");
+    lbl.className = "upg-group-name";
+    lbl.textContent = "T" + ty;
+    grp.appendChild(lbl);
+    ["dmg", "spd"].forEach((stat) => {
+      const btn = document.createElement("button");
+      btn.className = "upg-pbtn";
+      btn.dataset.towerType = ty;
+      btn.dataset.stat = stat;
+      btn.addEventListener("click", () => {
+        const p = G.player;
+        for (let i = 0; i < p.slots; i++) {
+          const t = p.towers[i];
+          if (t && t.type === ty) { playerUpgTower(i, stat); break; }
+        }
+      });
+      grp.appendChild(btn);
+    });
+    row.appendChild(grp);
+    towerCol.appendChild(row);
+  }
+  // Botón de slot extra debajo de las torres
+  slotBtn = document.createElement("button");
+  slotBtn.className = "slot-btn";
+  slotBtn.textContent = "➕ Slot";
+  slotBtn.addEventListener("click", playerBuySlot);
+  towerCol.appendChild(slotBtn);
+  upgPanel.appendChild(towerCol);
 
   refreshShopAge();
 }
@@ -1258,6 +1612,10 @@ function refreshShopAge() {
     const fr = frames(AGES[age], c.type, "walk");
     const mid = fr[Math.floor(fr.length / 2)];
     if (mid) c.img.src = mid.src;
+  }
+  for (const tc of towerCards) {
+    const key = `assets/towers/${AGES[age]}/t${tc.ty}.png`;
+    if (IMG[key]) tc.img.src = IMG[key].src;
   }
 }
 
@@ -1290,23 +1648,63 @@ function syncUI() {
     c.stats.textContent = `❤${es.hp} ⚔${es.dmg} ⏱${es.spd}s`;
     c.el.classList.toggle("disabled", !(p.gold >= s.cost && p.cd[c.type] <= 0));
   }
+  // Cards de torres
+  for (const tc of towerCards) {
+    const ty = tc.ty;
+    const c = towerBuyCost(p.age, ty);
+    const upgDmg = p.towerUpg.dmg[ty - 1];
+    const upgSpd = p.towerUpg.spd[ty - 1];
+    const ts = towerStats(p.age, ty, upgDmg, upgSpd);
+    tc.el.querySelector(".cost").textContent = c + " 🪙";
+    tc.el.querySelector(".stats").textContent = `⚔${ts.dmg} ⏱${ts.cd.toFixed(2)}s`;
+    const hasEmpty = p.towers.some(t => t === null);
+    tc.el.classList.toggle("disabled", !(p.gold >= c && hasEmpty));
+  }
   // panel de mejoras
   const upgBtns = document.querySelectorAll(".upg-pbtn");
   upgBtns.forEach((btn) => {
     const type = btn.dataset.type;
+    const towerType = btn.dataset.towerType;
     const stat = btn.dataset.stat;
-    const l = p.upg[type][stat];
-    if (l >= MAX_UPG) {
-      btn.innerHTML = "★MÁX";
-      btn.disabled = true;
-    } else {
-      const uc = upgradeCost(p.age, type, stat, l);
-      const lbl = { dmg: "+ATK", hp: "+HP", spd: "+VEL" };
-      btn.innerHTML = `${lbl[stat]} L${l+1}<br>${uc}🪙`;
-      btn.title = `Nivel ${l+1}/${MAX_UPG} · ${uc}🪙`;
-      btn.disabled = p.gold < uc;
+    if (type) {
+      // Mejora de unidad
+      const l = p.upg[type][stat];
+      if (l >= MAX_UPG) {
+        btn.innerHTML = "★MÁX";
+        btn.disabled = true;
+      } else {
+        const uc = upgradeCost(p.age, type, stat, l);
+        const lbl = { dmg: "+ATK", hp: "+HP", spd: "+VEL" };
+        btn.innerHTML = `${lbl[stat]} L${l+1}<br>${uc}🪙`;
+        btn.title = `Nivel ${l+1}/${MAX_UPG} · ${uc}🪙`;
+        btn.disabled = p.gold < uc;
+      }
+    } else if (towerType) {
+      // Mejora de torre
+      const ty = +towerType;
+      const lvl = p.towerUpg[stat][ty - 1];
+      if (lvl >= MAX_TOWER_UPG) {
+        btn.innerHTML = "★MÁX";
+        btn.disabled = true;
+      } else {
+        const uc = towerUpgCost(p.age, ty, stat, lvl);
+        const lbl = { dmg: "+ATK", spd: "+VEL" };
+        btn.innerHTML = `${lbl[stat]} L${lvl+1}<br>${uc}🪙`;
+        btn.title = `Nivel ${lvl+1}/${MAX_TOWER_UPG} · ${uc}🪙`;
+        btn.disabled = p.gold < uc;
+      }
     }
   });
+  // Botón de slot extra
+  if (slotBtn) {
+    const full = p.slots >= MAX_SLOTS;
+    slotBtn.classList.toggle("hidden", full);
+    if (!full) {
+      const sc = SLOT_COST[p.slots];
+      slotBtn.textContent = `➕ Slot ${p.slots}/${MAX_SLOTS} ${sc}🪙`;
+      slotBtn.disabled = p.gold < sc;
+    }
+  }
 }
 
 function endGame(win) {

@@ -295,48 +295,53 @@ canvas {
   flex-shrink: 0;
 }
 
-/* ── Cards de unidades (izquierda) ──────────────────────────── */
+/* ── Cards de unidades y torres (grid 2×3) ─────────────────── */
 #cards-area {
-  display: flex;
-  gap: 8px;
-  padding: 8px 10px;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(3, 110px);
+  gap: 3px 6px;
+  padding: 6px 10px;
+  align-content: center;
   border-right: 1px solid rgba(255,255,255,.06);
 }
 .card {
   position: relative;
-  width: 150px;
   background: linear-gradient(180deg, #20242f 0%, #1a1e2a 100%);
-  border: 2px solid #3a4150;
-  border-radius: 12px;
-  padding: 8px;
+  border: 1.5px solid #3a4150;
+  border-radius: 8px;
+  padding: 5px;
   cursor: pointer;
   transition: transform .08s, border-color .1s;
   user-select: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  box-shadow: 0 1px 4px rgba(0,0,0,.3);
 }
-.card:hover { border-color: #ffd866; transform: translateY(-4px); box-shadow: 0 4px 16px rgba(255,216,102,.15); }
+.card:hover { border-color: #ffd866; transform: translateY(-3px); box-shadow: 0 3px 10px rgba(255,216,102,.15); }
 .card.disabled { opacity: .5; cursor: not-allowed; filter: grayscale(.6); }
-.card.disabled:hover { transform: none; border-color: #3a4150; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
-.card .thumb { height: 52px; display: flex; align-items: flex-end; justify-content: center; }
-.card .thumb img { max-height: 52px; max-width: 100px; }
-.card .name { font-size: 13px; font-weight: 700; margin-top: 3px; text-align: center; }
-.card .cost { font-size: 12px; color: #ffd866; text-align: center; }
-.card .stats { font-size: 11px; opacity: .85; text-align: center; }
+.card.disabled:hover { transform: none; border-color: #3a4150; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.card .thumb { height: 44px; display: flex; align-items: flex-end; justify-content: center; }
+.card .thumb img { max-height: 44px; max-width: 80px; }
+.card .name { font-size: 11px; font-weight: 700; margin-top: 2px; text-align: center; }
+.card .cost { font-size: 11px; color: #ffd866; text-align: center; }
+.card .stats { font-size: 10px; opacity: .85; text-align: center; }
 .card .key {
-  position: absolute; top: 4px; left: 5px;
-  font-size: 10px; background: #000; padding: 1px 5px; border-radius: 3px; opacity: .6;
+  position: absolute; top: 3px; left: 4px;
+  font-size: 9px; background: #000; padding: 1px 4px; border-radius: 3px; opacity: .6;
 }
 
 /* ── Panel de mejoras ───────────────────────────────────────── */
 #upg-panel {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  gap: 10px;
   padding: 8px 12px;
   border-right: 1px solid rgba(255,255,255,.06);
   min-width: 300px;
   justify-content: center;
+}
+.upg-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 .upg-group {
   display: flex;
@@ -380,6 +385,70 @@ canvas {
   box-shadow: 0 2px 0 #23262e;
   cursor: not-allowed;
 }
+.upg-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.slot-btn {
+  padding: 7px 14px;
+  font-size: 12px; font-weight: 700;
+  border: 1.5px solid #2f6f8f;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #20242f 0%, #1a1e2a 100%);
+  color: #68d391;
+  cursor: pointer;
+  transition: border-color .1s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+.slot-btn:hover:not(:disabled) { border-color: #68d391; }
+.slot-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── Tooltip de unidad ─────────────────────────────────────── */
+#unit-tooltip {
+  position: absolute;
+  z-index: 12;
+  background: rgba(10, 12, 18, 0.92);
+  border: 1px solid #ffd866;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e8edf5;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+
+/* ── Popup de venta de torre ────────────────────────────────── */
+#tower-sell-popup {
+  position: absolute;
+  z-index: 12;
+  background: rgba(18, 20, 30, 0.95);
+  border: 1.5px solid #8f3a3a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e8edf5;
+  box-shadow: 0 4px 16px rgba(0,0,0,.6);
+  text-align: center;
+  min-width: 140px;
+}
+#tower-sell-popup .tsp-info { margin-bottom: 2px; color: #a0aec0; }
+#tower-sell-popup .tsp-sell { font-size: 15px; color: #ffd866; margin-bottom: 6px; }
+.tsp-btns { display: flex; gap: 6px; justify-content: center; }
+.tsp-btn {
+  padding: 5px 14px;
+  font-size: 13px; font-weight: 700;
+  border: none; border-radius: 6px;
+  cursor: pointer;
+  transition: background .1s;
+}
+.tsp-yes { background: #8f3a3a; color: #fff; }
+.tsp-yes:hover { background: #b04a4a; }
+.tsp-no { background: #3a4150; color: #a0aec0; }
+.tsp-no:hover { background: #4a5568; }
 
 /* ── Sección de economía (aldeanos) ─────────────────────────── */
 #econ-section {
@@ -413,43 +482,6 @@ canvas {
 }
 #econ-section button:hover:not(:disabled) { border-color: #f7c948; }
 #econ-section button:disabled { opacity: .4; cursor: not-allowed; }
-
-/* ── Sección de torres (derecha) ────────────────────────────── */
-#tower-section {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 12px;
-  min-width: 150px;
-  font-size: 13px;
-  font-weight: 700;
-}
-#tower-section .lbl { color: #a0aec0; font-weight: 400; }
-#tower-section .twr-card {
-  background: rgba(32,36,47,.6);
-  border: 1px solid rgba(62,70,90,.5);
-  border-radius: 8px;
-  padding: 5px 8px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.2);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-#tower-section button {
-  padding: 4px 10px;
-  font-size: 11px; font-weight: 700;
-  border: 1px solid #4a5568; border-radius: 5px;
-  background: linear-gradient(180deg, #20242f 0%, #1a1e2a 100%);
-  color: #e8edf5; cursor: pointer;
-  white-space: nowrap;
-}
-#tower-section button:hover:not(:disabled) { border-color: #f7c948; }
-#tower-section button:disabled { opacity: .4; cursor: not-allowed; }
-#tower-section .sell { border-color: #8f3a3a; color: #fc8181; }
-#tower-section .sell:hover { border-color: #e0524a; }
-#tower-section .inc { border-color: #2f6f8f; color: #68d391; }
 
 /* ── Pause button ───────────────────────────────────────────── */
 #pauseBtn { background: linear-gradient(180deg, #2f6f8f 0%, #1d4860 100%); box-shadow: 0 3px 0 #143245; font-size: 18px; padding: 4px 10px !important; border: none; border-radius: 6px; cursor: pointer; color: #fff; transition: background .1s; }
@@ -503,7 +535,7 @@ canvas {
   #bottom-panel::-webkit-scrollbar { width: 6px; }
   #bottom-panel::-webkit-scrollbar-thumb { background: #3a4150; border-radius: 3px; }
 
-  #cards-area { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); padding: 4px 6px; gap: 4px; flex-shrink: 0; }
+  #cards-area { display: flex; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); padding: 4px 6px; gap: 4px; flex-shrink: 0; }
   #cards-area::-webkit-scrollbar { display: none; }
   .card { width: 80px; padding: 4px; border-radius: 8px; border-width: 1px; flex-shrink: 0; }
   .card .thumb { height: 32px; }
@@ -518,11 +550,8 @@ canvas {
   .upg-group-name { width: 42px; font-size: 11px; }
   .upg-pbtn { padding: 7px 4px; font-size: 11px; }
 
-  /* Village y Tower apilados a lo ancho (fáciles de tocar) */
-  #econ-section,
-  #tower-section { width: 100%; min-width: 0; flex: none; padding: 6px 10px; font-size: 12px; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); flex-shrink: 0; }
+  /* Village apilado a lo ancho (fáciles de tocar) */
+  #econ-section { width: 100%; min-width: 0; flex: none; padding: 6px 10px; font-size: 12px; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); flex-shrink: 0; }
   #econ-section button { padding: 7px 10px; font-size: 12px; }
   #econ-section .econ-card { padding: 5px 6px; }
-  #tower-section button { padding: 6px 10px; font-size: 12px; }
-  #tower-section .twr-card { padding: 4px 6px; gap: 4px; }
 }
