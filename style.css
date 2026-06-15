@@ -173,7 +173,11 @@ canvas {
 .stat { font-size: 15px; font-weight: 700; white-space: nowrap; }
 .ic { font-size: 16px; }
 /* oro más grande y destacado */
-#gold { font-size: 24px; color: #ffd866; text-shadow: 0 1px 3px #000; }
+#gold {
+  font-size: 24px; color: #ffd866; text-shadow: 0 1px 3px #000;
+  display: inline-block; min-width: 4ch; text-align: left;
+  font-variant-numeric: tabular-nums; /* dígitos de ancho fijo: el HUD no se mueve */
+}
 .stat:first-child .ic { font-size: 22px; }
 .xpwrap { flex: 1; max-width: 260px; }
 .xplabel { font-size: 11px; opacity: .7; margin-bottom: 2px; }
@@ -321,6 +325,8 @@ canvas {
 .card .thumb { height: 44px; display: flex; align-items: flex-end; justify-content: center; }
 .card .thumb img { max-height: 44px; max-width: 80px; }
 .card .name { font-size: 11px; font-weight: 700; margin-top: 2px; text-align: center; }
+.card .lvl { font-size: 10px; font-weight: 700; color: #7af0c0; text-align: center; }
+.card .lvl.maxed { color: #ffd866; text-shadow: 0 0 6px rgba(255,216,102,.6); }
 .card .cost { font-size: 11px; color: #ffd866; text-align: center; }
 .card .stats { font-size: 10px; opacity: .85; text-align: center; }
 .card .key {
@@ -346,6 +352,7 @@ canvas {
 .upg-group {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
   background: rgba(32,36,47,.6);
   border: 1px solid rgba(62,70,90,.5);
@@ -375,7 +382,7 @@ canvas {
   color: #fff;
   box-shadow: 0 2px 0 #143245;
   white-space: normal;       /* permite 2 líneas, no se corta el texto */
-  min-width: 84px;
+  min-width: 72px;
   transition: background .1s;
 }
 .upg-pbtn:hover:not(:disabled) { background: linear-gradient(180deg, #3a85aa 0%, #256380 100%); }
@@ -384,6 +391,19 @@ canvas {
   color: #888;
   box-shadow: 0 2px 0 #23262e;
   cursor: not-allowed;
+}
+/* botón de especial: dorado cuando está disponible */
+.upg-special {
+  flex: 0 0 auto;
+  min-width: 58px;
+  background: linear-gradient(180deg, #c89a3a 0%, #8a6418 100%);
+  box-shadow: 0 2px 0 #5c4310;
+}
+.upg-special:hover:not(:disabled) { background: linear-gradient(180deg, #e0b24a 0%, #a87a20 100%); }
+.upg-special.owned {
+  background: linear-gradient(180deg, #2fa36b 0%, #1d6a45 100%) !important;
+  color: #eafff2 !important;
+  box-shadow: 0 2px 0 #134a30 !important;
 }
 .upg-row {
   display: flex;
@@ -418,7 +438,38 @@ canvas {
   pointer-events: none;
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0,0,0,.5);
+  text-align: center;
 }
+#unit-tooltip .tt-lvl {
+  color: #ffd866;
+  font-size: 13px;
+}
+
+/* ── Panel de control del enemigo (zona de test) ────────────── */
+#test-panel {
+  position: absolute;
+  top: 70px; left: 8px;
+  z-index: 13;
+  display: flex; flex-direction: column; gap: 4px;
+  background: rgba(40, 14, 14, 0.92);
+  border: 1px solid #b0524a;
+  border-radius: 8px;
+  padding: 7px 9px;
+  box-shadow: 0 3px 12px rgba(0,0,0,.5);
+  max-width: 46vw;
+}
+#test-panel .tp-title { font-size: 12px; font-weight: 700; color: #ff9a8a; margin-bottom: 2px; }
+#test-panel .tp-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+#test-panel .tp-lbl { font-size: 11px; font-weight: 700; color: #f0c0b8; width: 78px; flex-shrink: 0; }
+#test-panel .tp-lbl i { color: #7af0c0; font-style: normal; font-size: 10px; }
+#test-panel button {
+  font-size: 11px; font-weight: 700; padding: 4px 7px;
+  border: none; border-radius: 5px; cursor: pointer; color: #fff;
+  background: linear-gradient(180deg, #9a4038 0%, #6a241d 100%);
+  box-shadow: 0 2px 0 #4a1812; transition: background .1s;
+}
+#test-panel button:hover { background: linear-gradient(180deg, #b85248 0%, #863029 100%); }
+#test-panel button.tp-spec { background: linear-gradient(180deg, #c89a3a 0%, #8a6418 100%); box-shadow: 0 2px 0 #5c4310; }
 
 /* ── Popup de venta de torre ────────────────────────────────── */
 #tower-sell-popup {
@@ -486,6 +537,8 @@ canvas {
 /* ── Pause button ───────────────────────────────────────────── */
 #pauseBtn { background: linear-gradient(180deg, #2f6f8f 0%, #1d4860 100%); box-shadow: 0 3px 0 #143245; font-size: 18px; padding: 4px 10px !important; border: none; border-radius: 6px; cursor: pointer; color: #fff; transition: background .1s; }
 #pauseBtn:hover { background: linear-gradient(180deg, #3a85aa 0%, #256380 100%); }
+#speedBtn { background: linear-gradient(180deg, #2f6f8f 0%, #1d4860 100%); box-shadow: 0 3px 0 #143245; font-size: 14px; font-weight: 700; padding: 4px 10px !important; border: none; border-radius: 6px; cursor: pointer; color: #fff; transition: background .1s; white-space: nowrap; }
+#speedBtn:hover { background: linear-gradient(180deg, #3a85aa 0%, #256380 100%); }
 
 /* ── Responsive: móvil ──────────────────────────────────────── */
 @media (max-width: 767px) {

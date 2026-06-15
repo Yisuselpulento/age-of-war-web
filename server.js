@@ -94,24 +94,26 @@ wss.on("connection", (ws) => {
         break;
       }
 
-      case "game_action": {
+      // host -> guest: estado autoritativo completo
+      case "state": {
         if (!roomCode) return;
         const room = rooms.get(roomCode);
         if (!room) return;
         const target = isHost ? room.guest : room.host;
         if (target && target.readyState === 1) {
-          target.send(JSON.stringify({ type: "opponent_action", action: msg.action }));
+          target.send(JSON.stringify({ type: "state", s: msg.s }));
         }
         break;
       }
 
-      case "sync": {
+      // guest -> host: comando de input
+      case "cmd": {
         if (!roomCode) return;
         const room = rooms.get(roomCode);
         if (!room) return;
         const target = isHost ? room.guest : room.host;
         if (target && target.readyState === 1) {
-          target.send(JSON.stringify({ type: "sync", playerBaseHp: msg.playerBaseHp, enemyBaseHp: msg.enemyBaseHp }));
+          target.send(JSON.stringify({ type: "cmd", cmd: msg.cmd }));
         }
         break;
       }
@@ -124,7 +126,7 @@ wss.on("connection", (ws) => {
         room.hostReady = false; room.guestReady = false;
         const target = isHost ? room.guest : room.host;
         if (target && target.readyState === 1) {
-          target.send(JSON.stringify({ type: "opponent_won" }));
+          target.send(JSON.stringify({ type: "opponent_won", hostWon: msg.hostWon }));
         }
         break;
       }

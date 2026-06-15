@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Age of War — Web</title>
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
 
@@ -14,6 +14,7 @@
   <div class="menu-buttons">
     <button id="btn-vs-ia" class="menu-btn">🤖 VS IA (Local)</button>
     <button id="btn-vs-online" class="menu-btn">🌐 VS Online</button>
+    <button id="btn-vs-test" class="menu-btn">🧪 Zona de Test</button>
   </div>
   <p class="menu-footer">Selecciona modo de juego</p>
 </div>
@@ -89,6 +90,7 @@
       <button class="diff" data-d="extreme">Extremo</button>
     </div>
     <button id="evolveBtn" disabled>⬆ Evolucionar</button>
+    <button id="speedBtn" title="Velocidad del juego" class="hidden">⏩ x1</button>
     <button id="pauseBtn" title="Pausar" class="hidden">⏸</button>
     <button id="configBtn" title="Configuración">⚙</button>
     <button id="debugBtn" title="Test: oro + XP">🧪</button>
@@ -107,6 +109,44 @@
     </div>
   </div>
 
+  <!-- Panel de control del ENEMIGO (solo en zona de test) -->
+  <div id="test-panel" class="hidden">
+    <div class="tp-title">🧪 ENEMIGO · <span id="tp-gold">0</span>🪙 · <span id="tp-age">Edad</span></div>
+    <div class="tp-row">
+      <button data-tact="gold">+5000🪙</button>
+      <button data-tact="xp">+XP</button>
+      <button data-tact="evolve">⬆ Edad</button>
+      <button data-tact="villager">+Aldeano</button>
+    </div>
+    <div class="tp-row">
+      <button data-tspawn="melee">+Melee</button>
+      <button data-tspawn="range">+Range</button>
+      <button data-tspawn="tank">+Tank</button>
+    </div>
+    <div class="tp-row">
+      <span class="tp-lbl">Melee <i data-tlvl="melee">Nv1</i></span>
+      <button data-tupg="melee:dmg">ATK</button>
+      <button data-tupg="melee:hp">HP</button>
+      <button data-tupg="melee:spd">VEL</button>
+      <button class="tp-spec" data-tspec="melee">★</button>
+    </div>
+    <div class="tp-row">
+      <span class="tp-lbl">Range <i data-tlvl="range">Nv1</i></span>
+      <button data-tupg="range:dmg">ATK</button>
+      <button data-tupg="range:range">RNG</button>
+      <button data-tupg="range:spd">VEL</button>
+      <button class="tp-spec" data-tspec="range">★</button>
+    </div>
+    <div class="tp-row">
+      <span class="tp-lbl">Tank <i data-tlvl="tank">Nv1</i></span>
+      <button data-tupg="tank:dmg">ATK</button>
+      <button data-tupg="tank:hp">HP</button>
+      <button data-tupg="tank:spd">VEL</button>
+      <button data-tupg="tank:armor">ARM</button>
+      <button class="tp-spec" data-tspec="tank">★</button>
+    </div>
+  </div>
+
   <div id="bottom-panel">
     <div id="cards-area"></div>
     <div id="upg-panel"></div>
@@ -117,6 +157,6 @@
 <div id="loading">Cargando assets…</div>
 <audio id="bgm" src="assets/audio/theme.mp3" loop preload="auto"></audio>
 
-<script src="game.js?v=7"></script>
+<script src="game.js?v=19"></script>
 </body>
 </html>

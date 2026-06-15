@@ -40,12 +40,12 @@ const STATS = [
   { // 3 miltary
     melee: { cost: 420,  hp: 780,  dmg: 95,  spd: 55, range: 70,  g: 180, xp: 150 },
     range: { cost: 600,  hp: 430,  dmg: 78,  spd: 48, range: 285, g: 260, xp: 200 },
-    tank:  { cost: 1300, hp: 2400, dmg: 160, spd: 36, range: 85,  g: 520, xp: 380 },
+    tank:  { cost: 1300, hp: 2400, dmg: 160, spd: 36, range: 210, g: 520, xp: 380 },
   },
   { // 4 future
     melee: { cost: 800,  hp: 1400, dmg: 175, spd: 60, range: 75,  g: 340, xp: 280 },
     range: { cost: 1150, hp: 780,  dmg: 145, spd: 52, range: 305, g: 480, xp: 360 },
-    tank:  { cost: 2400, hp: 4400, dmg: 300, spd: 40, range: 90,  g: 950, xp: 700 },
+    tank:  { cost: 2400, hp: 4400, dmg: 300, spd: 40, range: 250, g: 950, xp: 700 },
   },
 ];
 
@@ -56,6 +56,7 @@ const BASE_DMG_MULT = 2.5; // las unidades pegan más fuerte a la base
 const SPEED_MULT = 1.5; // multiplicador global de velocidad de unidades
 const DMG_MULT = 1.5;   // multiplicador global de daño (ritmo de combate)
 const PASSIVE_GOLD = 14;       // oro/seg pasivo
+const AGE_GOLD = 6;            // oro/seg extra por cada edad alcanzada
 const SPAWN_CD = 0.8;          // s entre spawns
 const PLAYER_PASSIVE_XP = 5;   // xp/seg pasivo para el jugador (evoluciona por tiempo)
 const AI_PASSIVE_XP = 6;        // xp/seg pasivo para la IA
@@ -80,129 +81,155 @@ function wsUrl() {
 // ---- Conexión multijugador -------------------------------------------
 let ws = null; // WebSocket
 
-function netSend(action) {
-  if (ws && ws.readyState === 1) {
-    ws.send(JSON.stringify({ type: "game_action", action }));
+// ── Modelo HOST-AUTORITATIVO ──────────────────────────────────────────
+// El host simula TODO el juego y emite el estado completo (~30 Hz). El guest
+// no simula: solo renderiza el estado recibido (con coordenadas espejadas) y
+// envía sus inputs como comandos. Esto elimina el desync por completo.
+let isSyncHost = false; // quien recibe game_start con side:"player" es el host
+function isGuest() { return G.mode === "online" && !isSyncHost; }
+
+function sendCmd(cmd) {
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "cmd", cmd }));
+}
+
+// El host aplica los comandos del guest sobre el lado "enemy", con las mismas
+// puertas de oro/cooldown que el jugador local (anti-trampa + consistencia).
+function handleGuestCmd(c) {
+  switch (c.type) {
+    case "spawn":       trySpawn("enemy", c.unitType); break;
+    case "upgrade":     tryUpgrade("enemy", c.unitType, c.stat); break;
+    case "evolve":      tryEvolve("enemy"); break;
+    case "special":     tryBuySpecial("enemy", c.unitType); break;
+    case "villager":    tryVillager("enemy"); break;
+    case "villagerupg": tryVillagerUpgrade("enemy"); break;
+    case "buy_slot":    tryBuySlot("enemy"); break;
+    case "tower_buy":   tryBuyTower("enemy", c.slot, c.towerType); break;
+    case "tower_upg":   tryUpgradeTower("enemy", c.slot, c.kind); break;
+    case "tower_sell":  trySellTower("enemy", c.slot); break;
   }
 }
 
-function handleOpponentAction(action) {
-  const e = G.enemy;
-  switch (action.type) {
-    case "spawn": {
-      const s = STATS[e.age][action.unitType];
-      e.gold -= s.cost; e.cd[action.unitType] = SPAWN_CD;
-      G.units.push(new Unit("enemy", e.age, action.unitType));
-      break;
-    }
-    case "upgrade": {
-      const lvl = e.upg[action.unitType][action.stat];
-      e.gold -= upgradeCost(e.age, action.unitType, action.stat, lvl);
-      e.upg[action.unitType][action.stat] = lvl + 1;
-      break;
-    }
-    case "evolve": {
-      if (e.age < AGES.length - 1) {
-        e.xp -= EVOLVE_COST[e.age];
-        e.age++;
-        e.baseHp = 2000 + e.age * 800;
-      }
-      break;
-    }
-    case "villager": {
-      e.gold -= villagerCost(e.villagers);
-      e.villagers++;
-      break;
-    }
-    case "villagerupg": {
-      e.gold -= villagerLvlCost(e.villagerLvl);
-      e.villagerLvl++;
-      break;
-    }
-    case "tower_buy": {
-      e.gold -= towerBuyCost(e.age, action.towerType);
-      e.towers[action.slot] = { type: action.towerType, cd: 0, angle: 0, fireAnim: 0, animFrame: 0, animTimer: 0 };
-      break;
-    }
-    case "tower_upg": {
-      const t = e.towers[action.slot];
-      if (!t) break;
-      const lvl = e.towerUpg[action.kind][t.type - 1];
-      e.gold -= towerUpgCost(e.age, t.type, action.kind, lvl);
-      e.towerUpg[action.kind][t.type - 1] = lvl + 1;
-      break;
-    }
-    case "tower_sell": {
-      const t = e.towers[action.slot];
-      if (!t) break;
-      const d = e.towerUpg.dmg[t.type - 1];
-      const s = e.towerUpg.spd[t.type - 1];
-      e.gold += towerSellValue(t.type, e.age, d, s);
-      e.towers[action.slot] = null;
-      break;
-    }
-    case "buy_slot": {
-      e.gold -= SLOT_COST[e.slots];
-      e.slots++;
-      break;
-    }
+// ── Serialización de estado (host -> guest) ───────────────────────────
+const ANIM_I = { walk: 0, attack: 1, die: 2, idle: 3 };
+const TYPE_I = { melee: 0, range: 1, tank: 2 };
+
+function sideSnap(s) {
+  return {
+    g: Math.round(s.gold), x: Math.round(s.xp), a: s.age, h: Math.round(s.baseHp),
+    c: [+s.cd.melee.toFixed(2), +s.cd.range.toFixed(2), +s.cd.tank.toFixed(2)],
+    u: s.upg, t: s.towerUpg, v: s.villagers, vl: s.villagerLvl, sl: s.slots,
+    sp: [s.specials.melee ? 1 : 0, s.specials.range ? 1 : 0, s.specials.tank ? 1 : 0],
+    tw: s.towers.map((t) => t ? [t.type, +(t.angle || 0).toFixed(2), +(t.fireAnim || 0).toFixed(2), t.animFrame | 0] : 0),
+  };
+}
+function serializeState() {
+  const u = [];
+  for (const un of G.units) {
+    u.push([
+      un.side === "player" ? 0 : 1, un.age, TYPE_I[un.type],
+      Math.round(un.x), Math.round(un.y), Math.round(un.hp), Math.round(un.maxHp),
+      ANIM_I[un.anim] || 0, un.frame | 0, un.dying ? 1 : 0, +un.dieTimer.toFixed(2), +un.fade.toFixed(2),
+      un.lvl || 1, Math.round(un.dmg || 0), +(un.cd || 0).toFixed(2),
+    ]);
   }
+  const pr = [];
+  for (const p of G.projectiles) {
+    pr.push([
+      p.side === "player" ? 0 : 1, Math.round(p.x), Math.round(p.y),
+      Math.round(p.target.x), Math.round(p.target.y), p.texKey || "", +p.rot.toFixed(2), p.offY | 0,
+    ]);
+  }
+  return { p: sideSnap(G.player), e: sideSnap(G.enemy), u, pr };
 }
 
-// Wrappers que envían la acción al oponente en modo online
+function applySideSnap(dst, s) {
+  dst.gold = s.g; dst.xp = s.x; dst.age = s.a; dst.baseHp = s.h;
+  dst.cd.melee = s.c[0]; dst.cd.range = s.c[1]; dst.cd.tank = s.c[2];
+  dst.upg = s.u; dst.towerUpg = s.t;
+  dst.villagers = s.v; dst.villagerLvl = s.vl; dst.slots = s.sl;
+  if (s.sp) dst.specials = { melee: !!s.sp[0], range: !!s.sp[1], tank: !!s.sp[2] };
+  dst.towers = s.tw.map((t) => t ? { type: t[0], angle: t[1], fireAnim: t[2], animFrame: t[3], cd: 0, animTimer: 0 } : null);
+}
+// El guest se ve a sí mismo a la IZQUIERDA: host.player = mi rival, host.enemy = yo.
+function applyState(state) {
+  applySideSnap(G.player, state.e);
+  applySideSnap(G.enemy, state.p);
+  const units = [];
+  for (const a of state.u) {
+    const u = Object.create(Unit.prototype);
+    u.side = a[0] === 0 ? "enemy" : "player";     // bando espejado
+    u.age = a[1]; u.type = UNIT_TYPES[a[2]];
+    u.x = WORLD_W - a[3]; u.y = a[4];             // x espejada
+    u.hp = a[5]; u.maxHp = a[6];
+    u.anim = ANIMS[a[7]] || "walk"; u.frame = a[8];
+    u.dying = !!a[9]; u.dieTimer = a[10]; u.fade = a[11];
+    u.lvl = a[12] || 1; u.dmg = a[13] || 0; u.cd = a[14] || 0;
+    u.dead = false;
+    units.push(u);
+  }
+  G.units = units;
+  const prj = [];
+  for (const a of state.pr) {
+    const p = Object.create(Projectile.prototype);
+    p.side = a[0] === 0 ? "enemy" : "player";
+    p.x = WORLD_W - a[1]; p.y = a[2];
+    p.target = { x: WORLD_W - a[3], y: a[4], dead: false, dying: false };
+    p.texKey = a[5] || null; p.rot = a[6]; p.offY = a[7]; p.dead = false;
+    prj.push(p);
+  }
+  G.projectiles = prj;
+}
+
+// Wrappers de input: el guest envía comando (no simula); host/IA aplican local.
 function playerSpawn(type) {
   if (paused) return;
-  const ok = trySpawn("player", type);
-  if (ok && G.mode === "online") netSend({ type: "spawn", unitType: type });
-  return ok;
+  if (isGuest()) return sendCmd({ type: "spawn", unitType: type });
+  return trySpawn("player", type);
 }
 function playerUpgrade(type, stat) {
   if (paused) return;
-  const ok = tryUpgrade("player", type, stat);
-  if (ok && G.mode === "online") netSend({ type: "upgrade", unitType: type, stat });
-  return ok;
+  if (isGuest()) return sendCmd({ type: "upgrade", unitType: type, stat });
+  return tryUpgrade("player", type, stat);
 }
 function playerEvolve() {
   if (paused) return;
-  const ok = tryEvolve("player");
-  if (ok && G.mode === "online") netSend({ type: "evolve" });
-  return ok;
+  if (isGuest()) return sendCmd({ type: "evolve" });
+  return tryEvolve("player");
 }
 function playerVillager() {
   if (paused) return;
-  const ok = tryVillager("player");
-  if (ok && G.mode === "online") netSend({ type: "villager" });
-  return ok;
+  if (isGuest()) return sendCmd({ type: "villager" });
+  return tryVillager("player");
 }
 function playerVillagerUpg() {
   if (paused) return;
-  const ok = tryVillagerUpgrade("player");
-  if (ok && G.mode === "online") netSend({ type: "villagerupg" });
-  return ok;
+  if (isGuest()) return sendCmd({ type: "villagerupg" });
+  return tryVillagerUpgrade("player");
 }
 function playerBuySlot() {
   if (paused) return;
-  const ok = tryBuySlot("player");
-  if (ok && G.mode === "online") netSend({ type: "buy_slot" });
-  return ok;
+  if (isGuest()) return sendCmd({ type: "buy_slot" });
+  return tryBuySlot("player");
+}
+function playerBuySpecial(type) {
+  if (paused) return;
+  if (isGuest()) return sendCmd({ type: "special", unitType: type });
+  return tryBuySpecial("player", type);
 }
 function playerBuyTower(slot, towerType) {
   if (paused) return;
-  const ok = tryBuyTower("player", slot, towerType);
-  if (ok && G.mode === "online") netSend({ type: "tower_buy", slot, towerType });
-  return ok;
+  if (isGuest()) return sendCmd({ type: "tower_buy", slot, towerType });
+  return tryBuyTower("player", slot, towerType);
 }
 function playerUpgTower(slot, kind) {
   if (paused) return;
-  const ok = tryUpgradeTower("player", slot, kind);
-  if (ok && G.mode === "online") netSend({ type: "tower_upg", slot, kind });
-  return ok;
+  if (isGuest()) return sendCmd({ type: "tower_upg", slot, kind });
+  return tryUpgradeTower("player", slot, kind);
 }
 function playerSellTower(slot) {
   if (paused) return;
-  const ok = trySellTower("player", slot);
-  if (ok && G.mode === "online") netSend({ type: "tower_sell", slot });
-  return ok;
+  if (isGuest()) return sendCmd({ type: "tower_sell", slot });
+  return trySellTower("player", slot);
 }
 
 // ---- Ciclo día/noche ------------------------------------------------
@@ -245,10 +272,84 @@ const MAX_UPG = 5;
 const UPG_DMG = 0.16;        // +16% daño por nivel
 const UPG_HP = 0.16;         // +16% vida por nivel
 const UPG_SPD = 0.12;        // -12% cooldown de ataque por nivel
+const SPECIAL_LEVEL = 6;     // nivel (3 mejoras al máx) que desbloquea el especial
 
-const UPG_COST_MULT = { dmg: 1.4, hp: 1.2, spd: 1.8 };
+// Especial por tipo de unidad (se compra al llegar a Nv6 -> sube a Nv7).
+//  melee: +velocidad de movimiento y aguanta mejor a los tanques.
+//  range: +rango y aguanta mejor a los melee.
+//  tank:  +vida y +daño.
+const SPECIAL = {
+  melee: { spd: 1.18, resist: "tank" },
+  range: { range: 1.12, resist: "melee" },
+  tank:  { hp: 1.30, dmg: 1.30, regen: 0.03 }, // +regen: 3% de su vida máx por seg
+};
+const RESIST_FACTOR = 0.75;  // recibe 25% menos daño del tipo contra el que resiste
+const TANK_RANGED_AGE = 3;   // desde la edad militar, los tanques atacan a distancia
+const MAX_UNIT_LEVEL = 1 + MAX_UPG + 1; // Nv7 = 3/4 mejoras al máx + especial
+function specialCost(type) { return Math.round(STATS[0][type].cost * 12); } // melee600 range1020 tank2400
+// Descripción del especial con números concretos (para el tooltip del botón).
+function specialDesc(type) {
+  const sp = SPECIAL[type], p = [];
+  if (sp.spd)   p.push(`+${Math.round((sp.spd - 1) * 100)}% velocidad`);
+  if (sp.range) p.push(`+${Math.round((sp.range - 1) * 100)}% rango`);
+  if (sp.hp)    p.push(`+${Math.round((sp.hp - 1) * 100)}% vida`);
+  if (sp.dmg)   p.push(`+${Math.round((sp.dmg - 1) * 100)}% daño`);
+  if (sp.regen) p.push(`+${Math.round(sp.regen * 100)}% vida/seg (regeneración)`);
+  if (sp.resist) p.push(`+${Math.round((1 - RESIST_FACTOR) * 100)}% armadura vs ${UNIT_NAMES[sp.resist]}`);
+  return "★ " + p.join(", ");
+}
+
+const UPG_RANGE = 0.05;      // +5% rango por nivel (mejora exclusiva del range)
+// Escalado de daño por mejora, por tipo (el range gana menos daño por nivel)
+const DMG_UPG_RATE = { melee: 1, range: 0.5, tank: 1 };
+const UPG_ARMOR = 0.06;      // -6% daño recibido por nivel (mejora exclusiva del tank)
+const LEVEL_BONUS = 0.05;    // +5% a TODOS los stats por cada nivel de unidad
+
+// Mejoras disponibles por tipo. Las 3 primeras definen el nivel (al subirlas todas
+// la unidad sube de Nv y gana el bonus global). El tank tiene una 4ª (armadura)
+// incluida en el nivel, osea que necesita las 4 para subir de Nv.
+const UNIT_LEVEL_STATS = { melee: ["dmg", "hp", "spd"], range: ["dmg", "range", "spd"], tank: ["dmg", "hp", "spd", "armor"] };
+const UNIT_UPGS        = { melee: ["dmg", "hp", "spd"], range: ["dmg", "range", "spd"], tank: ["dmg", "hp", "spd", "armor"] };
+const UPG_LABEL = { dmg: "+ATK", hp: "+HP", spd: "+VEL", range: "+RNG", armor: "+ARM" };
+
+const UPG_COST_MULT = { dmg: 1.4, hp: 1.2, spd: 1.8, range: 1.5, armor: 1.6 };
 function upgradeCost(age, type, stat, lvl) {
-  return Math.round(STATS[age][type].cost * UPG_COST_MULT[stat] * (lvl + 1));
+  // El precio depende SOLO del nivel de la mejora, no de la edad: la primera
+  // mejora de cada tipo cuesta siempre lo mismo (base = costo de la unidad en edad 0).
+  return Math.round(STATS[0][type].cost * UPG_COST_MULT[stat] * (lvl + 1));
+}
+// Nivel: sube cuando las mejoras que cuentan (UNIT_LEVEL_STATS) alcanzan el mismo
+// escalón. Nv1 base; todas al máx -> Nv6; comprar especial -> Nv7.
+function unitLevel(upg, special, type) {
+  const stats = UNIT_LEVEL_STATS[type] || ["dmg", "hp", "spd"];
+  let m = Infinity;
+  for (const s of stats) m = Math.min(m, upg[s] || 0);
+  return 1 + m + (special ? 1 : 0);
+}
+
+// Stats efectivos de una unidad (centralizado: lo usan Unit, las cards y la IA).
+function computeStats(age, type, upg, special) {
+  const s = STATS[age][type];
+  const lv = unitLevel(upg, special, type);
+  const lb = 1 + LEVEL_BONUS * (lv - 1);   // bonus global por nivel
+  let hp    = s.hp  * (1 + UPG_HP  * (upg.hp    || 0)) * lb;
+  let dmg   = s.dmg * DMG_MULT * (1 + UPG_DMG * (DMG_UPG_RATE[type] || 1) * (upg.dmg || 0)) * lb;
+  let cd    = getBaseCD(age, type) * (1 - UPG_SPD * (upg.spd || 0)) / lb; // menos cd = más rápido
+  let spd   = s.spd * SPEED_MULT * lb;
+  let range = s.range * (1 + UPG_RANGE * (upg.range || 0)); // sin bonus de nivel: el alcance no se infla
+  let resist = null, regen = 0;
+  if (special) {
+    const sp = SPECIAL[type];
+    if (sp.hp) hp *= sp.hp;
+    if (sp.dmg) dmg *= sp.dmg;
+    if (sp.spd) spd *= sp.spd;
+    if (sp.range) range *= sp.range;
+    resist = sp.resist || null;
+    if (sp.regen) regen = hp * sp.regen; // vida/seg basada en su vida máx final
+  }
+  // armadura del tank: reducción de daño recibido de TODO (0..0.30)
+  const armor = type === "tank" ? Math.min(0.6, UPG_ARMOR * (upg.armor || 0)) : 0;
+  return { hp, dmg, cd, spd, range, resist, armor, regen, lvl: lv };
 }
 
 // ---- Ataque base desde sprites ----------------------------------------
@@ -303,8 +404,9 @@ function towerBuyCost(age, type) {
   return Math.round(base[type - 1] * (1 + age * 0.3));
 }
 function towerUpgCost(age, type, kind, lvl) {
+  // El precio depende solo del tipo de torre y del nivel de mejora, NO de la edad.
   const baseCost = kind === "dmg" ? 100 : 80;
-  return Math.round(baseCost * (1 + age * 0.4) * type * (lvl + 1));
+  return Math.round(baseCost * type * (lvl + 1));
 }
 function towerStats(age, type, upgDmg, upgSpd) {
   const b = TOWER_BASE[age][type - 1];
@@ -352,7 +454,7 @@ const TOWER_ATTACK_FRAMES = [
 
 // ---- Carga de assets -------------------------------------------------
 const IMG = {}; // cache de imágenes por ruta
-const ASSET_V = "7"; // versión de assets (cache-busting); subir al regenerar sprites
+const ASSET_V = "8"; // versión de assets (cache-busting); subir al regenerar sprites
 let manifest = null;
 
 function loadImage(src, retries) {
@@ -501,15 +603,21 @@ class Unit {
     this.age = age;
     this.type = type;
     const s = STATS[age][type];
-    const lvl = G[side].upg[type];
+    this.special = !!(G[side].specials && G[side].specials[type]);
+    const cs = computeStats(age, type, G[side].upg[type], this.special);
+    this.lvl = cs.lvl;            // nivel "horneado" al nacer
     this.cost = s.cost;
-    this.maxHp = s.hp * (1 + UPG_HP * lvl.hp);
-    this.hp = this.maxHp;
-    this.dmg = s.dmg * DMG_MULT * (1 + UPG_DMG * lvl.dmg);
+    this.maxHp = cs.hp;
+    this.dmg = cs.dmg;
     this.baseCD = getBaseCD(age, type);
-    this.cd = this.baseCD * (1 - UPG_SPD * lvl.spd);
-    this.spd = s.spd * SPEED_MULT;
-    this.range = s.range;
+    this.cd = cs.cd;
+    this.spd = cs.spd;
+    this.range = cs.range;
+    this.resist = cs.resist;      // resistencia del especial
+    this.armor = cs.armor;        // reducción de daño (tank)
+    this.regen = cs.regen;        // vida/seg (especial del tank)
+    this.rangedAttack = type === "range" || (type === "tank" && age >= TANK_RANGED_AGE);
+    this.hp = this.maxHp;
     this.reward = { g: s.g, xp: s.xp };
     this.atkTimer = 0;
     this.anim = "walk";
@@ -571,11 +679,12 @@ class Unit {
 }
 
 class Projectile {
-  constructor(x, y, target, dmg, side, projIdx) {
+  constructor(x, y, target, dmg, side, projIdx, atkType) {
     this.x = x; this.y = y;
     this.target = target;
     this.dmg = dmg;
     this.side = side;
+    this.atkType = atkType || null; // tipo del atacante (para resistencias)
     this.spd = 620;
     this.rot = 0;
     this.rotSpd = 0;
@@ -598,7 +707,7 @@ class Projectile {
     const dx = tx - this.x, dy = ty - this.y;
     const dist = Math.hypot(dx, dy);
     if (dist < 14) {
-      hitTarget(this.target, this.dmg, this.side);
+      hitTarget(this.target, this.dmg, this.side, this.atkType);
       this.dead = true;
       return;
     }
@@ -610,12 +719,14 @@ class Projectile {
     if (this.texKey) {
       const im = IMG[this.texKey];
       if (im) {
+        // El ángulo de viaje (mismo punto que usa update) orienta el sprite en
+        // cualquier dirección. NO se hace flip por bando: la rotación ya cubre
+        // 0..2π, así que la bala conserva su diagonal en ambos lados.
+        const dx = this.target.x - this.x;
+        const dy = (this.target.y - 40) - this.y;
+        const dirAngle = Math.atan2(dy, dx);
         ctx.save();
         ctx.translate(this.x, this.y + this.offY);
-        if (this.side === "enemy") ctx.scale(-1, 1);
-        const dx = this.target.x - this.x;
-        const dy = (this.target.y - 40) - this.y + this.offY;
-        const dirAngle = Math.atan2(dy, dx);
         ctx.rotate(dirAngle + this.rot);
         const pw = 36, ph = im.height * (pw / im.width);
         ctx.drawImage(im, -pw / 2, -ph / 2, pw, ph);
@@ -623,11 +734,21 @@ class Projectile {
         return;
       }
     }
-    // Fallback círculo genérico
-    ctx.fillStyle = this.side === "player" ? "#ffe27a" : "#ff8a6b";
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
-    ctx.fill();
+    // Fallback orientado: flecha fina para el range, obús grande para el tank
+    const dx = this.target.x - this.x;
+    const dy = (this.target.y - 40) - this.y;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(Math.atan2(dy, dx));
+    if (this.atkType === "tank") {
+      ctx.fillStyle = this.side === "player" ? "#ffd27a" : "#ff9a6b";
+      ctx.beginPath(); ctx.ellipse(0, 0, 8, 4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(-8, -0.8, 5, 1.6);
+    } else {
+      ctx.fillStyle = this.side === "player" ? "#e8d8b0" : "#d8a890";
+      ctx.fillRect(-6, -1.5, 12, 3);
+    }
+    ctx.restore();
   }
 }
 
@@ -661,16 +782,18 @@ function freshSide(gold) {
     cd: { melee: 0, range: 0, tank: 0 },
     upg: {
       melee: { dmg: 0, hp: 0, spd: 0 },
-      range: { dmg: 0, hp: 0, spd: 0 },
-      tank:  { dmg: 0, hp: 0, spd: 0 },
+      range: { dmg: 0, range: 0, spd: 0 },
+      tank:  { dmg: 0, hp: 0, spd: 0, armor: 0 },
     },
     towerUpg: { dmg: [0, 0, 0], spd: [0, 0, 0] },
+    specials: { melee: false, range: false, tank: false },
     villagers: 0,
     villagerLvl: 0,
     slots: 1,
     towers: [null, null, null, null],
     aiTimer: 0,
     aiBuildTimer: 0,
+    aiUpgTimer: 0,
     spawnCycle: 0,
   };
 }
@@ -684,8 +807,12 @@ const G = {
   mode: "ai", // "ai" | "online"
 };
 
-function hitTarget(t, dmg, side) {
+function hitTarget(t, dmg, side, atkType) {
   if (t.dead || t.dying) return;
+  // resistencia del especial: recibe menos daño del tipo contra el que aguanta
+  if (atkType && t.resist === atkType) dmg *= RESIST_FACTOR;
+  // armadura (tank): reduce el daño recibido de todo
+  if (t.armor) dmg *= (1 - t.armor);
   t.hp -= dmg;
   G.floats.push(new FloatText(t.x, t.y - 95, "-" + Math.round(dmg), "#ffce54"));
   if (t.hp <= 0) killUnit(t);
@@ -726,6 +853,7 @@ function trySpawn(side, type) {
 function tryUpgrade(side, type, stat) {
   const st = G[side];
   const lvl = st.upg[type][stat];
+  if (lvl === undefined) return false;   // stat no válido para este tipo
   if (lvl >= MAX_UPG) return false;
   const cost = upgradeCost(st.age, type, stat, lvl);
   if (st.gold < cost) return false;
@@ -798,6 +926,17 @@ function trySellTower(side, slot) {
   return true;
 }
 
+function tryBuySpecial(side, type) {
+  const st = G[side];
+  if (st.specials[type]) return false;                       // ya comprado
+  if (unitLevel(st.upg[type], false, type) < SPECIAL_LEVEL) return false; // requiere Nv6
+  const cost = specialCost(type);
+  if (st.gold < cost) return false;
+  st.gold -= cost;
+  st.specials[type] = true;
+  return true;
+}
+
 function tryEvolve(side) {
   const st = G[side];
   if (st.age >= AGES.length - 1) return false;
@@ -805,8 +944,8 @@ function tryEvolve(side) {
   if (st.xp < cost) return false;
   st.xp -= cost;
   st.age++;
-  st.baseHp = BASE_HP + st.age * 800; // +800 HP por edad
-  if (st.baseHp > G[side].baseHp) G[side].baseHp = st.baseHp;
+  // +800 de vida máxima por edad; suma 800 al actual sin curar del todo
+  st.baseHp = Math.min(baseMaxHp(st.age), st.baseHp + 800);
   if (side === "player") {
     G.floats.push(new FloatText(W / 2, H / 2, "¡Nueva Edad: " + AGE_NAMES[st.age] + "!", "#7af0c0"));
   }
@@ -821,8 +960,10 @@ function update(dt) {
   // dayCycleTime = (dayCycleTime + dt) % DAY_CYCLE_DURATION;
 
   // oro pasivo (base + aldeanos con mejora)
-  G.player.gold += (PASSIVE_GOLD + G.player.villagers * (VILLAGER_GOLD + G.player.villagerLvl * 2)) * dt;
-  const enemyInc = PASSIVE_GOLD + G.enemy.villagers * (VILLAGER_GOLD + G.enemy.villagerLvl * 2);
+  // oro pasivo: base + bono por edad (más rápido en edades altas, ya que las
+  // unidades son más caras) + aldeanos
+  G.player.gold += (PASSIVE_GOLD + G.player.age * AGE_GOLD + G.player.villagers * (VILLAGER_GOLD + G.player.villagerLvl * 2)) * dt;
+  const enemyInc = PASSIVE_GOLD + G.enemy.age * AGE_GOLD + G.enemy.villagers * (VILLAGER_GOLD + G.enemy.villagerLvl * 2);
   G.enemy.gold += enemyInc * dt;
   // xp pasivo del jugador (evoluciona con el tiempo, como la IA)
   G.player.xp += PLAYER_PASSIVE_XP * dt;
@@ -869,9 +1010,11 @@ function update(dt) {
   // limpiar muertos (solo si hubo bajas)
   if (anyDead) G.units = G.units.filter((u) => !u.dead);
 
-  // condición de victoria
-  if (G.enemy.baseHp <= 0) endGame(true);
-  else if (G.player.baseHp <= 0) endGame(false);
+  // condición de victoria (en zona de test no termina nunca)
+  if (G.mode !== "test") {
+    if (G.enemy.baseHp <= 0) endGame(true);
+    else if (G.player.baseHp <= 0) endGame(false);
+  }
 }
 
 // Procesa todas las unidades vivas de un bando (lista ordenada con el frente
@@ -882,6 +1025,7 @@ function stepSide(list, enemyList, side, enemyBaseX, enemyBaseSide, dt) {
   for (let i = 0; i < list.length; i++) {
     const u = list[i];
     if (u.fade < 1) u.fade = Math.min(1, u.fade + dt / 0.4);
+    if (u.regen && u.hp < u.maxHp) u.hp = Math.min(u.maxHp, u.hp + u.regen * dt); // regen del especial
     const prevX = u.x;
     let attacking = false;
 
@@ -897,8 +1041,8 @@ function stepSide(list, enemyList, side, enemyBaseX, enemyBaseSide, dt) {
       if (u.atkTimer <= 0) {
         u.atkTimer = u.cd;
         const bdmg = u.dmg * BASE_DMG_MULT;
-        G[enemyBaseSide].baseHp -= bdmg;
-        if (u.type === "range") {
+        if (G.mode !== "test") G[enemyBaseSide].baseHp -= bdmg; // bases invulnerables en test
+        if (u.rangedAttack) {
           G.projectiles.push(new Projectile(u.x, u.y - 50,
             { x: enemyBaseX, y: GROUND_Y - 60, dead: false, dying: false }, 0, u.side));
         }
@@ -924,10 +1068,10 @@ function stepSide(list, enemyList, side, enemyBaseX, enemyBaseSide, dt) {
 }
 
 function dealAttack(u, target) {
-  if (u.type === "range") {
-    G.projectiles.push(new Projectile(u.x, u.y - 50, target, u.dmg, u.side));
+  if (u.rangedAttack) {
+    G.projectiles.push(new Projectile(u.x, u.y - 50, target, u.dmg, u.side, undefined, u.type));
   } else {
-    hitTarget(target, u.dmg, u.side);
+    hitTarget(target, u.dmg, u.side, u.type);
   }
 }
 
@@ -1009,76 +1153,99 @@ function advanceAnim(u, dt, anim, loop) {
 }
 
 // ---- Dificultad / IA -------------------------------------------------
+// Cada dificultad tiene una "personalidad" distinta:
+//  comp   = composición objetivo [melee, range, tank]
+//  react  = cuánto contrarresta la composición del jugador (0..1)
+//  econ   = prioridad de economía temprana (aldeanos/torres)
+//  towers = nº de torres que intenta tener
+//  save   = qué tan dispuesta está a ahorrar para la unidad deseada (vs. spamear melee)
+//  idle   = prob. de "descansar" cuando el ejército ya está lleno (errores en fácil)
+//  upgEvery = segundos entre intentos de mejora de unidades
 const DIFF = {
-  easy:   { income: 0.65, maxUnits: 5,  spawnMin: 1.8, evolveChance: 0.25, upgChance: 0.00, xpMult: 0.8 },
-  medium: { income: 0.90, maxUnits: 8,  spawnMin: 1.1, evolveChance: 0.55, upgChance: 0.15, xpMult: 1.0 },
-  hard:   { income: 1.25, maxUnits: 11, spawnMin: 0.7, evolveChance: 0.80, upgChance: 0.40, xpMult: 1.25 },
-  extreme:{ income: 2.00, maxUnits: 18, spawnMin: 0.35, evolveChance: 1.00, upgChance: 0.80, xpMult: 2.2 },
+  easy:    { aiIncome: 0.22, maxUnits: 5,  spawnMin: 1.7,  evolveChance: 0.25, xpMult: 0.8, upgEvery: 16,  comp: [0.72, 0.18, 0.10], react: 0.0,  econ: 0.3, towers: 0, save: 0.45, idle: 0.32, fill: 0.7,  upgAfford: 4.0, buySpecial: false },
+  medium:  { aiIncome: 0.45, maxUnits: 8,  spawnMin: 1.05, evolveChance: 0.55, xpMult: 1.0, upgEvery: 7,   comp: [0.52, 0.30, 0.18], react: 0.35, econ: 0.6, towers: 1, save: 0.70, idle: 0.12, fill: 0.85, upgAfford: 2.2, buySpecial: false },
+  hard:    { aiIncome: 0.75, maxUnits: 12, spawnMin: 0.68, evolveChance: 0.85, xpMult: 1.3, upgEvery: 4,   comp: [0.46, 0.32, 0.22], react: 0.7,  econ: 0.9, towers: 2, save: 0.85, idle: 0.04, fill: 0.95, upgAfford: 1.5, buySpecial: true },
+  extreme: { aiIncome: 1.10, maxUnits: 18, spawnMin: 0.34, evolveChance: 1.0,  xpMult: 2.2, upgEvery: 2.2, comp: [0.42, 0.34, 0.24], react: 1.0,  econ: 1.2, towers: 4, save: 1.0,  idle: 0.0,  fill: 1.0,  upgAfford: 1.1, buySpecial: true },
 };
 let difficulty = "medium";
 
 function runAI(dt) {
   const ai = G.enemy;
   const D = DIFF[difficulty];
-  ai.gold += PASSIVE_GOLD * (D.income - 1) * dt;
+  // Ingreso escalado al costo de la edad actual: así el ritmo de spawn se mantiene
+  // al subir de edad (antes el costo subía mucho más rápido que el ingreso).
+  ai.gold += STATS[ai.age].melee.cost * D.aiIncome * dt;
   ai.xp += AI_PASSIVE_XP * D.xpMult * dt;
-  // Bonus de oro por edad: más ingresos en edades altas
-  ai.gold += ai.age * 3 * dt;
   ai.aiTimer -= dt;
   ai.aiBuildTimer -= dt;
+  ai.aiUpgTimer -= dt;
 
-  // ---- EVOLUCIÓN ----
+  // ---- EVOLUCIÓN (extreme evoluciona apenas puede; easy casi nunca) ----
   if (ai.age < AGES.length - 1 && ai.xp >= EVOLVE_COST[ai.age]) {
     if (Math.random() < D.evolveChance * dt * 20) tryEvolve("enemy");
   }
 
-  // ---- MEJORAS ----
-  if (D.upgChance > 0 && Math.random() < D.upgChance * dt * 5 * (1 + ai.age * 0.3)) {
-    const t = UNIT_TYPES[(Math.random() * 3) | 0];
-    const stat = ["dmg", "hp", "spd"][(Math.random() * 3) | 0];
-    const lvl = ai.upg[t][stat];
-    if (lvl < MAX_UPG && ai.gold > upgradeCost(ai.age, t, stat, lvl) * 1.5) {
-      tryUpgrade("enemy", t, stat);
+  // ---- Conteo de ambos ejércitos por tipo ----
+  let mc = 0, rc = 0, tc = 0, pm = 0, pr = 0, pt = 0;
+  for (const u of G.units) {
+    if (u.dying) continue;
+    if (u.side === "enemy") { u.type === "melee" ? mc++ : u.type === "range" ? rc++ : tc++; }
+    else { u.type === "melee" ? pm++ : u.type === "range" ? pr++ : pt++; }
+  }
+  const army = mc + rc + tc;
+  const wantVill = Math.min(MAX_VILLAGERS, Math.round(1 + D.econ * 2.5)); // easy ~2, extreme ~4
+
+  // ---- ECONOMÍA: aldeanos pronto, luego torres (ritmo según D.econ) ----
+  if (ai.aiBuildTimer <= 0) {
+    ai.aiBuildTimer = (2 + Math.random() * 2) / Math.max(0.5, D.econ);
+    if (ai.villagers < wantVill && ai.gold >= villagerCost(ai.villagers)) {
+      tryVillager("enemy");
+    } else if (ai.villagerLvl < MAX_VILLAGER_LVL && ai.villagers >= 3 && D.econ >= 0.8 &&
+               ai.gold > villagerLvlCost(ai.villagerLvl) * 1.4) {
+      tryVillagerUpgrade("enemy");
+    } else if (D.towers > 0 && (army >= 2 || ai.age >= 1)) {
+      let empty = -1, built = 0;
+      for (let i = 0; i < ai.slots; i++) { if (ai.towers[i]) built++; else if (empty < 0) empty = i; }
+      if (built < D.towers && empty >= 0 && ai.gold > towerBuyCost(ai.age, 1) * 1.4) {
+        let ty = 1;
+        if (ai.gold > towerBuyCost(ai.age, 3) * 1.5) ty = 3;
+        else if (ai.gold > towerBuyCost(ai.age, 2) * 1.5) ty = 2;
+        tryBuyTower("enemy", empty, ty);
+      } else if (built < D.towers && empty < 0 && ai.slots < MAX_SLOTS && ai.gold > SLOT_COST[ai.slots] * 1.4) {
+        tryBuySlot("enemy");
+      } else {
+        for (let i = 0; i < ai.slots; i++) {
+          const t = ai.towers[i]; if (!t) continue;
+          const ud = ai.towerUpg.dmg[t.type - 1], us = ai.towerUpg.spd[t.type - 1];
+          if (ud < MAX_TOWER_UPG && ai.gold > towerUpgCost(ai.age, t.type, "dmg", ud) * 1.6) { tryUpgradeTower("enemy", i, "dmg"); break; }
+          if (us < MAX_TOWER_UPG && ai.gold > towerUpgCost(ai.age, t.type, "spd", us) * 1.6) { tryUpgradeTower("enemy", i, "spd"); break; }
+        }
+      }
     }
   }
 
-  // ---- ECONOMÍA (aldeanos + torres) ----
-  if (ai.aiBuildTimer <= 0) {
-    ai.aiBuildTimer = 2 + Math.random() * 2;
-
-    if (ai.villagers < MAX_VILLAGERS && ai.gold > villagerCost(ai.villagers) * 1.3) {
-      tryVillager("enemy");
-    }
-    else if (ai.villagerLvl < MAX_VILLAGER_LVL && ai.villagers >= 3 &&
-             ai.gold > villagerLvlCost(ai.villagerLvl) * 1.5) {
-      tryVillagerUpgrade("enemy");
-    }
-    else if (D.upgChance > 0) {
-      const armySize = G.units.filter(u => u.side === "enemy" && !u.dying).length;
-      if (armySize >= 5) {
-        let empty = -1;
-        for (let i = 0; i < ai.slots; i++) if (!ai.towers[i]) { empty = i; break; }
-        if (empty >= 0) {
-          // Elegir tier según oro disponible
-          let chosenType = 1;
-          if (ai.gold > towerBuyCost(ai.age, 3) * 1.5) chosenType = 3;
-          else if (ai.gold > towerBuyCost(ai.age, 2) * 1.5) chosenType = 2;
-          tryBuyTower("enemy", empty, chosenType);
-        } else if (empty < 0 && ai.slots < MAX_SLOTS && ai.gold > SLOT_COST[ai.slots] * 1.5) {
-          tryBuySlot("enemy");
-        } else {
-          for (let i = 0; i < ai.slots; i++) {
-            const t = ai.towers[i];
-            if (!t) continue;
-            const upgDmg = ai.towerUpg.dmg[t.type - 1];
-            const upgSpd = ai.towerUpg.spd[t.type - 1];
-            if (upgDmg < MAX_TOWER_UPG && ai.gold > towerUpgCost(ai.age, t.type, "dmg", upgDmg) * 1.8) {
-              tryUpgradeTower("enemy", i, "dmg"); break;
-            }
-            if (upgSpd < MAX_TOWER_UPG && ai.gold > towerUpgCost(ai.age, t.type, "spd", upgSpd) * 1.8) {
-              tryUpgradeTower("enemy", i, "spd"); break;
-            }
-          }
+  // ---- MEJORAS de unidades: sube hasta el MÁX según dificultad ----
+  // Sube la stat de menor nivel (para subir de Nv parejo); al maxear las que
+  // cuentan, compra el especial y luego la armadura del tank (mejoras extra).
+  if (ai.aiUpgTimer <= 0) {
+    ai.aiUpgTimer = D.upgEvery * (0.7 + Math.random() * 0.6);
+    const order = ["melee", "range", "tank"].sort((a, b) => D.comp[TYPE_I[b]] - D.comp[TYPE_I[a]]);
+    for (const t of order) {
+      if (D.comp[TYPE_I[t]] < 0.12) continue; // no invierte en tipos que casi no usa
+      const gating = UNIT_LEVEL_STATS[t];
+      // stat que cuenta para el nivel con menor progreso
+      let lowStat = null, lowLvl = Infinity;
+      for (const s of gating) { const lv = ai.upg[t][s]; if (lv < lowLvl) { lowLvl = lv; lowStat = s; } }
+      if (lowLvl < MAX_UPG) {
+        const cost = upgradeCost(ai.age, t, lowStat, lowLvl);
+        if (ai.gold > cost * D.upgAfford) { tryUpgrade("enemy", t, lowStat); break; }
+      } else {
+        // ya está a Nv6: comprar especial (si la dificultad lo permite)
+        if (D.buySpecial && !ai.specials[t] && ai.gold > specialCost(t) * 1.15) { tryBuySpecial("enemy", t); break; }
+        // tank: subir armadura extra
+        if (t === "tank" && ai.upg.tank.armor < MAX_UPG) {
+          const c = upgradeCost(ai.age, "tank", "armor", ai.upg.tank.armor);
+          if (ai.gold > c * D.upgAfford) { tryUpgrade("enemy", "tank", "armor"); break; }
         }
       }
     }
@@ -1086,47 +1253,55 @@ function runAI(dt) {
 
   // ---- SPAWN ----
   if (ai.aiTimer > 0) return;
-
-  // Contar ejército vivo
-  let mc = 0, rc = 0, tc = 0;
-  for (const u of G.units) {
-    if (u.side === "enemy" && !u.dying) {
-      if (u.type === "melee") mc++;
-      else if (u.type === "range") rc++;
-      else tc++;
-    }
-  }
-  const total = mc + rc + tc;
   const maxUnits = Math.floor(D.maxUnits * (1 + ai.age * 0.12));
-  if (total >= maxUnits) { ai.aiTimer = 0.5; return; }
+  if (army >= maxUnits) { ai.aiTimer = 0.5; return; }
+  // si el ejército ya está casi lleno, fácil/medio a veces "descansan" (errores)
+  if (army >= maxUnits * D.fill && Math.random() < D.idle) { ai.aiTimer = D.spawnMin; return; }
 
-  // ---- CICLO DE SPAWN FORZADO (variedad garantizada) ----
-  // Ciclo de 8 spawns: 2 intentos de tank, 2 de range, 4 de melee
-  const cycle = ai.spawnCycle % 8;
-  ai.spawnCycle++;
-
-  let preferred;
-  if (cycle === 0 || cycle === 4) preferred = "tank";
-  else if (cycle === 2 || cycle === 6) preferred = "range";
-  else preferred = "melee";
-
-  // Si no hay ningún tank vivo y estamos cerca de poder comprar uno, ahorrar
-  const tankCost = STATS[ai.age]["tank"].cost;
-  if (tc === 0 && ai.gold >= tankCost * 0.7 && ai.gold < tankCost) {
-    ai.aiTimer = 0.5;
-    return;
+  // Composición objetivo, adaptada a la del jugador (contras)
+  const comp = D.comp.slice();
+  const pArmy = pm + pr + pt;
+  if (pArmy > 0 && D.react > 0) {
+    const pmF = pm / pArmy, prF = pr / pArmy, ptF = pt / pArmy;
+    comp[1] += D.react * (ptF * 0.5);              // range castiga a los tanks
+    comp[2] += D.react * (prF * 0.35);             // tank aguanta a los range
+    comp[0] += D.react * (prF * 0.2 + pmF * 0.1);  // melee presiona
   }
+  // elegir el tipo con mayor déficit respecto al objetivo
+  const cur = [mc, rc, tc], types = ["melee", "range", "tank"];
+  const sum = comp[0] + comp[1] + comp[2];
+  let bestT = "melee", bestDef = -Infinity;
+  for (let i = 0; i < 3; i++) {
+    const want = (comp[i] / sum) * (army + 1);
+    const def = want - cur[i];
+    if (def > bestDef) { bestDef = def; bestT = types[i]; }
+  }
+  // asegurar tanques: si la dificultad los valora y no hay ninguno vivo, ahorrar para uno
+  if (D.comp[2] >= 0.15 && tc === 0 && ai.gold >= STATS[ai.age].tank.cost * 0.4) bestT = "tank";
 
-  // Intentar la unidad preferida, sino la más barata disponible
-  let spawned = false;
-  for (const t of [...new Set([preferred, "melee", "range", "tank"])]) {
-    if (ai.gold >= STATS[ai.age][t].cost && trySpawn("enemy", t)) {
-      spawned = true;
-      break;
+  // reservar oro para el próximo aldeano (tras un pequeño ejército inicial)
+  const reserve = (ai.villagers < wantVill) ? villagerCost(ai.villagers) * 0.9 : 0;
+
+  // ahorrar para la unidad deseada en vez de spamear melee
+  let cost = STATS[ai.age][bestT].cost;
+  // umbral de espera: cuanto mayor D.save, antes empieza a ahorrar para la cara
+  const waitThresh = cost * (1 - D.save * 0.55); // extreme≈0.45·c, easy≈0.75·c
+  if (ai.gold < cost) {
+    if (ai.gold >= waitThresh) { ai.aiTimer = 0.4; return; } // casi alcanza: ahorrar
+    // si no, comprar la mejor (más cara) alternativa asequible
+    bestT = null;
+    for (const t of types) {
+      if (ai.gold >= STATS[ai.age][t].cost && (!bestT || STATS[ai.age][t].cost > STATS[ai.age][bestT].cost)) bestT = t;
     }
+    if (!bestT) { ai.aiTimer = 0.5; return; }
+    cost = STATS[ai.age][bestT].cost;
   }
 
-  ai.aiTimer = spawned ? (D.spawnMin + Math.random() * 0.5) : 0.3;
+  // si gastar dejaría sin oro para el aldeano pendiente, esperar (ya con ejército base)
+  if (army >= 2 && reserve > 0 && ai.gold - cost < reserve) { ai.aiTimer = 0.6; return; }
+
+  const ok = trySpawn("enemy", bestT);
+  ai.aiTimer = ok ? (D.spawnMin + Math.random() * 0.5) : 0.4;
 }
 
 // ---- Render ----------------------------------------------------------
@@ -1208,23 +1383,6 @@ function drawTowers(side) {
 
     ctx.drawImage(im, -w / 2, -h, w, h);
     ctx.restore();
-
-    if (t.fireAnim > 0) {
-      const dir = side === "player" ? 1 : -1;
-      const tipX = p.x + dir * (w * 0.4 + 6);
-      const tipY = p.y - 8 - h * 0.3 + (t.angle || 0) * 30;
-      const fa = Math.min(1, t.fireAnim / 0.06);
-      ctx.save();
-      ctx.globalAlpha = fa;
-      ctx.shadowColor = "#ffcc00";
-      ctx.shadowBlur = 14;
-      ctx.fillStyle = "#fff8cc";
-      ctx.beginPath(); ctx.arc(tipX, tipY, 7, 0, Math.PI * 2); ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = "#fff";
-      ctx.beginPath(); ctx.arc(tipX, tipY, 3, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    }
   }
 }
 
@@ -1265,27 +1423,31 @@ function render(paused) {
 
 // ---- Bucle principal (timestep fijo 1/60) ----------------------------
 const FIXED_DT = 1 / 60;
+const STATE_INTERVAL = 1 / 30; // frecuencia de emisión de estado del host
 let acc = 0;
 let last = 0;
 let loopRunning = false;
 let syncTimer = 0;
+let gameSpeed = 1; // x2 solo en modo VS IA
 function loop(ts) {
   const dt = Math.min(0.1, (ts - last) / 1000 || 0);
   last = ts;
   if (!document.getElementById("game").classList.contains("hidden")) {
-    if (!paused) {
-      acc += dt;
-      if (acc > 0.1) acc = 0.1;
+    const guest = G.mode === "online" && !isSyncHost;
+    if (!paused && !guest) {
+      // online siempre x1 (sincronía); VS IA y test permiten x2
+      acc += dt * (G.mode === "ai" || G.mode === "test" ? gameSpeed : 1);
+      if (acc > 0.2) acc = 0.2;
       while (acc >= FIXED_DT) {
         update(FIXED_DT);
         acc -= FIXED_DT;
       }
-      // host envía sync de vida de bases cada 2 segundos
-      if (G.mode === "online" && isSyncHost) {
+      // el host emite el estado autoritativo completo a ~30 Hz
+      if (G.mode === "online" && isSyncHost && !G.over && ws && ws.readyState === 1) {
         syncTimer += dt;
-        if (syncTimer >= 2) {
+        if (syncTimer >= STATE_INTERVAL) {
           syncTimer = 0;
-          ws.send(JSON.stringify({ type: "sync", playerBaseHp: G.player.baseHp, enemyBaseHp: G.enemy.baseHp }));
+          ws.send(JSON.stringify({ type: "state", s: serializeState() }));
         }
       }
     }
@@ -1328,13 +1490,44 @@ CV.addEventListener("mousemove", (e) => {
     const gameRect = gameEl.getBoundingClientRect();
     unitTooltip.style.left = (e.clientX - gameRect.left + 16) + "px";
     unitTooltip.style.top = (e.clientY - gameRect.top - 28) + "px";
-    const es = effStats(closest.side, closest.age, closest.type);
-    unitTooltip.innerHTML = `❤${closest.hp.toFixed(0)} ⚔${es.dmg} ⏱${es.spd}s`;
+    // stats reales de ESA unidad (horneados al nacer), no los de la edad actual
+    const lvTxt = (closest.lvl || 1) >= MAX_UNIT_LEVEL ? "Nv MAX" : "Nv " + (closest.lvl || 1);
+    unitTooltip.innerHTML = `<div class="tt-lvl">${lvTxt}</div>`;
     unitTooltip.classList.remove("hidden");
   } else {
     unitTooltip.classList.add("hidden");
   }
 });
+
+// Popup para eliminar una unidad (zona de test). Reusa towerSellPopup + su cierre.
+function showUnitDeletePopup(u, rect) {
+  if (towerSellPopup) { towerSellPopup.remove(); towerSellPopup = null; }
+  const gameEl = document.getElementById("game");
+  const gameRect = gameEl.getBoundingClientRect();
+  const bufX = (u.x - camX) * camScale;
+  const bufY = ((u.y - 60) - camY) * camScale;
+  const lvTxt = (u.lvl || 1) >= MAX_UNIT_LEVEL ? "NvMAX" : "Nv" + (u.lvl || 1);
+  towerSellPopup = document.createElement("div");
+  towerSellPopup.id = "tower-sell-popup";
+  towerSellPopup.style.left = Math.round(bufX * (rect.width / CV.width) + (rect.left - gameRect.left)) + "px";
+  towerSellPopup.style.top = Math.round(bufY * (rect.height / CV.height) + (rect.top - gameRect.top)) + "px";
+  towerSellPopup.innerHTML = `
+    <div class="tsp-info">${UNIT_NAMES[u.type]} ${lvTxt} · ${u.side === "player" ? "tuya" : "enemiga"}</div>
+    <div class="tsp-btns">
+      <button id="ud-del" class="tsp-btn tsp-no">🗑 Eliminar</button>
+      <button id="ud-cancel" class="tsp-btn tsp-yes">✕</button>
+    </div>`;
+  gameEl.appendChild(towerSellPopup);
+  const close = () => { if (towerSellPopup) { towerSellPopup.remove(); towerSellPopup = null; } document.removeEventListener("mousedown", closeTowerSellPopup); };
+  document.getElementById("ud-del").addEventListener("click", () => {
+    const idx = G.units.indexOf(u);
+    if (idx >= 0) G.units.splice(idx, 1);
+    close();
+  });
+  document.getElementById("ud-cancel").addEventListener("click", close);
+  document.removeEventListener("mousedown", closeTowerSellPopup);
+  setTimeout(() => document.addEventListener("mousedown", closeTowerSellPopup), 0);
+}
 
 CV.addEventListener("click", (e) => {
   if (G.over) return;
@@ -1344,6 +1537,18 @@ CV.addEventListener("click", (e) => {
   // Convertir mouse a coordenadas de mundo
   const wx = mx / camScale + camX;
   const wy = my / camScale + camY;
+
+  // En zona de test: clickear una unidad permite eliminarla
+  if (G.mode === "test") {
+    let closest = null, minDist = 55;
+    for (const u of G.units) {
+      if (u.dead || u.dying) continue;
+      const d = Math.hypot(u.x - wx, (u.y - 50) - wy);
+      if (d < minDist) { minDist = d; closest = u; }
+    }
+    if (closest) { showUnitDeletePopup(closest, rect); return; }
+  }
+
   const st = G.player;
   for (let i = 0; i < st.slots; i++) {
     const t = st.towers[i];
@@ -1401,9 +1606,10 @@ const hpBars = {
   player: { fill: document.querySelector("#hpPlayer .bb-fill"), txt: document.querySelector("#hpPlayer .bb-txt") },
   enemy:  { fill: document.querySelector("#hpEnemy .bb-fill"),  txt: document.querySelector("#hpEnemy .bb-txt") },
 };
+function baseMaxHp(age) { return BASE_HP + age * 800; }
 function updateHpBar(side) {
   const st = G[side];
-  const pct = Math.max(0, st.baseHp / BASE_HP);
+  const pct = Math.max(0, Math.min(1, st.baseHp / baseMaxHp(st.age)));
   const b = hpBars[side];
   b.fill.style.width = (pct * 100) + "%";
   b.txt.textContent = Math.max(0, Math.round(st.baseHp));
@@ -1488,6 +1694,7 @@ function buildShop() {
       <div class="key">${i + 1}</div>
       <div class="thumb"><img></div>
       <div class="name">${UNIT_NAMES[type]}</div>
+      <div class="lvl"></div>
       <div class="cost"></div>
       <div class="stats"></div>`;
     card.addEventListener("click", () => playerSpawn(type));
@@ -1495,6 +1702,7 @@ function buildShop() {
     shopCards.push({
       el: card, type,
       img: card.querySelector("img"),
+      lvl: card.querySelector(".lvl"),
       cost: card.querySelector(".cost"),
       stats: card.querySelector(".stats"),
     });
@@ -1542,7 +1750,7 @@ function buildShop() {
     lbl.className = "upg-group-name";
     lbl.textContent = UNIT_NAMES[type];
     grp.appendChild(lbl);
-    ["dmg", "hp", "spd"].forEach((stat) => {
+    UNIT_UPGS[type].forEach((stat) => {
       const btn = document.createElement("button");
       btn.className = "upg-pbtn";
       btn.dataset.type = type;
@@ -1550,6 +1758,12 @@ function buildShop() {
       btn.addEventListener("click", () => playerUpgrade(type, stat));
       grp.appendChild(btn);
     });
+    // botón de especial (se desbloquea al Nv6)
+    const sbtn = document.createElement("button");
+    sbtn.className = "upg-pbtn upg-special";
+    sbtn.dataset.special = type;
+    sbtn.addEventListener("click", () => playerBuySpecial(type));
+    grp.appendChild(sbtn);
     row.appendChild(grp);
     unitCol.appendChild(row);
   }
@@ -1597,12 +1811,13 @@ function buildShop() {
 }
 
 function effStats(side, age, type) {
-  const s = STATS[age][type];
-  const lvl = G[side].upg[type];
+  const cs = computeStats(age, type, G[side].upg[type], G[side].specials[type]);
   return {
-    hp: Math.round(s.hp * (1 + UPG_HP * lvl.hp)),
-    dmg: Math.round(s.dmg * DMG_MULT * (1 + UPG_DMG * lvl.dmg)),
-    spd: Math.round((getBaseCD(age, type) * (1 - UPG_SPD * lvl.spd)) * 100) / 100,
+    hp: Math.round(cs.hp),
+    dmg: Math.round(cs.dmg),
+    spd: Math.round(cs.cd * 100) / 100,
+    range: Math.round(cs.range),
+    armor: Math.round(cs.armor * 100),
   };
 }
 
@@ -1644,8 +1859,15 @@ function syncUI() {
   for (const c of shopCards) {
     const s = STATS[p.age][c.type];
     const es = effStats("player", p.age, c.type);
+    const lv = unitLevel(p.upg[c.type], p.specials[c.type], c.type);
+    c.lvl.textContent = lv >= MAX_UNIT_LEVEL ? "Nv MAX" : "Nv " + lv;
+    c.lvl.classList.toggle("maxed", lv >= MAX_UNIT_LEVEL);
     c.cost.textContent = s.cost + " 🪙";
-    c.stats.textContent = `❤${es.hp} ⚔${es.dmg} ⏱${es.spd}s`;
+    c.stats.textContent = c.type === "range"
+      ? `❤${es.hp} ⚔${es.dmg} 🎯${es.range}`
+      : (c.type === "tank" && es.armor > 0
+          ? `❤${es.hp} ⚔${es.dmg} 🛡${es.armor}%`
+          : `❤${es.hp} ⚔${es.dmg} ⏱${es.spd}s`);
     c.el.classList.toggle("disabled", !(p.gold >= s.cost && p.cd[c.type] <= 0));
   }
   // Cards de torres
@@ -1666,7 +1888,28 @@ function syncUI() {
     const type = btn.dataset.type;
     const towerType = btn.dataset.towerType;
     const stat = btn.dataset.stat;
-    if (type) {
+    const special = btn.dataset.special;
+    if (special) {
+      const owned = p.specials[special];
+      const unlocked = unitLevel(p.upg[special], false, special) >= SPECIAL_LEVEL;
+      if (owned) {
+        btn.innerHTML = "★ ACTIVO";
+        btn.disabled = true;
+        btn.classList.add("owned");
+        btn.title = specialDesc(special);
+      } else if (!unlocked) {
+        btn.innerHTML = "★ Nv6";
+        btn.disabled = true;
+        btn.classList.remove("owned");
+        btn.title = "Sube las 3 mejoras al máximo (Nv6) para desbloquear el especial";
+      } else {
+        const sc = specialCost(special);
+        btn.innerHTML = `★ ESP<br>${sc}🪙`;
+        btn.disabled = p.gold < sc;
+        btn.classList.remove("owned");
+        btn.title = specialDesc(special) + ` · ${sc}🪙`;
+      }
+    } else if (type) {
       // Mejora de unidad
       const l = p.upg[type][stat];
       if (l >= MAX_UPG) {
@@ -1674,9 +1917,14 @@ function syncUI() {
         btn.disabled = true;
       } else {
         const uc = upgradeCost(p.age, type, stat, l);
-        const lbl = { dmg: "+ATK", hp: "+HP", spd: "+VEL" };
-        btn.innerHTML = `${lbl[stat]} L${l+1}<br>${uc}🪙`;
-        btn.title = `Nivel ${l+1}/${MAX_UPG} · ${uc}🪙`;
+        btn.innerHTML = `${UPG_LABEL[stat]} L${l+1}<br>${uc}🪙`;
+        const su = STATS[p.age][type];
+        const eff = stat === "dmg"   ? `+${Math.round(su.dmg * DMG_MULT * UPG_DMG * (DMG_UPG_RATE[type] || 1))} de daño`
+                  : stat === "hp"    ? `+${Math.round(su.hp * UPG_HP)} de vida`
+                  : stat === "range" ? `+${Math.round(su.range * UPG_RANGE)} de rango`
+                  : stat === "armor" ? `+${Math.round(UPG_ARMOR * 100)}% de armadura (menos daño recibido)`
+                  : `+${Math.round(UPG_SPD * 100)}% vel. de ataque`;
+        btn.title = `${eff}  (Nv ${l+1}/${MAX_UPG} · ${uc}🪙)`;
         btn.disabled = p.gold < uc;
       }
     } else if (towerType) {
@@ -1690,7 +1938,15 @@ function syncUI() {
         const uc = towerUpgCost(p.age, ty, stat, lvl);
         const lbl = { dmg: "+ATK", spd: "+VEL" };
         btn.innerHTML = `${lbl[stat]} L${lvl+1}<br>${uc}🪙`;
-        btn.title = `Nivel ${lvl+1}/${MAX_TOWER_UPG} · ${uc}🪙`;
+        let eff;
+        if (stat === "dmg") {
+          const sp = p.towerUpg.spd[ty - 1];
+          const d = towerStats(p.age, ty, lvl + 1, sp).dmg - towerStats(p.age, ty, lvl, sp).dmg;
+          eff = `+${Math.round(d)} de daño`;
+        } else {
+          eff = `+12% vel. de ataque`;
+        }
+        btn.title = `${eff}  (Nv ${lvl+1}/${MAX_TOWER_UPG} · ${uc}🪙)`;
         btn.disabled = p.gold < uc;
       }
     }
@@ -1705,13 +1961,25 @@ function syncUI() {
       slotBtn.disabled = p.gold < sc;
     }
   }
+  // Panel de control del enemigo (zona de test)
+  if (G.mode === "test") {
+    const e = G.enemy;
+    const tg = document.getElementById("tp-gold"); if (tg) tg.textContent = Math.floor(e.gold);
+    const ta = document.getElementById("tp-age"); if (ta) ta.textContent = AGE_NAMES[e.age];
+    document.querySelectorAll("#test-panel [data-tlvl]").forEach((el) => {
+      const t = el.dataset.tlvl;
+      const lv = unitLevel(e.upg[t], e.specials[t], t);
+      el.textContent = lv >= MAX_UNIT_LEVEL ? "NvMAX" : "Nv" + lv;
+    });
+  }
 }
 
 function endGame(win) {
   if (G.over) return;
   G.over = true;
-  if (G.mode === "online" && ws && ws.readyState === 1) {
-    ws.send(JSON.stringify({ type: "game_over" }));
+  // solo el host detecta el fin (simula); informa el resultado al guest
+  if (G.mode === "online" && isSyncHost && ws && ws.readyState === 1) {
+    ws.send(JSON.stringify({ type: "game_over", hostWon: win }));
   }
   document.getElementById("overTitle").textContent = win ? "¡Victoria! 🏆" : "Derrota 💀";
   document.getElementById("overTitle").style.color = win ? "#7af0c0" : "#e0524a";
@@ -1737,6 +2005,7 @@ function showMenu() {
   document.getElementById("game").classList.add("hidden");
   document.getElementById("main-menu").classList.remove("hidden");
   document.getElementById("online-menu").classList.add("hidden");
+  document.getElementById("test-panel").classList.add("hidden");
   diffWrap.classList.remove("hidden");
 }
 
@@ -1747,12 +2016,36 @@ function startGame() {
   document.getElementById("loading").classList.add("hidden");
   document.getElementById("debugBtn").classList.remove("hidden");
   pauseBtn.classList.remove("hidden");
+  speedBtn.classList.remove("hidden");
   diffWrap.classList.remove("hidden");
   paused = false;
   pauseBtn.textContent = "⏸";
+  gameSpeed = 1; speedBtn.textContent = "⏩ x1";
+  document.getElementById("test-panel").classList.add("hidden");
   resetGame();
   G.mode = "ai";
   requestAnimationFrame(resizeCanvas); // el canvas ya es visible
+  startMusic();
+  if (!loopRunning) { loopRunning = true; requestAnimationFrame(loop); }
+}
+
+// ---- Zona de test: controlas ambos bandos (HUD abajo = tú, panel arriba = enemigo)
+function startTestGame() {
+  document.getElementById("main-menu").classList.add("hidden");
+  document.getElementById("online-menu").classList.add("hidden");
+  document.getElementById("game").classList.remove("hidden");
+  document.getElementById("loading").classList.add("hidden");
+  document.getElementById("debugBtn").classList.remove("hidden");
+  pauseBtn.classList.remove("hidden");
+  speedBtn.classList.remove("hidden");
+  diffWrap.classList.add("hidden");
+  document.getElementById("test-panel").classList.remove("hidden");
+  paused = false; pauseBtn.textContent = "⏸";
+  gameSpeed = 1; speedBtn.textContent = "⏩ x1";
+  resetGame();
+  G.mode = "test";
+  G.player.gold += 5000; G.enemy.gold += 5000;
+  requestAnimationFrame(resizeCanvas);
   startMusic();
   if (!loopRunning) { loopRunning = true; requestAnimationFrame(loop); }
 }
@@ -1764,7 +2057,10 @@ function startOnlineGame() {
   document.getElementById("loading").classList.add("hidden");
   document.getElementById("debugBtn").classList.add("hidden");
   pauseBtn.classList.add("hidden");
+  speedBtn.classList.add("hidden");
   diffWrap.classList.add("hidden");
+  document.getElementById("test-panel").classList.add("hidden");
+  gameSpeed = 1;
   resetGame();
   G.mode = "online";
   document.getElementById("restartBtn").disabled = false;
@@ -1772,8 +2068,6 @@ function startOnlineGame() {
   startMusic();
   if (!loopRunning) { loopRunning = true; requestAnimationFrame(loop); }
 }
-
-let isSyncHost = false; // quien recibe game_start con side:"player" es el host
 
 // Procesa mensajes de juego comunes a host y guest. Devuelve true si lo manejó.
 function handleNetGameMsg(msg) {
@@ -1785,21 +2079,23 @@ function handleNetGameMsg(msg) {
       syncTimer = 0;
       startOnlineGame();
       return true;
-    case "sync":
-      if (!G.over && !isSyncHost) {
-        G.player.baseHp = msg.enemyBaseHp;
-        G.enemy.baseHp = msg.playerBaseHp;
-      }
+    case "state":
+      if (!G.over && !isSyncHost) applyState(msg.s);
       return true;
-    case "opponent_action":
-      if (!G.over) handleOpponentAction(msg.action);
+    case "cmd":
+      if (!G.over && isSyncHost) handleGuestCmd(msg.cmd);
       return true;
-    case "opponent_won":
+    case "opponent_won": {
+      // el host informa el resultado; el guest ganó si el host perdió
       if (!G.over) {
-        endGame(false);
-        document.getElementById("overMsg").textContent = "Tu base fue destruida.";
+        const guestWon = msg.hostWon === false;
+        if (guestWon) G.enemy.baseHp = 0; else G.player.baseHp = 0;
+        endGame(guestWon);
+        document.getElementById("overMsg").textContent = guestWon
+          ? "Destruiste la base enemiga." : "Tu base fue destruida.";
       }
       return true;
+    }
     case "opponent_rematch":
       if (G.over) document.getElementById("overMsg").textContent = "El oponente quiere revancha. ¡Pulsa Jugar de nuevo!";
       return true;
@@ -1853,6 +2149,13 @@ pauseBtn.addEventListener("click", () => {
   pauseBtn.title = paused ? "Reanudar" : "Pausar";
 });
 
+// botón de velocidad x2 (solo VS IA)
+const speedBtn = document.getElementById("speedBtn");
+speedBtn.addEventListener("click", () => {
+  gameSpeed = gameSpeed === 1 ? 2 : 1;
+  speedBtn.textContent = "⏩ x" + gameSpeed;
+});
+
 // selector de dificultad (reinicia la partida al cambiar)
 const diffBtns = document.querySelectorAll(".diff");
 diffBtns.forEach((b) => b.addEventListener("click", () => {
@@ -1870,7 +2173,7 @@ diffBtns.forEach((b) => b.addEventListener("click", () => {
 const bgm = document.getElementById("bgm");
 let musicMuted = localStorage.getItem("aow_muted") === "1";
 let musicVol = parseFloat(localStorage.getItem("aow_vol"));
-if (isNaN(musicVol)) musicVol = 0.45;
+if (isNaN(musicVol)) musicVol = 0.30;
 bgm.volume = musicVol;
 bgm.muted = musicMuted;
 
@@ -1920,7 +2223,6 @@ document.getElementById("debugBtn").addEventListener("click", () => {
   G.player.gold += 10000;
   const need = G.player.age < EVOLVE_COST.length ? EVOLVE_COST[G.player.age] : 99999;
   G.player.xp += need * 2;
-  if (G.mode === "online") netSend({ type: "debug" });
 });
 
 window.addEventListener("keydown", (e) => {
@@ -1937,6 +2239,7 @@ window.addEventListener("keydown", (e) => {
   else if (e.key === "r") playerUpgrade("tank", "dmg");
   else if (e.key === "f") playerUpgrade("tank", "hp");
   else if (e.key === "c") playerUpgrade("tank", "spd");
+  else if (e.key === "d") playerUpgrade("tank", "armor");
   else if (e.key === "v" || e.key === "V") playerVillager();
   else if (e.key === "b" || e.key === "B") playerVillagerUpg();
   else if (e.key === "p" || e.key === "P" || e.key === "Escape") {
@@ -1952,6 +2255,25 @@ window.addEventListener("keydown", (e) => {
 document.getElementById("btn-vs-ia").addEventListener("click", () => {
   G.mode = "ai";
   startGame();
+});
+
+document.getElementById("btn-vs-test").addEventListener("click", () => {
+  startTestGame();
+});
+
+// Panel de control del ENEMIGO (zona de test)
+const testPanel = document.getElementById("test-panel");
+testPanel.addEventListener("click", (ev) => {
+  const b = ev.target.closest("button");
+  if (!b) return;
+  const e = G.enemy;
+  if (b.dataset.tact === "gold") e.gold += 5000;
+  else if (b.dataset.tact === "xp") e.xp += (EVOLVE_COST[e.age] || 1000) + 1000;
+  else if (b.dataset.tact === "evolve") tryEvolve("enemy");
+  else if (b.dataset.tact === "villager") { e.gold += villagerCost(e.villagers); tryVillager("enemy"); }
+  else if (b.dataset.tspawn) { e.cd[b.dataset.tspawn] = 0; trySpawn("enemy", b.dataset.tspawn); }
+  else if (b.dataset.tupg) { const [t, s] = b.dataset.tupg.split(":"); tryUpgrade("enemy", t, s); }
+  else if (b.dataset.tspec) tryBuySpecial("enemy", b.dataset.tspec);
 });
 
 document.getElementById("btn-vs-online").addEventListener("click", () => {
