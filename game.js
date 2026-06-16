@@ -2226,7 +2226,7 @@ function buildShop() {
       card.className = "card";
       card.innerHTML = `
         <div class="key">${i + 1}</div>
-        <div class="cd-bar"></div>
+        <svg class="cd-ring" viewBox="0 0 100 100"><circle class="cd-ring-fill" cx="50" cy="50" r="44" transform="rotate(-90 50 50)"/></svg>
         <div class="thumb">${getUnitThumb(uid)}</div>
         <div class="name">${u.name}</div>
         <div class="lvl"></div>
@@ -2255,7 +2255,8 @@ function buildShop() {
         lvl: card.querySelector(".lvl"),
         cost: card.querySelector(".cost"),
         stats: card.querySelector(".stats"),
-        cdBar: card.querySelector(".cd-bar"),
+        cdSvg: card.querySelector(".cd-ring"),
+        cdFill: card.querySelector(".cd-ring-fill"),
       });
     } else {
       // Placeholder visual del slot vacío — mismo tamaño que cards llenas
@@ -2395,9 +2396,11 @@ function syncUI() {
     const cdRem = p.cd[c.uid] || 0;
     const uDef = UNIT_CATALOG[c.uid];
     const cdMax = (uDef && uDef.cooldown != null) ? uDef.cooldown : SPAWN_CD;
-    if (c.cdBar) {
-      c.cdBar.style.width = cdRem > 0 ? ((cdRem / cdMax) * 100) + "%" : "0%";
-      c.cdBar.classList.toggle("active", cdRem > 0);
+    if (c.cdFill) {
+      const circ = 276; // 2 * PI * 44
+      const progress = cdRem > 0 ? (cdRem / cdMax) : 0;
+      c.cdFill.style.strokeDashoffset = circ * (1 - progress);
+      c.cdSvg.classList.toggle("active", cdRem > 0);
     }
     c.el.classList.toggle("disabled", !(p.gold >= s.cost && cdRem <= 0));
   }

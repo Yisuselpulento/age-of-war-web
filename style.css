@@ -413,16 +413,19 @@ canvas {
   font-size: 8px; background: rgba(0,0,0,.5); padding: 1px 4px; border-radius: 3px; opacity: .6;
   z-index: 2;
 }
-.card .cd-bar {
-  position: absolute; top: 0; left: 0; height: 100%; width: 0%;
-  background: rgba(100, 180, 255, 0.25);
-  border-radius: 8px;
-  transition: width 0.1s linear;
-  pointer-events: none;
-  z-index: 1;
+.card .cd-ring {
+  position: absolute; top: -2px; left: -2px; width: calc(100% + 4px); height: calc(100% + 4px);
+  pointer-events: none; z-index: 1;
 }
-.card .cd-bar.active {
-  background: rgba(60, 140, 220, 0.35);
+.card .cd-ring .cd-ring-fill {
+  fill: none; stroke: rgba(100, 180, 255, 0.2); stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 276;
+  stroke-dashoffset: 276;
+  transition: stroke-dashoffset 0.1s linear;
+}
+.card .cd-ring.active .cd-ring-fill {
+  stroke: rgba(60, 140, 220, 0.4);
 }
 
 /* Upgrades dentro de cada card-slot */
