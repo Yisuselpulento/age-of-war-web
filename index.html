@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Age of War — Web</title>
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
 
@@ -14,7 +14,12 @@
   <div class="menu-buttons">
     <button id="btn-vs-ia" class="menu-btn">🤖 VS IA (Local)</button>
     <button id="btn-vs-online" class="menu-btn">🌐 VS Online</button>
+    <button id="btn-deck" class="menu-btn">📜 Editor de Mazo</button>
     <button id="btn-vs-test" class="menu-btn">🧪 Zona de Test</button>
+  </div>
+  <div class="menu-race-select">
+    <label>Raza activa:</label>
+    <select id="main-race-select"></select>
   </div>
   <p class="menu-footer">Selecciona modo de juego</p>
 </div>
@@ -37,6 +42,43 @@
     <input type="text" id="join-code-input" maxlength="4" class="join-input" placeholder="EJ: X7K9" autocomplete="off">
     <button id="btn-join-confirm" class="menu-btn">✅ Unirse</button>
     <p id="join-error" class="join-error hidden">Código inválido</p>
+  </div>
+</div>
+
+<!-- Editor de mazos -->
+<div id="deck-builder" class="hidden">
+  <h1 class="menu-title">📜 Editor de Mazo</h1>
+  <p class="deck-subtitle">Elige una raza · Arma tu mazo para cada edad · Máx. 6 por edad</p>
+
+  <div id="deck-race-tabs"></div>
+
+  <div id="deck-tabs"></div>
+
+  <div id="deck-content">
+    <div id="deck-pool">
+      <div class="deck-pool-header">
+        <span class="deck-pool-title">Unidades disponibles</span>
+        <input id="deck-filter" type="text" placeholder="Filtrar por nombre, tipo, counter…">
+      </div>
+      <div id="deck-pool-list"></div>
+    </div>
+
+    <div id="deck-slots">
+      <div class="deck-slots-header">
+        <span class="deck-slots-title">Mazo actual</span>
+        <span id="deck-count">0/4</span>
+      </div>
+      <div id="deck-slots-list"></div>
+    </div>
+  </div>
+
+  <div class="deck-actions">
+    <button id="deck-back-btn" class="menu-btn back-btn">⬅ Volver</button>
+    <span id="deck-error" class="hidden" style="color:#fc8181;font-size:13px"></span>
+    <div class="deck-main-btns">
+      <button id="deck-reset-btn" class="menu-btn" style="background:#4a3a3a">🔄 Reiniciar mazo</button>
+      <button id="deck-save-btn" class="menu-btn">💾 Guardar y Volver</button>
+    </div>
   </div>
 </div>
 
@@ -81,7 +123,7 @@
       <div class="xplabel">XP <span id="xptext">0/0</span></div>
       <div class="xpbar"><div id="xpfill"></div></div>
     </div>
-    <div class="stat" id="ageName">Edad de Piedra</div>
+    <div class="stat" id="ageName">Era I</div>
     <div id="diffWrap">
       <span class="difflbl">IA:</span>
       <button class="diff" data-d="easy">Fácil</button>
@@ -106,6 +148,9 @@
     <div class="cfg-row">
       <span>Volumen</span>
       <input id="volSlider" type="range" min="0" max="100" value="45">
+    </div>
+    <div class="cfg-row cfg-row-sep">
+      <button id="cfg-menu-btn" class="cfg-menu-btn">⬅ Volver al menú</button>
     </div>
   </div>
 
@@ -157,6 +202,6 @@
 <div id="loading">Cargando assets…</div>
 <audio id="bgm" src="assets/audio/theme.mp3" loop preload="auto"></audio>
 
-<script src="game.js?v=19"></script>
+<script src="game.js?v=20"></script>
 </body>
 </html>

@@ -64,6 +64,28 @@ body {
 .back-btn:hover { border-color: #a0aec0; color: #e8edf5; }
 .menu-footer { font-size: 13px; color: #718096; }
 
+.menu-race-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  color: #a0aec0;
+}
+.menu-race-select select {
+  background: #1a202c;
+  border: 2px solid #4a5568;
+  border-radius: 8px;
+  color: #e8edf5;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 8px 14px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color .15s;
+}
+.menu-race-select select:hover { border-color: #f7c948; }
+.menu-race-select select:focus { border-color: #f7c948; }
+
 /* ── Sala de espera / Unirse ────────────────────────────────── */
 .room-code-label {
   font-size: 16px;
@@ -227,6 +249,15 @@ canvas {
 }
 #muteBtn.muted { background: #8f3a3a; }
 #volSlider { flex: 1; max-width: 110px; cursor: pointer; accent-color: #f7c948; }
+.cfg-row-sep { border-top: 1px solid #2d3748; padding-top: 8px; justify-content: center; }
+.cfg-menu-btn {
+  width: 100%; padding: 8px 12px; font-size: 13px; font-weight: 700; cursor: pointer;
+  border: 1px solid #4a5568; border-radius: 8px; background: #2d3748; color: #e2e8f0;
+  transition: background .12s;
+}
+.cfg-menu-btn:hover { background: #4a5568; }
+.cfg-menu-btn.surrender { border-color: #8f3a3a; background: #5a2020; color: #fc8181; }
+.cfg-menu-btn.surrender:hover { background: #7a2a2a; }
 
 /* ── Fase del día (desactivado) ─────────────────────────────── */
 #day-indicator { display: none; }
@@ -501,7 +532,168 @@ canvas {
 .tsp-no { background: #3a4150; color: #a0aec0; }
 .tsp-no:hover { background: #4a5568; }
 
-/* ── Sección de economía (aldeanos) ─────────────────────────── */
+/* ── Editor de mazos ────────────────────────────────────────── */
+#deck-builder {
+  position: fixed; inset: 0;
+  z-index: 100;
+  display: flex; flex-direction: column;
+  background: linear-gradient(160deg, #0d0f17 0%, #141824 50%, #1a1f2e 100%);
+  padding: 0; overflow: hidden;
+}
+#deck-builder .menu-title { margin: 14px 0 2px; font-size: 26px; letter-spacing: 1px; }
+.deck-subtitle { font-size: 12px; color: #8892a8; text-align: center; margin: 0 0 10px; letter-spacing: .3px; }
+
+#deck-race-tabs {
+  display: flex; gap: 4px; justify-content: center;
+  padding: 0 20px; margin-bottom: 6px;
+}
+.deck-race-tab {
+  padding: 6px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+  border: 1.5px solid #3a2a4a; border-radius: 8px;
+  background: #1a1425; color: #8a7a9a; cursor: pointer;
+  transition: all .15s;
+}
+.deck-race-tab:hover { border-color: #b080e0; color: #c8a8e8; }
+.deck-race-tab.active { border-color: #a060d0; color: #d0a8f0; background: rgba(160,96,208,.1); box-shadow: 0 0 12px rgba(160,96,208,.08); }
+.deck-race-tab.locked { opacity: .4; cursor: not-allowed; filter: grayscale(.6); }
+.deck-race-tab.locked:hover { border-color: #3a2a4a; color: #8a7a9a; }
+
+#deck-tabs {
+  display: flex; gap: 4px; justify-content: center;
+  padding: 0 20px; margin-bottom: 10px;
+}
+.deck-tab {
+  padding: 7px 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px;
+  border: 1.5px solid #2d3548; border-radius: 8px;
+  background: #161b28; color: #6b7a92; cursor: pointer;
+  transition: all .15s;
+}
+.deck-tab:hover { border-color: #ffd866; color: #e8d5a0; }
+.deck-tab.active { border-color: #f0c940; color: #f0c940; background: rgba(240,201,64,.08); box-shadow: 0 0 12px rgba(240,201,64,.06); }
+
+#deck-content {
+  display: flex; gap: 16px; flex: 1;
+  padding: 0 20px; min-height: 0;
+}
+
+/* Pool (unidades disponibles) */
+#deck-pool {
+  flex: 1; display: flex; flex-direction: column;
+  min-width: 0; background: rgba(22,27,40,.7);
+  border: 1px solid #262e42; border-radius: 12px; padding: 12px;
+  backdrop-filter: blur(4px);
+}
+.deck-pool-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.deck-pool-title { font-size: 13px; font-weight: 700; color: #d0d8e8; text-transform: uppercase; letter-spacing: .5px; }
+#deck-filter {
+  flex: 1; max-width: 280px;
+  padding: 6px 12px; font-size: 12px;
+  background: #0d0f17; border: 1px solid #2d3548; border-radius: 8px;
+  color: #d0d8e8; outline: none; transition: border-color .15s;
+}
+#deck-filter:focus { border-color: #f0c940; }
+#deck-filter::placeholder { color: #4a5568; }
+#deck-pool-list {
+  flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
+  min-height: 0;
+}
+
+/* Slots del mazo */
+#deck-slots {
+  width: 340px; display: flex; flex-direction: column;
+  flex-shrink: 0;
+  background: rgba(22,27,40,.7);
+  border: 1px solid #262e42; border-radius: 12px; padding: 12px;
+  backdrop-filter: blur(4px);
+}
+.deck-slots-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.deck-slots-title { font-size: 13px; font-weight: 700; color: #d0d8e8; text-transform: uppercase; letter-spacing: .5px; }
+#deck-count { font-size: 14px; font-weight: 700; color: #f0c940; background: rgba(240,201,64,.08); padding: 2px 10px; border-radius: 6px; }
+#deck-slots-list {
+  flex: 1; display: flex; flex-direction: column; gap: 8px;
+  min-height: 0; overflow-y: auto;
+}
+
+/* ── Card unitaria (pool) ──────────────────────────────────── */
+.dcard {
+  display: flex; gap: 12px; padding: 10px 12px; border-radius: 12px;
+  border: 1px solid #262e42; cursor: grab;
+  background: linear-gradient(145deg, rgba(30,36,52,.7), rgba(22,27,40,.7));
+  transition: all .15s; user-select: none;
+  position: relative; overflow: hidden;
+}
+.dcard::after {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+  pointer-events: none;
+}
+.dcard:hover { border-color: #4a6a8a; background: linear-gradient(145deg, rgba(36,44,64,.8), rgba(28,34,52,.8)); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,.3); }
+.dcard:active { cursor: grabbing; transform: translateY(0); }
+.dcard.in-deck { border-color: #2a5a7a; background: linear-gradient(145deg, rgba(22,40,60,.6), rgba(16,30,48,.6)); }
+.dcard.dragging { opacity: .4; }
+
+.dcard .dci {
+  width: 52px; height: 52px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(13,15,23,.6); border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.05);
+  position: relative;
+}
+.dcard .dci img { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
+.dcard .dbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; justify-content: center; }
+.dcard .dtop { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.dcard .dcn { font-size: 13px; font-weight: 700; color: #e0e8f0; letter-spacing: .2px; }
+.dcard .dcc { font-size: 12px; color: #f0c940; font-weight: 700; white-space: nowrap; background: rgba(240,201,64,.08); padding: 2px 8px; border-radius: 4px; }
+.dcard .dtags { display: flex; gap: 3px; flex-wrap: wrap; }
+.dcard .ddesc { font-size: 10.5px; color: #6b7a92; line-height: 1.3; }
+
+.dctag {
+  font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+  letter-spacing: .3px; text-transform: uppercase;
+}
+.dctag-tag-melee { background: #7a2a2a; color: #f0b0a0; }
+.dctag-tag-range { background: #1a4a6a; color: #a0c8e8; }
+.dctag-tag-tank  { background: #5a4a30; color: #e0c8a0; }
+.dctag-tag-ground { background: #2a3a4a; color: #8a9ab0; }
+.dctag-strong { background: rgba(42,120,60,.25); color: #6adb80; border: 1px solid rgba(42,120,60,.3); }
+.dctag-weak   { background: rgba(160,50,50,.25); color: #f08080; border: 1px solid rgba(160,50,50,.3); }
+
+/* ── Slots del mazo (drop zones) ──────────────────────────── */
+.deck-slot {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 10px;
+  border: 2px dashed #262e42; background: rgba(13,15,23,.3);
+  min-height: 56px; transition: all .15s;
+}
+.deck-slot.dragover { border-color: #5abf7a; background: rgba(60,180,100,.08); box-shadow: inset 0 0 20px rgba(60,180,100,.05); }
+
+.deck-slot .ds-num {
+  width: 24px; height: 24px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; color: #4a5568;
+  background: rgba(13,15,23,.4); border-radius: 6px;
+}
+
+.deck-slot .ds-empty {
+  font-size: 12px; color: #4a5568; font-style: italic;
+  flex: 1; text-align: center;
+}
+
+.deck-slot .ds-rm {
+  padding: 4px 10px; font-size: 15px;
+  background: rgba(200,60,60,.1); border: 1px solid rgba(200,60,60,.2);
+  color: #f08080; cursor: pointer; border-radius: 6px;
+  transition: all .1s; flex-shrink: 0; line-height: 1;
+}
+.deck-slot .ds-rm:hover { background: rgba(200,60,60,.25); border-color: rgba(200,60,60,.4); }
+
+.deck-actions {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 20px; justify-content: space-between;
+}
+#deck-error { font-size: 12px; }
+.deck-main-btns { display: flex; gap: 8px; }
+.deck-main-btns .menu-btn { padding: 10px 20px; font-size: 13px; }
 #econ-section {
   display: flex;
   flex-direction: column;
@@ -607,4 +799,16 @@ canvas {
   #econ-section { width: 100%; min-width: 0; flex: none; padding: 6px 10px; font-size: 12px; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); flex-shrink: 0; }
   #econ-section button { padding: 7px 10px; font-size: 12px; }
   #econ-section .econ-card { padding: 5px 6px; }
+
+  /* Deck builder responsive */
+  #deck-builder .menu-title { font-size: 20px; }
+  .deck-subtitle { font-size: 11px; }
+  #deck-content { flex-direction: column; }
+  #deck-pool { max-height: 40vh; }
+  #deck-slots { width: 100%; }
+  .deck-actions { flex-wrap: wrap; font-size: 12px; }
+  .deck-main-btns { width: 100%; }
+  .deck-main-btns .menu-btn { flex: 1; font-size: 13px; padding: 10px 8px; }
+  .dcard { flex-wrap: wrap; }
+  .dcard .dcd { width: 100%; order: 10; }
 }

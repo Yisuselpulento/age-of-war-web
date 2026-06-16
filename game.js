@@ -6,9 +6,157 @@
 // Nota: índices 1 y 2 intercambiados (la 2ª edad usa sprites de caballero y la 3ª
 // los medievales), manteniendo la progresión de stats por índice.
 const AGES = ["cave", "knight", "medival", "miltary", "future"];
-const AGE_NAMES = ["Edad de Piedra", "Caballeros", "Medieval", "Era Militar", "Futuro"];
+const AGE_NAMES = ["Era I", "Era II", "Era III", "Era IV", "Era V"];
 const UNIT_TYPES = ["melee", "range", "tank"];
-const UNIT_NAMES = { melee: "Melee", range: "Range", tank: "Tank" };
+const UNIT_NAMES = {
+  1:"Troglodita",2:"Cazador",3:"Forzudo",
+  4:"Caballero",5:"Arquero",6:"Paladín",
+  7:"Espadachín",8:"Ballestero",9:"Blindado",
+  10:"Soldado",11:"Francotirador",12:"Tanque",
+  13:"Comando",14:"Centinela",15:"Mecha",
+  16:"Zerling",17:"Ultralisk",
+};
+const UNIT_IDS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17];
+
+const UNIT_CATALOG = {
+  // ── Era 0 (Cave) ──────────────────────────────────────
+  1: { id:1, name:"Troglodita", icon:"⚔️",  spriteId:"melee",  race:"humans",   combatStyle:"melee",  movementType:"ground", homeEra:0,
+    desc:"Versátil luchador cuerpo a cuerpo. Efectivo contra arqueros.",
+    tags:["melee","ground"], counters:'Fuerte vs <b>Ranged</b> · Débil vs <b>Aéreo</b>',
+    strongVs:["ranged"], weakVs:["aerial"], inmun:[], cost:50, upgs:["dmg","hp","spd"],
+    availableEras:[0], specialAbility:null },
+  2: { id:2, name:"Cazador", icon:"🏹",  spriteId:"range",  race:"humans",   combatStyle:"ranged", movementType:"ground", homeEra:0,
+    desc:"Ataca desde lejos. Ideal contra unidades aéreas.",
+    tags:["ranged","ground"], counters:'Fuerte vs <b>Aéreo</b> · Débil vs <b>Melee</b>',
+    strongVs:["aerial"], weakVs:["melee"], inmun:[], cost:85, upgs:["dmg","range","spd"],
+    availableEras:[0], specialAbility:null },
+  3: { id:3, name:"Forzudo", icon:"🛡️", spriteId:"tank",   race:"humans",   combatStyle:"tank",   movementType:"ground", homeEra:0,
+    desc:"Alta resistencia y blindaje. Absorbe y retiene al enemigo.",
+    tags:["tank","ground"], counters:'Resiste <b>Ranged</b> · Débil vs <b>Melee</b>',
+    strongVs:["ranged"], weakVs:["melee"], inmun:[], cost:200, upgs:["dmg","hp","spd","armor"],
+    availableEras:[0], specialAbility:null },
+
+  // ── Era 1 (Knight) ─────────────────────────────────────
+  4: { id:4, name:"Caballero", icon:"⚔️", spriteId:"melee", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:1,
+    desc:"Guerrero montado con armadura de placas. Potencia en la carga.",
+    tags:["melee","ground"], counters:'Fuerte vs <b>Ranged</b> · Débil vs <b>Aéreo</b>',
+    strongVs:["ranged"], weakVs:["aerial"], inmun:[], cost:110, upgs:["dmg","hp","spd"],
+    availableEras:[1], specialAbility:null },
+  5: { id:5, name:"Arquero", icon:"🏹", spriteId:"range", race:"humans", combatStyle:"ranged", movementType:"ground", homeEra:1,
+    desc:"Arquero entrenado con arco compuesto. Alcance superior.",
+    tags:["ranged","ground"], counters:'Fuerte vs <b>Aéreo</b> · Débil vs <b>Melee</b>',
+    strongVs:["aerial"], weakVs:["melee"], inmun:[], cost:170, upgs:["dmg","range","spd"],
+    availableEras:[1], specialAbility:null },
+  6: { id:6, name:"Paladín", icon:"🛡️", spriteId:"tank", race:"humans", combatStyle:"tank", movementType:"ground", homeEra:1,
+    desc:"Campeón sagrado con escudo y fe inquebrantable.",
+    tags:["tank","ground"], counters:'Resiste <b>Ranged</b> · Débil vs <b>Melee</b>',
+    strongVs:["ranged"], weakVs:["melee"], inmun:[], cost:400, upgs:["dmg","hp","spd","armor"],
+    availableEras:[1], specialAbility:null },
+
+  // ── Era 2 (Medival) ────────────────────────────────────
+  7:  { id:7,  name:"Espadachín", icon:"⚔️", spriteId:"melee", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:2,
+    desc:"Experto en esgrima con espada larga. Golpes precisos y letales.",
+    tags:["melee","ground"], counters:'Fuerte vs <b>Ranged</b> · Débil vs <b>Aéreo</b>',
+    strongVs:["ranged"], weakVs:["aerial"], inmun:[], cost:220, upgs:["dmg","hp","spd"],
+    availableEras:[2], specialAbility:null },
+  8:  { id:8,  name:"Ballestero", icon:"🏹", spriteId:"range", race:"humans", combatStyle:"ranged", movementType:"ground", homeEra:2,
+    desc:"Ballesta de repetición. Perfora blindajes con facilidad.",
+    tags:["ranged","ground"], counters:'Fuerte vs <b>Aéreo</b> · Débil vs <b>Melee</b>',
+    strongVs:["aerial"], weakVs:["melee"], inmun:[], cost:320, upgs:["dmg","range","spd"],
+    availableEras:[2], specialAbility:null },
+  9:  { id:9,  name:"Blindado", icon:"🛡️", spriteId:"tank", race:"humans", combatStyle:"tank", movementType:"ground", homeEra:2,
+    desc:"Armadura de placas completa. Muro impenetrable.",
+    tags:["tank","ground"], counters:'Resiste <b>Ranged</b> · Débil vs <b>Melee</b>',
+    strongVs:["ranged"], weakVs:["melee"], inmun:[], cost:700, upgs:["dmg","hp","spd","armor"],
+    availableEras:[2], specialAbility:null },
+
+  // ── Era 3 (Miltary) ────────────────────────────────────
+  10: { id:10, name:"Soldado", icon:"⚔️", spriteId:"melee", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:3,
+    desc:"Infantería moderna con fusil de asalto y granadas.",
+    tags:["melee","ground"], counters:'Fuerte vs <b>Ranged</b> · Débil vs <b>Aéreo</b>',
+    strongVs:["ranged"], weakVs:["aerial"], inmun:[], cost:420, upgs:["dmg","hp","spd"],
+    availableEras:[3], specialAbility:null },
+  11: { id:11, name:"Francotirador", icon:"🎯", spriteId:"range", race:"humans", combatStyle:"ranged", movementType:"ground", homeEra:3,
+    desc:"Rifle de precisión de largo alcance. Elimina objetivos clave.",
+    tags:["ranged","ground"], counters:'Fuerte vs <b>Aéreo</b> · Débil vs <b>Melee</b>',
+    strongVs:["aerial"], weakVs:["melee"], inmun:[], cost:600, upgs:["dmg","range","spd"],
+    availableEras:[3], specialAbility:null },
+  12: { id:12, name:"Tanque", icon:"🛡️", spriteId:"tank", race:"humans", combatStyle:"tank", movementType:"ground", homeEra:3,
+    desc:"Blindaje pesado con cañón rotatorio. Máquina de guerra.",
+    tags:["tank","ground"], counters:'Resiste <b>Ranged</b> · Débil vs <b>Melee</b>',
+    strongVs:["ranged"], weakVs:["melee"], inmun:[], cost:1300, upgs:["dmg","hp","spd","armor"],
+    availableEras:[3], specialAbility:null },
+
+  // ── Era 4 (Future) ─────────────────────────────────────
+  13: { id:13, name:"Comando", icon:"⚔️", spriteId:"melee", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:4,
+    desc:"Operaciones especiales con exoesqueleto potenciado.",
+    tags:["melee","ground"], counters:'Fuerte vs <b>Ranged</b> · Débil vs <b>Aéreo</b>',
+    strongVs:["ranged"], weakVs:["aerial"], inmun:[], cost:800, upgs:["dmg","hp","spd"],
+    availableEras:[4], specialAbility:null },
+  14: { id:14, name:"Centinela", icon:"🎯", spriteId:"range", race:"humans", combatStyle:"ranged", movementType:"ground", homeEra:4,
+    desc:"Torreta automatizada con sistema de puntería láser.",
+    tags:["ranged","ground"], counters:'Fuerte vs <b>Aéreo</b> · Débil vs <b>Melee</b>',
+    strongVs:["aerial"], weakVs:["melee"], inmun:[], cost:1150, upgs:["dmg","range","spd"],
+    availableEras:[4], specialAbility:null },
+  15: { id:15, name:"Mecha", icon:"🛡️", spriteId:"tank", race:"humans", combatStyle:"tank", movementType:"ground", homeEra:4,
+    desc:"Robot de combate gigante con blindaje de aleación.",
+    tags:["tank","ground"], counters:'Resiste <b>Ranged</b> · Débil vs <b>Melee</b>',
+    strongVs:["ranged"], weakVs:["melee"], inmun:[], cost:2400, upgs:["dmg","hp","spd","armor"],
+    availableEras:[4], specialAbility:null },
+
+  // ── Monsters ──────────────────────────────────────────
+   16: { id:16, name:"Zerling", icon:"👾", spriteId:"zerling", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
+     desc:"Criatura rápida que ataca en enjambre. Devastadora en grupo.",
+     tags:["melee","ground"], counters:'Poca vida · Débil vs <b>Ranged</b> y <b>Aéreo</b>',
+     strongVs:[], weakVs:["ranged","aerial"], inmun:[], cost:40, upgs:["dmg","hp","spd"],
+     availableEras:[0,1,2,3,4], specialAbility:null },
+   17: { id:17, name:"Ultralisk", icon:"🦂", spriteId:"ultralisk", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
+     desc:"Coloso blindado que arrasa líneas enemigas. Resistente y letal.",
+     tags:["melee","ground"], counters:'Alta vida · Débil vs <b>Ranged</b>',
+     strongVs:["aerial"], weakVs:["ranged"], inmun:[], cost:150, upgs:["dmg","hp","spd","armor"],
+     availableEras:[0,1,2,3,4], specialAbility:null },
+};
+
+// Razas disponibles (cada unidad pertenece a una raza)
+const RACES = ["humans", "aliens", "monsters", "deaths", "demons", "magics"];
+const RACE_NAMES = {
+  humans: "Humanos", aliens: "Alienígenas", monsters: "Monstruos",
+  deaths: "Muertes", demons: "Demonios", magics: "Mágicos",
+};
+
+// Simulación de base de datos de unidades
+const UnitDB = {
+  getAll() { return UNIT_IDS.map(id => UNIT_CATALOG[id]); },
+  getById(id) { return UNIT_CATALOG[id] || null; },
+  getByEra(eraIdx) { return UNIT_IDS.filter(id => UNIT_CATALOG[id].availableEras.includes(eraIdx)).map(id => UNIT_CATALOG[id]); },
+  getByTag(tag) { return UNIT_IDS.filter(id => UNIT_CATALOG[id].tags.includes(tag)).map(id => UNIT_CATALOG[id]); },
+  getByRace(race) { return UNIT_IDS.filter(id => UNIT_CATALOG[id].race === race).map(id => UNIT_CATALOG[id]); },
+  getByRaceAndEra(race, eraIdx) {
+    return UNIT_IDS.filter(id => UNIT_CATALOG[id].race === race && UNIT_CATALOG[id].availableEras.includes(eraIdx)).map(id => UNIT_CATALOG[id]);
+  },
+  isAvailableInEra(id, eraIdx) {
+    const u = UNIT_CATALOG[id];
+    return u ? u.availableEras.includes(eraIdx) : false;
+  },
+  getAvailableIds(eraIdx) {
+    return UNIT_IDS.filter(id => UNIT_CATALOG[id].availableEras.includes(eraIdx));
+  },
+  getAvailableIdsByRace(race, eraIdx) {
+    return UNIT_IDS.filter(id => UNIT_CATALOG[id].race === race && UNIT_CATALOG[id].availableEras.includes(eraIdx));
+  },
+  // Para el motor de juego: ver si un combatStyle está disponible en una era
+  isStyleAvailable(style, eraIdx) {
+    return UNIT_IDS.some(id => UNIT_CATALOG[id].combatStyle === style && UNIT_CATALOG[id].availableEras.includes(eraIdx));
+  },
+  // Buscar la unidad específica para una raza+era+combatStyle
+  getUnitForStyle(race, era, style) {
+    for (const id of UNIT_IDS) {
+      const u = UNIT_CATALOG[id];
+      if (u.race === race && u.availableEras.includes(era) && u.combatStyle === style) return u;
+    }
+    return null;
+  },
+};
 const ANIMS = ["walk", "attack", "die", "idle"];
 
 // Orientación nativa de cada sprite (true = mira a la derecha)
@@ -181,10 +329,12 @@ function applyState(state) {
 }
 
 // Wrappers de input: el guest envía comando (no simula); host/IA aplican local.
-function playerSpawn(type) {
+function playerSpawn(uid) {
   if (paused) return;
-  if (isGuest()) return sendCmd({ type: "spawn", unitType: type });
-  return trySpawn("player", type);
+  const u = UNIT_CATALOG[uid];
+  if (!u) return false;
+  if (isGuest()) return sendCmd({ type: "spawn", unitType: u.combatStyle, unitId: uid });
+  return trySpawn("player", u.combatStyle, u.spriteId);
 }
 function playerUpgrade(type, stat) {
   if (paused) return;
@@ -295,7 +445,7 @@ function specialDesc(type) {
   if (sp.hp)    p.push(`+${Math.round((sp.hp - 1) * 100)}% vida`);
   if (sp.dmg)   p.push(`+${Math.round((sp.dmg - 1) * 100)}% daño`);
   if (sp.regen) p.push(`+${Math.round(sp.regen * 100)}% vida/seg (regeneración)`);
-  if (sp.resist) p.push(`+${Math.round((1 - RESIST_FACTOR) * 100)}% armadura vs ${UNIT_NAMES[sp.resist]}`);
+  if (sp.resist) p.push(`+${Math.round((1 - RESIST_FACTOR) * 100)}% armadura vs ${sp.resist}`);
   return "★ " + p.join(", ");
 }
 
@@ -503,10 +653,12 @@ async function loadAll() {
         paths.push(`assets/towers/${age}/t${l}/${age}_turret_${l}_attack${String(f).padStart(4, "0")}.png`);
       }
     }
-    for (const u of UNIT_TYPES) {
+    // Cargar sprites desde el catálogo (cada unidad tiene su spriteId)
+    const spriteIds = [...new Set(UNIT_IDS.map(id => UNIT_CATALOG[id].spriteId))];
+    for (const sid of spriteIds) {
       for (const anim of ANIMS) {
-        const n = manifest[age][u][anim] || 0;
-        for (let i = 0; i < n; i++) paths.push(`assets/units/${age}/${u}/${anim}/${i}.png`);
+        const n = manifest[age][sid][anim] || 0;
+        for (let i = 0; i < n; i++) paths.push(`assets/units/${age}/${sid}/${anim}/${i}.png`);
       }
     }
   }
@@ -598,13 +750,14 @@ CV.addEventListener("wheel", (e) => {
 
 // ---- Entidades -------------------------------------------------------
 class Unit {
-  constructor(side, age, type) {
+  constructor(side, age, type, spriteId) {
     this.side = side;
     this.age = age;
     this.type = type;
+    this.spriteId = spriteId || type;
     const s = STATS[age][type];
     this.special = !!(G[side].specials && G[side].specials[type]);
-    const cs = computeStats(age, type, G[side].upg[type], this.special);
+    const cs = computeStats(age, type, G[side].upg[age][type], this.special);
     this.lvl = cs.lvl;            // nivel "horneado" al nacer
     this.cost = s.cost;
     this.maxHp = cs.hp;
@@ -640,10 +793,10 @@ class Unit {
     this.half = type === "tank" ? 46 : 26;
   }
 
-  get walkFrames() { return frames(this.age, this.type, "walk"); }
+  get walkFrames() { return frames(this.age, this.spriteId, "walk"); }
 
   draw() {
-    const fr = frames(this.age, this.type, this.dying ? "die" : this.anim);
+    const fr = frames(this.age, this.spriteId, this.dying ? "die" : this.anim);
     if (!fr.length) return;
     const im = fr[Math.min(this.frame, fr.length - 1)];
     if (!im) return;
@@ -777,14 +930,19 @@ class FloatText {
 
 // ---- Estado del juego ------------------------------------------------
 function freshSide(gold) {
+  const upg = [];
+  for (let a = 0; a < AGES.length; a++) {
+    const ageUpg = {};
+    for (const t of UNIT_TYPES) {
+      ageUpg[t] = {};
+      for (const s of UNIT_UPGS[t]) ageUpg[t][s] = 0;
+    }
+    upg.push(ageUpg);
+  }
   return {
     gold, xp: 0, age: 0, baseHp: BASE_HP,
     cd: { melee: 0, range: 0, tank: 0 },
-    upg: {
-      melee: { dmg: 0, hp: 0, spd: 0 },
-      range: { dmg: 0, range: 0, spd: 0 },
-      tank:  { dmg: 0, hp: 0, spd: 0, armor: 0 },
-    },
+    upg,
     towerUpg: { dmg: [0, 0, 0], spd: [0, 0, 0] },
     specials: { melee: false, range: false, tank: false },
     villagers: 0,
@@ -840,25 +998,27 @@ function killUnit(t) {
 }
 
 // ---- Spawning --------------------------------------------------------
-function trySpawn(side, type) {
+function trySpawn(side, type, spriteId) {
   const st = G[side];
+  // Para el enemigo (IA): ver disponibilidad global
+  if (side === "enemy" && !UnitDB.isStyleAvailable(type, st.age)) return false;
   const s = STATS[st.age][type];
   if (st.gold < s.cost || st.cd[type] > 0) return false;
   st.gold -= s.cost;
   st.cd[type] = SPAWN_CD;
-  G.units.push(new Unit(side, st.age, type));
+  G.units.push(new Unit(side, st.age, type, spriteId));
   return true;
 }
 
 function tryUpgrade(side, type, stat) {
   const st = G[side];
-  const lvl = st.upg[type][stat];
+  const lvl = st.upg[st.age][type][stat];
   if (lvl === undefined) return false;   // stat no válido para este tipo
   if (lvl >= MAX_UPG) return false;
   const cost = upgradeCost(st.age, type, stat, lvl);
   if (st.gold < cost) return false;
   st.gold -= cost;
-  st.upg[type][stat]++;
+  st.upg[st.age][type][stat]++;
   return true;
 }
 
@@ -929,7 +1089,7 @@ function trySellTower(side, slot) {
 function tryBuySpecial(side, type) {
   const st = G[side];
   if (st.specials[type]) return false;                       // ya comprado
-  if (unitLevel(st.upg[type], false, type) < SPECIAL_LEVEL) return false; // requiere Nv6
+  if (unitLevel(st.upg[st.age][type], false, type) < SPECIAL_LEVEL) return false; // requiere Nv6
   const cost = specialCost(type);
   if (st.gold < cost) return false;
   st.gold -= cost;
@@ -1137,11 +1297,11 @@ function updateTowers(side, frontEnemy, dt) {
 
 function advanceAnim(u, dt, anim, loop) {
   if (u.anim !== anim) { u.anim = anim; u.frame = 0; u.frameTimer = 0; }
-  const fr = u.dying ? frames(u.age, u.type, "die") : frames(u.age, u.type, anim);
+  const fr = u.dying ? frames(u.age, u.spriteId, "die") : frames(u.age, u.spriteId, anim);
   if (!fr.length) return;
   let fps = anim === "attack" ? 14 : 12;
   if (anim === "attack" && !u.dying) {
-    const spdLvl = G[u.side].upg[u.type].spd;
+    const spdLvl = G[u.side].upg[u.age][u.type].spd;
     fps = 14 * (1 + UPG_SPD * spdLvl);
   }
   u.frameTimer += dt;
@@ -1162,10 +1322,10 @@ function advanceAnim(u, dt, anim, loop) {
 //  idle   = prob. de "descansar" cuando el ejército ya está lleno (errores en fácil)
 //  upgEvery = segundos entre intentos de mejora de unidades
 const DIFF = {
-  easy:    { aiIncome: 0.22, maxUnits: 5,  spawnMin: 1.7,  evolveChance: 0.25, xpMult: 0.8, upgEvery: 16,  comp: [0.72, 0.18, 0.10], react: 0.0,  econ: 0.3, towers: 0, save: 0.45, idle: 0.32, fill: 0.7,  upgAfford: 4.0, buySpecial: false },
-  medium:  { aiIncome: 0.45, maxUnits: 8,  spawnMin: 1.05, evolveChance: 0.55, xpMult: 1.0, upgEvery: 7,   comp: [0.52, 0.30, 0.18], react: 0.35, econ: 0.6, towers: 1, save: 0.70, idle: 0.12, fill: 0.85, upgAfford: 2.2, buySpecial: false },
-  hard:    { aiIncome: 0.75, maxUnits: 12, spawnMin: 0.68, evolveChance: 0.85, xpMult: 1.3, upgEvery: 4,   comp: [0.46, 0.32, 0.22], react: 0.7,  econ: 0.9, towers: 2, save: 0.85, idle: 0.04, fill: 0.95, upgAfford: 1.5, buySpecial: true },
-  extreme: { aiIncome: 1.10, maxUnits: 18, spawnMin: 0.34, evolveChance: 1.0,  xpMult: 2.2, upgEvery: 2.2, comp: [0.42, 0.34, 0.24], react: 1.0,  econ: 1.2, towers: 4, save: 1.0,  idle: 0.0,  fill: 1.0,  upgAfford: 1.1, buySpecial: true },
+  easy:    { aiIncome: 0.22, maxUnits: 5,  spawnMin: 1.7,  evolveChance: 0.25, xpMult: 0.8, upgEvery: 16,  comp: [0.62, 0.16, 0.08], react: 0.0,  econ: 0.3, towers: 0, save: 0.45, idle: 0.32, fill: 0.7,  upgAfford: 4.0, buySpecial: false },
+  medium:  { aiIncome: 0.45, maxUnits: 8,  spawnMin: 1.05, evolveChance: 0.55, xpMult: 1.0, upgEvery: 7,   comp: [0.42, 0.26, 0.16], react: 0.35, econ: 0.6, towers: 1, save: 0.70, idle: 0.12, fill: 0.85, upgAfford: 2.2, buySpecial: false },
+  hard:    { aiIncome: 0.75, maxUnits: 12, spawnMin: 0.68, evolveChance: 0.85, xpMult: 1.3, upgEvery: 4,   comp: [0.36, 0.28, 0.20], react: 0.7,  econ: 0.9, towers: 2, save: 0.85, idle: 0.04, fill: 0.95, upgAfford: 1.5, buySpecial: true },
+  extreme: { aiIncome: 1.10, maxUnits: 18, spawnMin: 0.34, evolveChance: 1.0,  xpMult: 2.2, upgEvery: 2.2, comp: [0.32, 0.28, 0.22], react: 1.0,  econ: 1.2, towers: 4, save: 1.0,  idle: 0.0,  fill: 1.0,  upgAfford: 1.1, buySpecial: true },
 };
 let difficulty = "medium";
 
@@ -1186,13 +1346,17 @@ function runAI(dt) {
   }
 
   // ---- Conteo de ambos ejércitos por tipo ----
-  let mc = 0, rc = 0, tc = 0, pm = 0, pr = 0, pt = 0;
+  const curCount = {}, pCount = {};
+  const allTypes = UNIT_TYPES.filter(t => UnitDB.isStyleAvailable(t, ai.age));
+  for (const t of allTypes) { curCount[t] = 0; pCount[t] = 0; }
   for (const u of G.units) {
     if (u.dying) continue;
-    if (u.side === "enemy") { u.type === "melee" ? mc++ : u.type === "range" ? rc++ : tc++; }
-    else { u.type === "melee" ? pm++ : u.type === "range" ? pr++ : pt++; }
+    if (u.side === "enemy") { if (curCount[u.type] !== undefined) curCount[u.type]++; }
+    else { if (pCount[u.type] !== undefined) pCount[u.type]++; }
   }
-  const army = mc + rc + tc;
+  let army = 0, pArmy = 0;
+  for (const t of allTypes) { army += curCount[t]; pArmy += pCount[t]; }
+  const mc = curCount["melee"] || 0, rc = curCount["range"] || 0, tc = curCount["tank"] || 0;
   const wantVill = Math.min(MAX_VILLAGERS, Math.round(1 + D.econ * 2.5)); // easy ~2, extreme ~4
 
   // ---- ECONOMÍA: aldeanos pronto, luego torres (ritmo según D.econ) ----
@@ -1229,13 +1393,14 @@ function runAI(dt) {
   // cuentan, compra el especial y luego la armadura del tank (mejoras extra).
   if (ai.aiUpgTimer <= 0) {
     ai.aiUpgTimer = D.upgEvery * (0.7 + Math.random() * 0.6);
-    const order = ["melee", "range", "tank"].sort((a, b) => D.comp[TYPE_I[b]] - D.comp[TYPE_I[a]]);
-    for (const t of order) {
+    const aiUnitOrder = UNIT_TYPES.filter(t => UnitDB.isStyleAvailable(t, ai.age)).sort(
+      (a, b) => D.comp[TYPE_I[b]] - D.comp[TYPE_I[a]]);
+    for (const t of aiUnitOrder) {
       if (D.comp[TYPE_I[t]] < 0.12) continue; // no invierte en tipos que casi no usa
       const gating = UNIT_LEVEL_STATS[t];
       // stat que cuenta para el nivel con menor progreso
       let lowStat = null, lowLvl = Infinity;
-      for (const s of gating) { const lv = ai.upg[t][s]; if (lv < lowLvl) { lowLvl = lv; lowStat = s; } }
+      for (const s of gating) { const lv = ai.upg[ai.age][t][s]; if (lv < lowLvl) { lowLvl = lv; lowStat = s; } }
       if (lowLvl < MAX_UPG) {
         const cost = upgradeCost(ai.age, t, lowStat, lowLvl);
         if (ai.gold > cost * D.upgAfford) { tryUpgrade("enemy", t, lowStat); break; }
@@ -1243,8 +1408,8 @@ function runAI(dt) {
         // ya está a Nv6: comprar especial (si la dificultad lo permite)
         if (D.buySpecial && !ai.specials[t] && ai.gold > specialCost(t) * 1.15) { tryBuySpecial("enemy", t); break; }
         // tank: subir armadura extra
-        if (t === "tank" && ai.upg.tank.armor < MAX_UPG) {
-          const c = upgradeCost(ai.age, "tank", "armor", ai.upg.tank.armor);
+        if (t === "tank" && ai.upg[ai.age].tank.armor < MAX_UPG) {
+          const c = upgradeCost(ai.age, "tank", "armor", ai.upg[ai.age].tank.armor);
           if (ai.gold > c * D.upgAfford) { tryUpgrade("enemy", "tank", "armor"); break; }
         }
       }
@@ -1260,24 +1425,27 @@ function runAI(dt) {
 
   // Composición objetivo, adaptada a la del jugador (contras)
   const comp = D.comp.slice();
-  const pArmy = pm + pr + pt;
   if (pArmy > 0 && D.react > 0) {
-    const pmF = pm / pArmy, prF = pr / pArmy, ptF = pt / pArmy;
-    comp[1] += D.react * (ptF * 0.5);              // range castiga a los tanks
-    comp[2] += D.react * (prF * 0.35);             // tank aguanta a los range
-    comp[0] += D.react * (prF * 0.2 + pmF * 0.1);  // melee presiona
+    const pfMelee = (pCount["melee"] || 0) / pArmy;
+    const pfRange = (pCount["range"] || 0) / pArmy;
+    const pfTank  = (pCount["tank"] || 0) / pArmy;
+    comp[1] += D.react * (pfTank * 0.5);              // range castiga a los tanks
+    comp[2] += D.react * (pfRange * 0.35);             // tank aguanta a los range
+    comp[0] += D.react * (pfRange * 0.2 + pfMelee * 0.1);  // melee presiona
   }
   // elegir el tipo con mayor déficit respecto al objetivo
-  const cur = [mc, rc, tc], types = ["melee", "range", "tank"];
-  const sum = comp[0] + comp[1] + comp[2];
-  let bestT = "melee", bestDef = -Infinity;
-  for (let i = 0; i < 3; i++) {
-    const want = (comp[i] / sum) * (army + 1);
+  const types = UNIT_TYPES.filter(t => UnitDB.isStyleAvailable(t, ai.age));
+  const cur = types.map(t => curCount[t]);
+  let sum = 0; for (let i = 0; i < types.length; i++) sum += comp[TYPE_I[types[i]]];
+  let bestT = types[0] || "melee", bestDef = -Infinity;
+  for (let i = 0; i < types.length; i++) {
+    const ti = TYPE_I[types[i]];
+    const want = (comp[ti] / sum) * (army + 1);
     const def = want - cur[i];
     if (def > bestDef) { bestDef = def; bestT = types[i]; }
   }
   // asegurar tanques: si la dificultad los valora y no hay ninguno vivo, ahorrar para uno
-  if (D.comp[2] >= 0.15 && tc === 0 && ai.gold >= STATS[ai.age].tank.cost * 0.4) bestT = "tank";
+  if (types.includes("tank") && D.comp[2] >= 0.15 && tc === 0 && ai.gold >= STATS[ai.age].tank.cost * 0.4) bestT = "tank";
 
   // reservar oro para el próximo aldeano (tras un pequeño ejército inicial)
   const reserve = (ai.villagers < wantVill) ? villagerCost(ai.villagers) * 0.9 : 0;
@@ -1512,7 +1680,7 @@ function showUnitDeletePopup(u, rect) {
   towerSellPopup.style.left = Math.round(bufX * (rect.width / CV.width) + (rect.left - gameRect.left)) + "px";
   towerSellPopup.style.top = Math.round(bufY * (rect.height / CV.height) + (rect.top - gameRect.top)) + "px";
   towerSellPopup.innerHTML = `
-    <div class="tsp-info">${UNIT_NAMES[u.type]} ${lvTxt} · ${u.side === "player" ? "tuya" : "enemiga"}</div>
+    <div class="tsp-info">${u.type} ${lvTxt} · ${u.side === "player" ? "tuya" : "enemiga"}</div>
     <div class="tsp-btns">
       <button id="ud-del" class="tsp-btn tsp-no">🗑 Eliminar</button>
       <button id="ud-cancel" class="tsp-btn tsp-yes">✕</button>
@@ -1687,21 +1855,27 @@ function buildShop() {
   cardsDiv.innerHTML = "";
   shopCards = [];
 
-  UNIT_TYPES.forEach((type, i) => {
+  const pRace = G.playerRace || "humans";
+  const age = G.player ? G.player.age : 0;
+  const d = currentDeck && currentDeck[pRace] ? (currentDeck[pRace][age] || []) : UnitDB.getAvailableIdsByRace(pRace, age);
+  d.forEach((uid, i) => {
+    const u = UNIT_CATALOG[uid];
+    if (!u) return;
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
       <div class="key">${i + 1}</div>
-      <div class="thumb"><img></div>
-      <div class="name">${UNIT_NAMES[type]}</div>
+      <div class="thumb"><img src="${getUnitThumb(uid)}"></div>
+      <div class="name">${u.name}</div>
       <div class="lvl"></div>
       <div class="cost"></div>
       <div class="stats"></div>`;
-    card.addEventListener("click", () => playerSpawn(type));
+    card.addEventListener("click", () => playerSpawn(uid));
     cardsDiv.appendChild(card);
     shopCards.push({
-      el: card, type,
+      el: card, uid, type: u.combatStyle,
       img: card.querySelector("img"),
+      name: card.querySelector(".name"),
       lvl: card.querySelector(".lvl"),
       cost: card.querySelector(".cost"),
       stats: card.querySelector(".stats"),
@@ -1740,15 +1914,19 @@ function buildShop() {
   // Columna de upgrades de unidades (izquierda)
   const unitCol = document.createElement("div");
   unitCol.className = "upg-col";
-  for (let idx = 0; idx < 3; idx++) {
-    const type = UNIT_TYPES[idx];
+  const upgRace = G.playerRace || "humans";
+  const upgAge = G.player ? G.player.age : 0;
+  const upgDeck = (currentDeck && currentDeck[upgRace]) ? (currentDeck[upgRace][upgAge] || []) : UnitDB.getAvailableIdsByRace(upgRace, upgAge);
+  const upgradeTypes = [...new Set(upgDeck.map(uid => (UNIT_CATALOG[uid] || {}).combatStyle).filter(Boolean))];
+  upgradeTypes.forEach((type, idx) => {
+    const u = UnitDB.getUnitForStyle(upgRace, upgAge, type);
     const row = document.createElement("div");
     row.className = "upg-row";
     const grp = document.createElement("div");
     grp.className = "upg-group";
     const lbl = document.createElement("span");
     lbl.className = "upg-group-name";
-    lbl.textContent = UNIT_NAMES[type];
+    lbl.textContent = u ? u.name : type;
     grp.appendChild(lbl);
     UNIT_UPGS[type].forEach((stat) => {
       const btn = document.createElement("button");
@@ -1766,7 +1944,7 @@ function buildShop() {
     grp.appendChild(sbtn);
     row.appendChild(grp);
     unitCol.appendChild(row);
-  }
+  });
   upgPanel.appendChild(unitCol);
 
   // Columna de upgrades de torres (derecha)
@@ -1811,7 +1989,7 @@ function buildShop() {
 }
 
 function effStats(side, age, type) {
-  const cs = computeStats(age, type, G[side].upg[type], G[side].specials[type]);
+  const cs = computeStats(age, type, G[side].upg[age][type], G[side].specials[type]);
   return {
     hp: Math.round(cs.hp),
     dmg: Math.round(cs.dmg),
@@ -1824,9 +2002,12 @@ function effStats(side, age, type) {
 function refreshShopAge() {
   const age = G.player.age;
   for (const c of shopCards) {
-    const fr = frames(AGES[age], c.type, "walk");
+    const u = UNIT_CATALOG[c.uid];
+    if (!u) continue;
+    const fr = frames(AGES[age], u.spriteId, "walk");
     const mid = fr[Math.floor(fr.length / 2)];
     if (mid) c.img.src = mid.src;
+    c.name.textContent = u.name;
   }
   for (const tc of towerCards) {
     const key = `assets/towers/${AGES[age]}/t${tc.ty}.png`;
@@ -1843,7 +2024,7 @@ function syncUI() {
   elXpFill.style.width = Math.min(100, (p.xp / need) * 100) + "%";
   elAge.textContent = AGE_NAMES[p.age];
 
-  if (p.age !== lastAge) { refreshShopAge(); lastAge = p.age; }
+  if (p.age !== lastAge) { buildShop(); lastAge = p.age; }
 
   updateHpBar("player");
   updateHpBar("enemy");
@@ -1859,7 +2040,7 @@ function syncUI() {
   for (const c of shopCards) {
     const s = STATS[p.age][c.type];
     const es = effStats("player", p.age, c.type);
-    const lv = unitLevel(p.upg[c.type], p.specials[c.type], c.type);
+    const lv = unitLevel(p.upg[p.age][c.type], p.specials[c.type], c.type);
     c.lvl.textContent = lv >= MAX_UNIT_LEVEL ? "Nv MAX" : "Nv " + lv;
     c.lvl.classList.toggle("maxed", lv >= MAX_UNIT_LEVEL);
     c.cost.textContent = s.cost + " 🪙";
@@ -1891,7 +2072,7 @@ function syncUI() {
     const special = btn.dataset.special;
     if (special) {
       const owned = p.specials[special];
-      const unlocked = unitLevel(p.upg[special], false, special) >= SPECIAL_LEVEL;
+      const unlocked = unitLevel(p.upg[p.age][special], false, special) >= SPECIAL_LEVEL;
       if (owned) {
         btn.innerHTML = "★ ACTIVO";
         btn.disabled = true;
@@ -1911,7 +2092,7 @@ function syncUI() {
       }
     } else if (type) {
       // Mejora de unidad
-      const l = p.upg[type][stat];
+      const l = p.upg[p.age][type][stat];
       if (l >= MAX_UPG) {
         btn.innerHTML = "★MÁX";
         btn.disabled = true;
@@ -1968,7 +2149,7 @@ function syncUI() {
     const ta = document.getElementById("tp-age"); if (ta) ta.textContent = AGE_NAMES[e.age];
     document.querySelectorAll("#test-panel [data-tlvl]").forEach((el) => {
       const t = el.dataset.tlvl;
-      const lv = unitLevel(e.upg[t], e.specials[t], t);
+      const lv = unitLevel(e.upg[e.age][t], e.specials[t], t);
       el.textContent = lv >= MAX_UNIT_LEVEL ? "NvMAX" : "Nv" + lv;
     });
   }
@@ -2007,6 +2188,9 @@ function showMenu() {
   document.getElementById("online-menu").classList.add("hidden");
   document.getElementById("test-panel").classList.add("hidden");
   diffWrap.classList.remove("hidden");
+  // Sincronizar selector de raza
+  const sel = document.getElementById("main-race-select");
+  if (sel) sel.value = loadActiveRace();
 }
 
 function startGame() {
@@ -2024,6 +2208,7 @@ function startGame() {
   document.getElementById("test-panel").classList.add("hidden");
   resetGame();
   G.mode = "ai";
+  buildShop();
   requestAnimationFrame(resizeCanvas); // el canvas ya es visible
   startMusic();
   if (!loopRunning) { loopRunning = true; requestAnimationFrame(loop); }
@@ -2045,6 +2230,7 @@ function startTestGame() {
   resetGame();
   G.mode = "test";
   G.player.gold += 5000; G.enemy.gold += 5000;
+  buildShop();
   requestAnimationFrame(resizeCanvas);
   startMusic();
   if (!loopRunning) { loopRunning = true; requestAnimationFrame(loop); }
@@ -2061,7 +2247,10 @@ function startOnlineGame() {
   diffWrap.classList.add("hidden");
   document.getElementById("test-panel").classList.add("hidden");
   gameSpeed = 1;
+  G.playerRace = document.getElementById("main-race-select").value;
+  currentDeck = loadDeck();
   resetGame();
+  buildShop();
   G.mode = "online";
   document.getElementById("restartBtn").disabled = false;
   requestAnimationFrame(resizeCanvas);
@@ -2196,7 +2385,29 @@ function refreshAudioUI() {
 }
 refreshAudioUI();
 
-configBtn.addEventListener("click", () => configPanel.classList.toggle("hidden"));
+configBtn.addEventListener("click", () => {
+  configPanel.classList.toggle("hidden");
+  const menuBtn = document.getElementById("cfg-menu-btn");
+  if (!configPanel.classList.contains("hidden")) {
+    if (G.mode === "online") {
+      menuBtn.textContent = "🏳 Rendirse";
+      menuBtn.classList.add("surrender");
+    } else {
+      menuBtn.textContent = "⬅ Volver al menú";
+      menuBtn.classList.remove("surrender");
+    }
+  }
+});
+document.getElementById("cfg-menu-btn").addEventListener("click", () => {
+  configPanel.classList.add("hidden");
+  if (G.mode === "online") {
+    G.over = true;
+    endGame(true);
+    document.getElementById("overMsg").textContent = "Te has rendido.";
+  } else {
+    showMenu();
+  }
+});
 muteBtn.addEventListener("click", () => {
   musicMuted = !musicMuted;
   bgm.muted = musicMuted;
@@ -2225,10 +2436,317 @@ document.getElementById("debugBtn").addEventListener("click", () => {
   G.player.xp += need * 2;
 });
 
+function getUnitThumb(uid) {
+  const u = UNIT_CATALOG[uid];
+  if (!u) return "❓";
+  const sid = u.spriteId;
+  const age = AGES[u.homeEra];
+  const key = `assets/units/${age}/${sid}/walk/0.png`;
+  const im = IMG[key];
+  if (im) return `<img src="${im.src}" alt="${u.name}" style="width:28px;height:28px;object-fit:contain;image-rendering:pixelated">`;
+  const key2 = `assets/units/${age}/${sid}/idle/0.png`;
+  const im2 = IMG[key2];
+  if (im2) return `<img src="${im2.src}" alt="${u.name}" style="width:28px;height:28px;object-fit:contain;image-rendering:pixelated">`;
+  return u.icon || "❓";
+}
+
+// ---- Deck Builder ----------------------------------------------------
+const DECK_MAX = 6;
+const DECK_MIN = 0;
+
+function defaultDeck() {
+  const d = {};
+  for (const race of RACES) {
+    d[race] = {};
+    for (let a = 0; a < AGES.length; a++) {
+      d[race][a] = [];
+    }
+  }
+  // Solo humanos tiene unidades por ahora (y zerling para monsters)
+  for (let a = 0; a < AGES.length; a++) {
+    d["humans"][a] = UnitDB.getAvailableIdsByRace("humans", a);
+    d["monsters"][a] = UnitDB.getAvailableIdsByRace("monsters", a);
+  }
+  return d;
+}
+
+function loadDeck() {
+  try {
+    const raw = localStorage.getItem("aow_deck");
+    if (raw) {
+      const d = JSON.parse(raw);
+      let ok = true;
+      for (const race of RACES) {
+        if (!d[race] || typeof d[race] !== "object") { ok = false; break; }
+        for (let a = 0; a < AGES.length; a++) {
+          if (!Array.isArray(d[race][a]) || d[race][a].length < DECK_MIN) { ok = false; break; }
+          for (const uid of d[race][a]) {
+            if (!UNIT_CATALOG[uid]) { ok = false; break; }
+          }
+          if (!ok) break;
+        }
+        if (!ok) break;
+      }
+      if (ok) return d;
+    }
+  } catch {}
+  return defaultDeck();
+}
+
+function saveDeck(deck) {
+  localStorage.setItem("aow_deck", JSON.stringify(deck));
+  localStorage.setItem("aow_active_race", currentRace);
+}
+
+// ---- Propiedad de razas (colección del jugador) ----------------------
+// Una raza se "posee" si tiene unidades en el catálogo o fue desbloqueada.
+function ownedRaces() {
+  let unlocked = [];
+  try { unlocked = JSON.parse(localStorage.getItem("aow_owned_races") || "[]"); } catch {}
+  return RACES.filter(r => UnitDB.getByRace(r).length > 0 || unlocked.includes(r));
+}
+function isRaceOwned(race) { return ownedRaces().includes(race); }
+
+// ¿El mazo de la raza está listo? (≥1 unidad en cada era donde la raza tiene unidades)
+function deckReady(race, deck) {
+  if (!isRaceOwned(race)) return false;
+  deck = deck || loadDeck();
+  const rd = deck[race];
+  if (!rd) return false;
+  for (let a = 0; a < AGES.length; a++) {
+    if (UnitDB.getByRaceAndEra(race, a).length > 0 && (!rd[a] || rd[a].length < 1)) return false;
+  }
+  return true;
+}
+
+// Gate previo a combate: exige un mazo preseleccionado válido.
+function ensurePlayable() {
+  const race = loadActiveRace();
+  if (!deckReady(race)) {
+    alert(`Tu mazo de ${RACE_NAMES[race]} no está completo.\nNecesitas al menos 1 unidad por cada era disponible. Abriendo el editor de mazo…`);
+    openDeckBuilder();
+    return false;
+  }
+  return true;
+}
+
+function loadActiveRace() {
+  let r;
+  try { r = localStorage.getItem("aow_active_race") || "humans"; }
+  catch { r = "humans"; }
+  const owned = ownedRaces();
+  return owned.includes(r) ? r : (owned[0] || "humans");
+}
+
+let currentDeckAge = 0;
+let currentRace = "humans";
+let currentDeck = null;
+
+function openDeckBuilder() {
+  currentDeck = loadDeck();
+  currentRace = loadActiveRace();
+  currentDeckAge = 0;
+  document.getElementById("main-menu").classList.add("hidden");
+  document.getElementById("deck-builder").classList.remove("hidden");
+  renderDeckBuilder();
+}
+
+function closeDeckBuilder() {
+  document.getElementById("deck-builder").classList.add("hidden");
+  document.getElementById("main-menu").classList.remove("hidden");
+}
+
+function renderDeckBuilder() {
+  renderRaceTabs();
+  renderDeckTabs();
+  renderDeckPool();
+  renderDeckSlots();
+}
+
+function renderRaceTabs() {
+  const cont = document.getElementById("deck-race-tabs");
+  cont.innerHTML = "";
+  for (const race of RACES) {
+    const owned = isRaceOwned(race);
+    const tab = document.createElement("button");
+    tab.className = "deck-tab deck-race-tab" + (race === currentRace ? " active" : "") + (owned ? "" : " locked");
+    tab.textContent = (owned ? "" : "🔒 ") + RACE_NAMES[race];
+    if (owned) {
+      tab.addEventListener("click", () => { currentRace = race; currentDeckAge = 0; renderDeckBuilder(); });
+    } else {
+      tab.disabled = true;
+      tab.title = "Raza bloqueada — aún no la tienes";
+    }
+    cont.appendChild(tab);
+  }
+}
+
+function renderDeckTabs() {
+  const cont = document.getElementById("deck-tabs");
+  cont.innerHTML = "";
+  for (let a = 0; a < AGES.length; a++) {
+    const tab = document.createElement("button");
+    tab.className = "deck-tab" + (a === currentDeckAge ? " active" : "");
+    tab.textContent = AGE_NAMES[a];
+    tab.addEventListener("click", () => { currentDeckAge = a; renderDeckBuilder(); });
+    cont.appendChild(tab);
+  }
+}
+
+function renderDeckPool() {
+  const list = document.getElementById("deck-pool-list");
+  const filter = document.getElementById("deck-filter").value.toLowerCase();
+  list.innerHTML = "";
+  const deckForAge = (currentDeck[currentRace] && currentDeck[currentRace][currentDeckAge]) || [];
+  const available = UnitDB.getAvailableIdsByRace(currentRace, currentDeckAge).filter((uid) => {
+    const u = UNIT_CATALOG[uid];
+    if (!filter) return true;
+    return u.name.toLowerCase().includes(filter)
+      || String(u.id).includes(filter)
+      || u.tags.some(t => t.includes(filter))
+      || u.counters.toLowerCase().includes(filter)
+      || u.desc.toLowerCase().includes(filter);
+  });
+  for (const uid of available) {
+    const u = UNIT_CATALOG[uid];
+    const inDeck = deckForAge.includes(uid);
+    const thumb = getUnitThumb(uid);
+    const card = document.createElement("div");
+    card.className = "dcard" + (inDeck ? " in-deck" : "");
+    card.setAttribute("draggable", inDeck ? "false" : "true");
+    card.dataset.uid = uid;
+    card.innerHTML = `
+      <div class="dci">${thumb}</div>
+      <div class="dbody">
+        <div class="dtop">
+          <span class="dcn">${u.name}</span>
+          <span class="dcc">🪙${u.cost}</span>
+        </div>
+        <div class="dtags">
+          ${u.tags.map(t => `<span class="dctag dctag-tag-${t}">${t}</span>`).join("")}
+          ${u.strongVs.length ? u.strongVs.map(s => `<span class="dctag dctag-strong">+${s}</span>`).join("") : ""}
+          ${u.weakVs.length ? u.weakVs.map(s => `<span class="dctag dctag-weak">-${s}</span>`).join("") : ""}
+        </div>
+        <div class="ddesc">${u.desc}</div>
+      </div>`;
+    if (!inDeck) {
+      card.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("text/plain", uid);
+        card.classList.add("dragging");
+      });
+      card.addEventListener("dragend", () => card.classList.remove("dragging"));
+      card.addEventListener("click", () => addToDeck(uid));
+    }
+    list.appendChild(card);
+  }
+}
+
+function renderDeckSlots() {
+  const list = document.getElementById("deck-slots-list");
+  list.innerHTML = "";
+  const deckForAge = (currentDeck[currentRace] && currentDeck[currentRace][currentDeckAge]) || [];
+  document.getElementById("deck-count").textContent = deckForAge.length + "/" + DECK_MAX;
+  for (let i = 0; i < DECK_MAX; i++) {
+    const slot = document.createElement("div");
+    slot.className = "deck-slot";
+    slot.dataset.idx = i;
+    if (i < deckForAge.length) {
+      const uid = deckForAge[i];
+      const u = UNIT_CATALOG[uid];
+      const thumb = getUnitThumb(uid);
+      slot.innerHTML = `
+        <div class="ds-num">${i + 1}</div>
+        <div class="dci">${thumb}</div>
+        <div class="dbody">
+          <div class="dtop">
+            <span class="dcn">${u.name}</span>
+            <span class="dcc">🪙${u.cost}</span>
+          </div>
+          <div class="dtags">
+            ${u.tags.map(t => `<span class="dctag dctag-tag-${t}">${t}</span>`).join("")}
+          </div>
+        </div>
+        <button class="ds-rm" data-uid="${uid}" title="Quitar">✕</button>`;
+      slot.querySelector(".ds-rm").addEventListener("click", (e) => {
+        e.stopPropagation();
+        removeFromDeck(uid);
+      });
+    } else {
+      slot.innerHTML = `
+        <div class="ds-num">${i + 1}</div>
+        <div class="ds-empty">Arrastra una unidad aquí</div>`;
+      slot.addEventListener("dragover", (e) => { e.preventDefault(); slot.classList.add("dragover"); });
+      slot.addEventListener("dragleave", () => slot.classList.remove("dragover"));
+      slot.addEventListener("drop", (e) => {
+        e.preventDefault();
+        slot.classList.remove("dragover");
+        const uid = e.dataTransfer.getData("text/plain");
+        addToDeck(uid);
+      });
+    }
+    list.appendChild(slot);
+  }
+}
+
+function addToDeck(uid) {
+  if (!uid || !UNIT_CATALOG[uid]) return;
+  const u = UNIT_CATALOG[uid];
+  if (u.race !== currentRace) return; // solo unidades de la raza actual
+  const deck = currentDeck[currentRace][currentDeckAge];
+  if (deck.length >= DECK_MAX) return;
+  if (deck.includes(uid)) return;
+  deck.push(uid);
+  document.getElementById("deck-error").classList.add("hidden");
+  renderDeckBuilder();
+}
+
+function removeFromDeck(uid) {
+  if (!uid) return;
+  const deck = currentDeck[currentRace][currentDeckAge];
+  const idx = deck.indexOf(uid);
+  if (idx === -1) return;
+  deck.splice(idx, 1);
+  document.getElementById("deck-error").classList.add("hidden");
+  renderDeckBuilder();
+}
+
+document.getElementById("deck-filter").addEventListener("input", () => renderDeckPool());
+
+document.getElementById("deck-back-btn").addEventListener("click", closeDeckBuilder);
+
+document.getElementById("deck-reset-btn").addEventListener("click", () => {
+  if (!confirm("¿Reiniciar mazo de " + RACE_NAMES[currentRace] + " a valores por defecto?")) return;
+  currentDeck[currentRace] = {};
+  for (let a = 0; a < AGES.length; a++) {
+    currentDeck[currentRace][a] = UnitDB.getAvailableIdsByRace(currentRace, a);
+  }
+  renderDeckBuilder();
+});
+
+document.getElementById("deck-save-btn").addEventListener("click", () => {
+  // validar: mínimo 1 unidad por edad (solo para razas con unidades)
+  for (let a = 0; a < AGES.length; a++) {
+    const raceHasUnits = UnitDB.getByRace(currentRace).length > 0;
+    if (raceHasUnits && (!currentDeck[currentRace][a] || currentDeck[currentRace][a].length < 1)) {
+      document.getElementById("deck-error").textContent = `❌ ${RACE_NAMES[currentRace]} necesita al menos 1 unidad en ${AGE_NAMES[a]}`;
+      document.getElementById("deck-error").classList.remove("hidden");
+      return;
+    }
+  }
+  saveDeck(currentDeck);
+  closeDeckBuilder();
+});
+
 window.addEventListener("keydown", (e) => {
-  if (e.key === "1") playerSpawn("melee");
-  else if (e.key === "2") playerSpawn("range");
-  else if (e.key === "3") playerSpawn("tank");
+  const playerAge = G.player ? G.player.age : 0;
+  const pRace = G.playerRace || "humans";
+  const deckForAge = (currentDeck && currentDeck[pRace]) ? (currentDeck[pRace][playerAge] || []) : [];
+  // Teclas 1-9 spawnean la unidad en esa posición del mazo
+  if (e.key >= "1" && e.key <= "9") {
+    const idx = parseInt(e.key) - 1;
+    const uid = deckForAge[idx];
+    if (uid) playerSpawn(uid);
+  }
   else if (e.key.toLowerCase() === "e") playerEvolve();
   else if (e.key === "q") playerUpgrade("melee", "dmg");
   else if (e.key === "a") playerUpgrade("melee", "hp");
@@ -2252,12 +2770,37 @@ window.addEventListener("keydown", (e) => {
 });
 
 // ---- Menú principal --------------------------------------------------
+function populateRaceSelect() {
+  const sel = document.getElementById("main-race-select");
+  sel.innerHTML = "";
+  for (const race of ownedRaces()) {
+    const opt = document.createElement("option");
+    opt.value = race;
+    opt.textContent = RACE_NAMES[race];
+    sel.appendChild(opt);
+  }
+  sel.value = loadActiveRace();
+  sel.addEventListener("change", () => {
+    localStorage.setItem("aow_active_race", sel.value);
+    G.playerRace = sel.value;
+    buildShop();
+  });
+}
+populateRaceSelect();
+
 document.getElementById("btn-vs-ia").addEventListener("click", () => {
+  if (!ensurePlayable()) return;
   G.mode = "ai";
+  G.playerRace = loadActiveRace();
+  currentDeck = loadDeck();
   startGame();
 });
 
+document.getElementById("btn-deck").addEventListener("click", openDeckBuilder);
+
 document.getElementById("btn-vs-test").addEventListener("click", () => {
+  G.playerRace = document.getElementById("main-race-select").value;
+  currentDeck = loadDeck();
   startTestGame();
 });
 
@@ -2277,6 +2820,7 @@ testPanel.addEventListener("click", (ev) => {
 });
 
 document.getElementById("btn-vs-online").addEventListener("click", () => {
+  if (!ensurePlayable()) return;
   document.getElementById("main-menu").classList.add("hidden");
   document.getElementById("online-menu").classList.remove("hidden");
   document.getElementById("online-buttons").classList.remove("hidden");
@@ -2396,5 +2940,7 @@ document.getElementById("btn-join-confirm").addEventListener("click", () => {
   if (document.getElementById("game").classList.contains("hidden")) {
     document.getElementById("main-menu").classList.remove("hidden");
   }
+  G.playerRace = loadActiveRace();
+  currentDeck = loadDeck();
   buildShop();
 })();
