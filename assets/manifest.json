@@ -4,34 +4,44 @@
   "range": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
   "tank":  { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
    "zerling": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "ultralisk": { "walk": 8, "attack": 8, "die": 8, "idle": 7 }
+   "ultralisk": { "walk": 8, "attack": 8, "die": 8, "idle": 7 },
+   "larva": { "walk": 8, "attack": 7, "die": 8, "idle": 7 },
+   "insect": { "walk": 8, "attack": 8, "die": 8, "idle": 6 }
   },
   "medival": {
    "melee": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
    "range": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
    "tank":  { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
    "zerling": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "ultralisk": { "walk": 8, "attack": 8, "die": 8, "idle": 7 }
+   "ultralisk": { "walk": 8, "attack": 8, "die": 8, "idle": 7 },
+   "larva": { "walk": 8, "attack": 7, "die": 8, "idle": 7 },
+   "insect": { "walk": 8, "attack": 8, "die": 8, "idle": 6 }
   },
   "knight": {
    "melee": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
    "range": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
    "tank":  { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
    "zerling": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "ultralisk": { "walk": 8, "attack": 8, "die": 8, "idle": 7 }
+   "ultralisk": { "walk": 8, "attack": 8, "die": 8, "idle": 7 },
+   "larva": { "walk": 8, "attack": 7, "die": 8, "idle": 7 },
+   "insect": { "walk": 8, "attack": 8, "die": 8, "idle": 6 }
   },
   "miltary": {
    "melee": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
    "range": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
    "tank":  { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
    "zerling": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "ultralisk": { "walk": 8, "attack": 8, "die": 8, "idle": 7 }
+   "ultralisk": { "walk": 8, "attack": 8, "die": 8, "idle": 7 },
+   "larva": { "walk": 8, "attack": 7, "die": 8, "idle": 7 },
+   "insect": { "walk": 8, "attack": 8, "die": 8, "idle": 6 }
   },
   "future": {
    "melee": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
    "range": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
    "tank":  { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
    "zerling": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "ultralisk": { "walk": 8, "attack": 8, "die": 8, "idle": 7 }
+   "ultralisk": { "walk": 8, "attack": 8, "die": 8, "idle": 7 },
+   "larva": { "walk": 8, "attack": 7, "die": 8, "idle": 7 },
+   "insect": { "walk": 8, "attack": 8, "die": 8, "idle": 6 }
  }
 }

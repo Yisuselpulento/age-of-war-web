@@ -23,6 +23,26 @@ cost, upgs[], availableEras[], specialAbility`.
   getAvailableIdsByRace, getUnitForStyle, etc.).
 - Una unidad solo puede asignarse al **mazo de su raza** y a las **eras de `availableEras`**.
 
+### Escalado INDIVIDUAL de unidades
+Cada unidad puede tener su propio bloque `stats` (valores base en era 0) + `growth`
+(multiplicador por edad). `unitBase(uid, age, type)` resuelve los stats:
+- Con `stats` propio → individual: `valor = round(base × growth^edad)` para cost/hp/dmg/g/xp;
+  `spd`, `range` y `cd` (cadencia de ataque) son constantes del bloque.
+- Sin `stats` → cae a `STATS[age][combatStyle]` (comportamiento de los humanos).
+`computeStats(age, type, upg, special, uid)` y `trySpawn(side, type, spriteId, uid)` reciben
+el `uid` para aplicar el escalado individual + las mejoras/nivel/especial por tipo encima.
+**Al pedir nuevas unidades: definir siempre `stats` (era0) + `growth` balanceados.**
+Las mejoras (dmg/hp/spd/armor), nivel y especial siguen siendo POR TIPO (melee/range/tank),
+compartidos entre unidades del mismo tipo en el mazo.
+
+Stats base era0 → era4 (con DMG_MULT 1.5 ya aplicado en dmg efectivo, Nv1 sin mejoras):
+| Unidad | combatStyle | cost e0→e4 | hp e0→e4 | dmg e0→e4 | spd | cd |
+|---|---|---|---|---|---|---|
+| Larva (18) | melee | 30→251 | 80→750 | 15→132 | 38 | 0.60 | barata/frágil, enjambre |
+| Zerling (16) | melee | 40→350 | 95→954 | 23→227 | 60 | 0.50 | rápida, poca vida |
+| Insecto (19) | melee | 120→1125 | 260→2853 | 39→374 | 42 | 0.62 | acorazado, bruiser |
+| Ultralisk (17) | melee | 150→1439 | 500→5249 | 51→512 | 30 | 0.75 | coloso lento, mucha vida |
+
 ### Razas — `RACES` / `RACE_NAMES`
 `["humans","aliens","monsters","deaths","demons","magics"]`. Por ahora solo **humans**
 (roster completo, 5 eras × melee/ranged/tank) y **monsters** (zerling, ultralisk) tienen

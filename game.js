@@ -14,9 +14,9 @@ const UNIT_NAMES = {
   7:"Espadachín",8:"Ballestero",9:"Blindado",
   10:"Soldado",11:"Francotirador",12:"Tanque",
   13:"Comando",14:"Centinela",15:"Mecha",
-  16:"Zerling",17:"Ultralisk",
+  16:"Zerling",17:"Ultralisk",18:"Larva",19:"Insecto",
 };
-const UNIT_IDS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17];
+const UNIT_IDS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19];
 
 const UNIT_CATALOG = {
   // ── Era 0 (Cave) ──────────────────────────────────────
@@ -104,17 +104,35 @@ const UNIT_CATALOG = {
     strongVs:["ranged"], weakVs:["melee"], inmun:[], cost:2400, upgs:["dmg","hp","spd","armor"],
     availableEras:[4], specialAbility:null },
 
-  // ── Monsters ──────────────────────────────────────────
+  // ── Monsters (escalado INDIVIDUAL: stats base era0 + growth^edad) ──────
    16: { id:16, name:"Zerling", icon:"👾", spriteId:"zerling", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
      desc:"Criatura rápida que ataca en enjambre. Devastadora en grupo.",
-     tags:["melee","ground"], counters:'Poca vida · Débil vs <b>Ranged</b> y <b>Aéreo</b>',
+     tags:["melee","ground"], counters:'Rápido · Poca vida · Débil vs <b>Ranged</b>',
      strongVs:[], weakVs:["ranged","aerial"], inmun:[], cost:40, upgs:["dmg","hp","spd"],
-     availableEras:[0,1,2,3,4], specialAbility:null },
+     availableEras:[0,1,2,3,4], specialAbility:null,
+     stats:  { cost:40, hp:95, dmg:15, spd:60, range:55, g:22, xp:18, cd:0.50 },
+     growth: { cost:1.72, hp:1.78, dmg:1.78, g:1.72, xp:1.72 } },
    17: { id:17, name:"Ultralisk", icon:"🦂", spriteId:"ultralisk", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
      desc:"Coloso blindado que arrasa líneas enemigas. Resistente y letal.",
-     tags:["melee","ground"], counters:'Alta vida · Débil vs <b>Ranged</b>',
-     strongVs:["aerial"], weakVs:["ranged"], inmun:[], cost:150, upgs:["dmg","hp","spd","armor"],
-     availableEras:[0,1,2,3,4], specialAbility:null },
+     tags:["melee","ground"], counters:'Mucha vida · Lento · Débil vs <b>Ranged</b>',
+     strongVs:["aerial"], weakVs:["ranged"], inmun:[], cost:150, upgs:["dmg","hp","spd"],
+     availableEras:[0,1,2,3,4], specialAbility:null,
+     stats:  { cost:150, hp:500, dmg:34, spd:30, range:70, g:90, xp:70, cd:0.75 },
+     growth: { cost:1.76, hp:1.80, dmg:1.78, g:1.74, xp:1.74 } },
+   18: { id:18, name:"Larva", icon:"🐛", spriteId:"larva", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
+     desc:"Cría barata y frágil. Inunda el frente con números puros.",
+     tags:["melee","ground"], counters:'Muy barata · Frágil · Débil vs <b>Ranged</b>',
+     strongVs:[], weakVs:["ranged","aerial"], inmun:[], cost:30, upgs:["dmg","hp","spd"],
+     availableEras:[0,1,2,3,4], specialAbility:null,
+     stats:  { cost:30, hp:80, dmg:10, spd:38, range:55, g:18, xp:15, cd:0.60 },
+     growth: { cost:1.70, hp:1.75, dmg:1.72, g:1.70, xp:1.70 } },
+   19: { id:19, name:"Insecto", icon:"🦗", spriteId:"insect", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
+     desc:"Bestia acorazada de empuje. Aguanta el daño y rompe líneas.",
+     tags:["melee","ground"], counters:'Resistente · Empuje · Débil vs <b>Ranged</b>',
+     strongVs:[], weakVs:["ranged"], inmun:[], cost:120, upgs:["dmg","hp","spd"],
+     availableEras:[0,1,2,3,4], specialAbility:null,
+     stats:  { cost:120, hp:260, dmg:26, spd:42, range:60, g:55, xp:45, cd:0.62 },
+     growth: { cost:1.75, hp:1.82, dmg:1.76, g:1.74, xp:1.74 } },
 };
 
 // Razas disponibles (cada unidad pertenece a una raza)
@@ -244,7 +262,7 @@ function sendCmd(cmd) {
 // puertas de oro/cooldown que el jugador local (anti-trampa + consistencia).
 function handleGuestCmd(c) {
   switch (c.type) {
-    case "spawn":       trySpawn("enemy", c.unitType); break;
+    case "spawn":       trySpawn("enemy", c.unitType, (UNIT_CATALOG[c.unitId]||{}).spriteId, c.unitId); break;
     case "upgrade":     tryUpgrade("enemy", c.unitType, c.stat); break;
     case "evolve":      tryEvolve("enemy"); break;
     case "special":     tryBuySpecial("enemy", c.unitType); break;
@@ -334,7 +352,7 @@ function playerSpawn(uid) {
   const u = UNIT_CATALOG[uid];
   if (!u) return false;
   if (isGuest()) return sendCmd({ type: "spawn", unitType: u.combatStyle, unitId: uid });
-  return trySpawn("player", u.combatStyle, u.spriteId);
+  return trySpawn("player", u.combatStyle, u.spriteId, uid);
 }
 function playerUpgrade(type, stat) {
   if (paused) return;
@@ -477,14 +495,28 @@ function unitLevel(upg, special, type) {
   return 1 + m + (special ? 1 : 0);
 }
 
+// Stats base de una unidad para una edad. Las unidades con `stats` propio usan
+// ESCALADO INDIVIDUAL (base era0 × growth^edad); el resto cae a STATS[age][type].
+function unitBase(uid, age, type) {
+  const u = uid != null ? UNIT_CATALOG[uid] : null;
+  if (u && u.stats) {
+    const b = u.stats, g = u.growth || {};
+    const sc = (k) => Math.round(b[k] * Math.pow(g[k] != null ? g[k] : 1, age));
+    return { cost: sc("cost"), hp: sc("hp"), dmg: sc("dmg"), spd: b.spd,
+             range: b.range, g: sc("g"), xp: sc("xp"), cd: b.cd };
+  }
+  return STATS[age][type];
+}
+
 // Stats efectivos de una unidad (centralizado: lo usan Unit, las cards y la IA).
-function computeStats(age, type, upg, special) {
-  const s = STATS[age][type];
+function computeStats(age, type, upg, special, uid) {
+  const s = unitBase(uid, age, type);
+  const baseCd = (s.cd != null) ? s.cd : getBaseCD(age, type);
   const lv = unitLevel(upg, special, type);
   const lb = 1 + LEVEL_BONUS * (lv - 1);   // bonus global por nivel
   let hp    = s.hp  * (1 + UPG_HP  * (upg.hp    || 0)) * lb;
   let dmg   = s.dmg * DMG_MULT * (1 + UPG_DMG * (DMG_UPG_RATE[type] || 1) * (upg.dmg || 0)) * lb;
-  let cd    = getBaseCD(age, type) * (1 - UPG_SPD * (upg.spd || 0)) / lb; // menos cd = más rápido
+  let cd    = baseCd * (1 - UPG_SPD * (upg.spd || 0)) / lb; // menos cd = más rápido
   let spd   = s.spd * SPEED_MULT * lb;
   let range = s.range * (1 + UPG_RANGE * (upg.range || 0)); // sin bonus de nivel: el alcance no se infla
   let resist = null, regen = 0;
@@ -604,7 +636,7 @@ const TOWER_ATTACK_FRAMES = [
 
 // ---- Carga de assets -------------------------------------------------
 const IMG = {}; // cache de imágenes por ruta
-const ASSET_V = "8"; // versión de assets (cache-busting); subir al regenerar sprites
+const ASSET_V = "9"; // versión de assets (cache-busting); subir al regenerar sprites
 let manifest = null;
 
 function loadImage(src, retries) {
@@ -750,14 +782,15 @@ CV.addEventListener("wheel", (e) => {
 
 // ---- Entidades -------------------------------------------------------
 class Unit {
-  constructor(side, age, type, spriteId) {
+  constructor(side, age, type, spriteId, uid) {
     this.side = side;
     this.age = age;
     this.type = type;
+    this.uid = uid != null ? uid : null;
     this.spriteId = spriteId || type;
-    const s = STATS[age][type];
+    const s = unitBase(uid, age, type);
     this.special = !!(G[side].specials && G[side].specials[type]);
-    const cs = computeStats(age, type, G[side].upg[age][type], this.special);
+    const cs = computeStats(age, type, G[side].upg[age][type], this.special, uid);
     this.lvl = cs.lvl;            // nivel "horneado" al nacer
     this.cost = s.cost;
     this.maxHp = cs.hp;
@@ -998,15 +1031,15 @@ function killUnit(t) {
 }
 
 // ---- Spawning --------------------------------------------------------
-function trySpawn(side, type, spriteId) {
+function trySpawn(side, type, spriteId, uid) {
   const st = G[side];
   // Para el enemigo (IA): ver disponibilidad global
   if (side === "enemy" && !UnitDB.isStyleAvailable(type, st.age)) return false;
-  const s = STATS[st.age][type];
+  const s = unitBase(uid, st.age, type);
   if (st.gold < s.cost || st.cd[type] > 0) return false;
   st.gold -= s.cost;
   st.cd[type] = SPAWN_CD;
-  G.units.push(new Unit(side, st.age, type, spriteId));
+  G.units.push(new Unit(side, st.age, type, spriteId, uid));
   return true;
 }
 
@@ -1988,8 +2021,8 @@ function buildShop() {
   refreshShopAge();
 }
 
-function effStats(side, age, type) {
-  const cs = computeStats(age, type, G[side].upg[age][type], G[side].specials[type]);
+function effStats(side, age, type, uid) {
+  const cs = computeStats(age, type, G[side].upg[age][type], G[side].specials[type], uid);
   return {
     hp: Math.round(cs.hp),
     dmg: Math.round(cs.dmg),
@@ -2038,8 +2071,8 @@ function syncUI() {
   dayFillEl.style.width = ((dayCycleTime / DAY_CYCLE_DURATION) * 100) + "%";
 
   for (const c of shopCards) {
-    const s = STATS[p.age][c.type];
-    const es = effStats("player", p.age, c.type);
+    const s = unitBase(c.uid, p.age, c.type);
+    const es = effStats("player", p.age, c.type, c.uid);
     const lv = unitLevel(p.upg[p.age][c.type], p.specials[c.type], c.type);
     c.lvl.textContent = lv >= MAX_UNIT_LEVEL ? "Nv MAX" : "Nv " + lv;
     c.lvl.classList.toggle("maxed", lv >= MAX_UNIT_LEVEL);
