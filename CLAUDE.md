@@ -29,11 +29,21 @@ Cada unidad puede tener su propio bloque `stats` (valores base en era 0) + `grow
 - Con `stats` propio → individual: `valor = round(base × growth^edad)` para cost/hp/dmg/g/xp;
   `spd`, `range` y `cd` (cadencia de ataque) son constantes del bloque.
 - Sin `stats` → cae a `STATS[age][combatStyle]` (comportamiento de los humanos).
-`computeStats(age, type, upg, special, uid)` y `trySpawn(side, type, spriteId, uid)` reciben
-el `uid` para aplicar el escalado individual + las mejoras/nivel/especial por tipo encima.
+`computeStats(uid, age, uupg)` y `trySpawn(side, type, spriteId, uid)` reciben el `uid`.
 **Al pedir nuevas unidades: definir siempre `stats` (era0) + `growth` balanceados.**
-Las mejoras (dmg/hp/spd/armor), nivel y especial siguen siendo POR TIPO (melee/range/tank),
-compartidos entre unidades del mismo tipo en el mazo.
+
+### Mejoras POR UNIDAD (sistema actual)
+- `G[side].upg = { [uid]: {dmg, hp/range, spd} }` — cada unidad sube sus mejoras de forma
+  independiente (global, no por edad). `getUpg(side, uid)` las crea lazy.
+- Stats de mejora por unidad: range → `[dmg, range, spd]`; el resto → `[dmg, hp, spd]`
+  (`unitUpgStats(uid)`). Máx `MAX_UPG`=5 por stat.
+- **Nivel** `unitLevel(uupg, uid)` = 1 + el mínimo de las 3 mejoras. Subir las 3 a L1 → Nv2,
+  etc. Máx `MAX_UNIT_LEVEL`=6. El bonus de nivel (`LEVEL_BONUS` +5%/nivel) afecta **solo
+  vida y daño** (no spd ni rango).
+- `upgradeCost(uid, stat, lvl)` = costo base era0 de la unidad × `UPG_COST_MULT[stat]` × (lvl+1).
+- `tryUpgrade(side, uid, stat)` / `playerUpgrade(uid, stat)`. Panel: una fila por unidad del mazo.
+- ELIMINADO del sistema viejo: upgrades por tipo `[age][type]`, especiales (SPECIAL/Nv6-Nv7),
+  armadura del tank, resistencias. El cd de spawn sigue siendo por tipo (`cd[type]`).
 
 Stats base era0 → era4 (con DMG_MULT 1.5 ya aplicado en dmg efectivo, Nv1 sin mejoras):
 | Unidad | combatStyle | cost e0→e4 | hp e0→e4 | dmg e0→e4 | spd | cd |
@@ -75,11 +85,8 @@ unidades. El resto están vacías = bloqueadas.
 ## Motor de combate (SIN cambios por ahora)
 - Coordenadas WORLD (1280×540, GROUND_Y=405, PLAYER_BASE_X=90, ENEMY_BASE_X=1190) + cámara.
 - Loop de timestep fijo `FIXED_DT=1/60` con acumulador.
-- Stats centralizados en `computeStats(age, type, upg, special)` (usado por Unit, cards e IA).
-- Upgrades por tipo: melee[dmg,hp,spd] · range[dmg,range,spd] · tank[dmg,hp,spd,armor].
-- Niveles de unidad `unitLevel()` = 1 + min(stats de nivel) + (special?1:0); máx Nv7.
-  Bonus por nivel +5%/nivel (LEVEL_BONUS), excepto el stat `range`. Range tiene HP extra
-  por nivel (escalado propio). Specials se desbloquean en Nv6.
+- Stats centralizados en `computeStats(uid, age, uupg)` (usado por Unit, cards e IA).
+- Mejoras y nivel: ver sección "Mejoras POR UNIDAD" arriba.
 - **Online host-authoritative**: el host simula y difunde estado completo ~30 Hz; el guest
   solo renderiza (espejado) y envía comandos. Evita desync.
 

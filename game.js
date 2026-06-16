@@ -271,9 +271,8 @@ function sendCmd(cmd) {
 function handleGuestCmd(c) {
   switch (c.type) {
     case "spawn":       trySpawn("enemy", c.unitType, (UNIT_CATALOG[c.unitId]||{}).spriteId, c.unitId); break;
-    case "upgrade":     tryUpgrade("enemy", c.unitType, c.stat); break;
+    case "upgrade":     tryUpgrade("enemy", c.uid, c.stat); break;
     case "evolve":      tryEvolve("enemy"); break;
-    case "special":     tryBuySpecial("enemy", c.unitType); break;
     case "villager":    tryVillager("enemy"); break;
     case "villagerupg": tryVillagerUpgrade("enemy"); break;
     case "buy_slot":    tryBuySlot("enemy"); break;
@@ -292,7 +291,6 @@ function sideSnap(s) {
     g: Math.round(s.gold), x: Math.round(s.xp), a: s.age, h: Math.round(s.baseHp),
     c: [+s.cd.melee.toFixed(2), +s.cd.range.toFixed(2), +s.cd.tank.toFixed(2)],
     u: s.upg, t: s.towerUpg, v: s.villagers, vl: s.villagerLvl, sl: s.slots,
-    sp: [s.specials.melee ? 1 : 0, s.specials.range ? 1 : 0, s.specials.tank ? 1 : 0],
     tw: s.towers.map((t) => t ? [t.type, +(t.angle || 0).toFixed(2), +(t.fireAnim || 0).toFixed(2), t.animFrame | 0] : 0),
   };
 }
@@ -319,9 +317,8 @@ function serializeState() {
 function applySideSnap(dst, s) {
   dst.gold = s.g; dst.xp = s.x; dst.age = s.a; dst.baseHp = s.h;
   dst.cd.melee = s.c[0]; dst.cd.range = s.c[1]; dst.cd.tank = s.c[2];
-  dst.upg = s.u; dst.towerUpg = s.t;
+  dst.upg = s.u || {}; dst.towerUpg = s.t;
   dst.villagers = s.v; dst.villagerLvl = s.vl; dst.slots = s.sl;
-  if (s.sp) dst.specials = { melee: !!s.sp[0], range: !!s.sp[1], tank: !!s.sp[2] };
   dst.towers = s.tw.map((t) => t ? { type: t[0], angle: t[1], fireAnim: t[2], animFrame: t[3], cd: 0, animTimer: 0 } : null);
 }
 // El guest se ve a sí mismo a la IZQUIERDA: host.player = mi rival, host.enemy = yo.
@@ -362,10 +359,10 @@ function playerSpawn(uid) {
   if (isGuest()) return sendCmd({ type: "spawn", unitType: u.combatStyle, unitId: uid });
   return trySpawn("player", u.combatStyle, u.spriteId, uid);
 }
-function playerUpgrade(type, stat) {
+function playerUpgrade(uid, stat) {
   if (paused) return;
-  if (isGuest()) return sendCmd({ type: "upgrade", unitType: type, stat });
-  return tryUpgrade("player", type, stat);
+  if (isGuest()) return sendCmd({ type: "upgrade", uid, stat });
+  return tryUpgrade("player", uid, stat);
 }
 function playerEvolve() {
   if (paused) return;
@@ -386,11 +383,6 @@ function playerBuySlot() {
   if (paused) return;
   if (isGuest()) return sendCmd({ type: "buy_slot" });
   return tryBuySlot("player");
-}
-function playerBuySpecial(type) {
-  if (paused) return;
-  if (isGuest()) return sendCmd({ type: "special", unitType: type });
-  return tryBuySpecial("player", type);
 }
 function playerBuyTower(slot, towerType) {
   if (paused) return;
@@ -443,64 +435,47 @@ function drawDayFilter() {
   ctx.fillRect(0, 0, W, H);
 }
 
-// ---- Sistema de mejoras (separado por stat) --------------------------
+// ---- Sistema de mejoras (POR UNIDAD) ---------------------------------
 const MAX_UPG = 5;
-const UPG_DMG = 0.16;        // +16% daño por nivel
-const UPG_HP = 0.16;         // +16% vida por nivel
-const UPG_SPD = 0.12;        // -12% cooldown de ataque por nivel
-const SPECIAL_LEVEL = 6;     // nivel (3 mejoras al máx) que desbloquea el especial
-
-// Especial por tipo de unidad (se compra al llegar a Nv6 -> sube a Nv7).
-//  melee: +velocidad de movimiento y aguanta mejor a los tanques.
-//  range: +rango y aguanta mejor a los melee.
-//  tank:  +vida y +daño.
-const SPECIAL = {
-  melee: { spd: 1.18, resist: "tank" },
-  range: { range: 1.12, resist: "melee" },
-  tank:  { hp: 1.30, dmg: 1.30, regen: 0.03 }, // +regen: 3% de su vida máx por seg
-};
-const RESIST_FACTOR = 0.75;  // recibe 25% menos daño del tipo contra el que resiste
+const UPG_DMG = 0.16;        // +16% daño por nivel de mejora
+const UPG_HP = 0.16;         // +16% vida por nivel de mejora
+const UPG_SPD = 0.12;        // -12% cooldown de ataque por nivel de mejora
+const UPG_RANGE = 0.05;      // +5% rango por nivel (mejora del range)
+const DMG_UPG_RATE = { melee: 1, range: 0.5, tank: 1 }; // el range gana menos daño por mejora
+const LEVEL_BONUS = 0.05;    // al subir de NIVEL: +5% a VIDA y DAÑO (solo)
 const TANK_RANGED_AGE = 3;   // desde la edad militar, los tanques atacan a distancia
-const MAX_UNIT_LEVEL = 1 + MAX_UPG + 1; // Nv7 = 3/4 mejoras al máx + especial
-function specialCost(type) { return Math.round(STATS[0][type].cost * 12); } // melee600 range1020 tank2400
-// Descripción del especial con números concretos (para el tooltip del botón).
-function specialDesc(type) {
-  const sp = SPECIAL[type], p = [];
-  if (sp.spd)   p.push(`+${Math.round((sp.spd - 1) * 100)}% velocidad`);
-  if (sp.range) p.push(`+${Math.round((sp.range - 1) * 100)}% rango`);
-  if (sp.hp)    p.push(`+${Math.round((sp.hp - 1) * 100)}% vida`);
-  if (sp.dmg)   p.push(`+${Math.round((sp.dmg - 1) * 100)}% daño`);
-  if (sp.regen) p.push(`+${Math.round(sp.regen * 100)}% vida/seg (regeneración)`);
-  if (sp.resist) p.push(`+${Math.round((1 - RESIST_FACTOR) * 100)}% armadura vs ${sp.resist}`);
-  return "★ " + p.join(", ");
+const MAX_UNIT_LEVEL = 1 + MAX_UPG; // Nv6 = las 3 mejoras al máximo
+
+// Mejoras de cada unidad: range = [dmg, range, spd]; el resto = [dmg, hp, spd].
+function unitUpgStats(uid) {
+  const u = UNIT_CATALOG[uid];
+  return (u && u.combatStyle === "range") ? ["dmg", "range", "spd"] : ["dmg", "hp", "spd"];
+}
+const UPG_LABEL = { dmg: "+ATK", hp: "+HP", spd: "+VEL", range: "+RNG" };
+const UPG_COST_MULT = { dmg: 1.4, hp: 1.2, spd: 1.8, range: 1.5 };
+
+// Costo de una mejora: depende del costo base (era0) de la unidad y del nivel de la mejora.
+function upgradeCost(uid, stat, lvl) {
+  const base = unitBase(uid, 0, (UNIT_CATALOG[uid] || {}).combatStyle).cost;
+  return Math.round(base * UPG_COST_MULT[stat] * (lvl + 1));
 }
 
-const UPG_RANGE = 0.05;      // +5% rango por nivel (mejora exclusiva del range)
-// Escalado de daño por mejora, por tipo (el range gana menos daño por nivel)
-const DMG_UPG_RATE = { melee: 1, range: 0.5, tank: 1 };
-const UPG_ARMOR = 0.06;      // -6% daño recibido por nivel (mejora exclusiva del tank)
-const LEVEL_BONUS = 0.05;    // +5% a TODOS los stats por cada nivel de unidad
-
-// Mejoras disponibles por tipo. Las 3 primeras definen el nivel (al subirlas todas
-// la unidad sube de Nv y gana el bonus global). El tank tiene una 4ª (armadura)
-// incluida en el nivel, osea que necesita las 4 para subir de Nv.
-const UNIT_LEVEL_STATS = { melee: ["dmg", "hp", "spd"], range: ["dmg", "range", "spd"], tank: ["dmg", "hp", "spd", "armor"] };
-const UNIT_UPGS        = { melee: ["dmg", "hp", "spd"], range: ["dmg", "range", "spd"], tank: ["dmg", "hp", "spd", "armor"] };
-const UPG_LABEL = { dmg: "+ATK", hp: "+HP", spd: "+VEL", range: "+RNG", armor: "+ARM" };
-
-const UPG_COST_MULT = { dmg: 1.4, hp: 1.2, spd: 1.8, range: 1.5, armor: 1.6 };
-function upgradeCost(age, type, stat, lvl) {
-  // El precio depende SOLO del nivel de la mejora, no de la edad: la primera
-  // mejora de cada tipo cuesta siempre lo mismo (base = costo de la unidad en edad 0).
-  return Math.round(STATS[0][type].cost * UPG_COST_MULT[stat] * (lvl + 1));
+// Registro de mejoras de una unidad para un bando (lazy init).
+function getUpg(side, uid) {
+  const st = G[side];
+  if (!st.upg[uid]) {
+    const rec = {};
+    for (const s of unitUpgStats(uid)) rec[s] = 0;
+    st.upg[uid] = rec;
+  }
+  return st.upg[uid];
 }
-// Nivel: sube cuando las mejoras que cuentan (UNIT_LEVEL_STATS) alcanzan el mismo
-// escalón. Nv1 base; todas al máx -> Nv6; comprar especial -> Nv7.
-function unitLevel(upg, special, type) {
-  const stats = UNIT_LEVEL_STATS[type] || ["dmg", "hp", "spd"];
+
+// Nivel de la unidad: 1 + el mínimo de sus mejoras. Subir las 3 a Nv1 -> Nv2, etc.
+function unitLevel(uupg, uid) {
   let m = Infinity;
-  for (const s of stats) m = Math.min(m, upg[s] || 0);
-  return 1 + m + (special ? 1 : 0);
+  for (const s of unitUpgStats(uid)) m = Math.min(m, (uupg && uupg[s]) || 0);
+  return 1 + (m === Infinity ? 0 : m);
 }
 
 // Stats base de una unidad para una edad. Las unidades con `stats` propio usan
@@ -517,29 +492,19 @@ function unitBase(uid, age, type) {
 }
 
 // Stats efectivos de una unidad (centralizado: lo usan Unit, las cards y la IA).
-function computeStats(age, type, upg, special, uid) {
+// `uupg` = registro de mejoras de ESA unidad. El bonus de nivel solo afecta vida y daño.
+function computeStats(uid, age, uupg) {
+  const type = (UNIT_CATALOG[uid] || {}).combatStyle || "melee";
   const s = unitBase(uid, age, type);
   const baseCd = (s.cd != null) ? s.cd : getBaseCD(age, type);
-  const lv = unitLevel(upg, special, type);
-  const lb = 1 + LEVEL_BONUS * (lv - 1);   // bonus global por nivel
-  let hp    = s.hp  * (1 + UPG_HP  * (upg.hp    || 0)) * lb;
-  let dmg   = s.dmg * DMG_MULT * (1 + UPG_DMG * (DMG_UPG_RATE[type] || 1) * (upg.dmg || 0)) * lb;
-  let cd    = baseCd * (1 - UPG_SPD * (upg.spd || 0)) / lb; // menos cd = más rápido
-  let spd   = s.spd * SPEED_MULT * lb;
-  let range = s.range * (1 + UPG_RANGE * (upg.range || 0)); // sin bonus de nivel: el alcance no se infla
-  let resist = null, regen = 0;
-  if (special) {
-    const sp = SPECIAL[type];
-    if (sp.hp) hp *= sp.hp;
-    if (sp.dmg) dmg *= sp.dmg;
-    if (sp.spd) spd *= sp.spd;
-    if (sp.range) range *= sp.range;
-    resist = sp.resist || null;
-    if (sp.regen) regen = hp * sp.regen; // vida/seg basada en su vida máx final
-  }
-  // armadura del tank: reducción de daño recibido de TODO (0..0.30)
-  const armor = type === "tank" ? Math.min(0.6, UPG_ARMOR * (upg.armor || 0)) : 0;
-  return { hp, dmg, cd, spd, range, resist, armor, regen, lvl: lv };
+  const lv = unitLevel(uupg, uid);
+  const lb = 1 + LEVEL_BONUS * (lv - 1);   // bonus de nivel: SOLO vida y daño
+  const hp    = s.hp  * (1 + UPG_HP  * (uupg.hp  || 0)) * lb;
+  const dmg   = s.dmg * DMG_MULT * (1 + UPG_DMG * (DMG_UPG_RATE[type] || 1) * (uupg.dmg || 0)) * lb;
+  const cd    = baseCd * (1 - UPG_SPD * (uupg.spd || 0)); // menos cd = más rápido
+  const spd   = s.spd * SPEED_MULT;
+  const range = s.range * (1 + UPG_RANGE * (uupg.range || 0));
+  return { hp, dmg, cd, spd, range, resist: null, armor: 0, regen: 0, lvl: lv };
 }
 
 // ---- Ataque base desde sprites ----------------------------------------
@@ -798,8 +763,7 @@ class Unit {
     this.uid = uid != null ? uid : null;
     this.spriteId = spriteId || type;
     const s = unitBase(uid, age, type);
-    this.special = !!(G[side].specials && G[side].specials[type]);
-    const cs = computeStats(age, type, G[side].upg[age][type], this.special, uid);
+    const cs = computeStats(uid, age, getUpg(side, uid));
     this.lvl = cs.lvl;            // nivel "horneado" al nacer
     this.cost = s.cost;
     this.maxHp = cs.hp;
@@ -808,9 +772,9 @@ class Unit {
     this.cd = cs.cd;
     this.spd = cs.spd;
     this.range = cs.range;
-    this.resist = cs.resist;      // resistencia del especial
-    this.armor = cs.armor;        // reducción de daño (tank)
-    this.regen = cs.regen;        // vida/seg (especial del tank)
+    this.resist = null;
+    this.armor = 0;
+    this.regen = 0;
     this.rangedAttack = type === "range" || (type === "tank" && age >= TANK_RANGED_AGE);
     this.hp = this.maxHp;
     this.reward = { g: s.g, xp: s.xp };
@@ -972,21 +936,11 @@ class FloatText {
 
 // ---- Estado del juego ------------------------------------------------
 function freshSide(gold) {
-  const upg = [];
-  for (let a = 0; a < AGES.length; a++) {
-    const ageUpg = {};
-    for (const t of UNIT_TYPES) {
-      ageUpg[t] = {};
-      for (const s of UNIT_UPGS[t]) ageUpg[t][s] = 0;
-    }
-    upg.push(ageUpg);
-  }
   return {
     gold, xp: 0, age: 0, baseHp: BASE_HP,
     cd: { melee: 0, range: 0, tank: 0 },
-    upg,
+    upg: {},   // mejoras POR UNIDAD: { [uid]: {dmg,hp/range,spd} } (lazy via getUpg)
     towerUpg: { dmg: [0, 0, 0], spd: [0, 0, 0] },
-    specials: { melee: false, range: false, tank: false },
     villagers: 0,
     villagerLvl: 0,
     slots: 1,
@@ -1009,10 +963,6 @@ const G = {
 
 function hitTarget(t, dmg, side, atkType) {
   if (t.dead || t.dying) return;
-  // resistencia del especial: recibe menos daño del tipo contra el que aguanta
-  if (atkType && t.resist === atkType) dmg *= RESIST_FACTOR;
-  // armadura (tank): reduce el daño recibido de todo
-  if (t.armor) dmg *= (1 - t.armor);
   t.hp -= dmg;
   G.floats.push(new FloatText(t.x, t.y - 95, "-" + Math.round(dmg), "#ffce54"));
   if (t.hp <= 0) killUnit(t);
@@ -1042,8 +992,12 @@ function killUnit(t) {
 // ---- Spawning --------------------------------------------------------
 function trySpawn(side, type, spriteId, uid) {
   const st = G[side];
-  // Para el enemigo (IA): ver disponibilidad global
-  if (side === "enemy" && !UnitDB.isStyleAvailable(type, st.age)) return false;
+  // Si no se dio uid (IA/enemigo), resolver la unidad por raza+era+tipo.
+  if (uid == null) {
+    const u = UnitDB.getUnitForStyle(sideRace(side), st.age, type);
+    if (!u) return false;
+    uid = u.id; spriteId = spriteId || u.spriteId;
+  }
   const s = unitBase(uid, st.age, type);
   if (st.gold < s.cost || st.cd[type] > 0) return false;
   st.gold -= s.cost;
@@ -1052,15 +1006,17 @@ function trySpawn(side, type, spriteId, uid) {
   return true;
 }
 
-function tryUpgrade(side, type, stat) {
+// Mejora POR UNIDAD: sube un stat (dmg/hp/spd o dmg/range/spd) de esa unidad.
+function tryUpgrade(side, uid, stat) {
   const st = G[side];
-  const lvl = st.upg[st.age][type][stat];
-  if (lvl === undefined) return false;   // stat no válido para este tipo
+  if (!unitUpgStats(uid).includes(stat)) return false;  // stat no válido para esta unidad
+  const rec = getUpg(side, uid);
+  const lvl = rec[stat] || 0;
   if (lvl >= MAX_UPG) return false;
-  const cost = upgradeCost(st.age, type, stat, lvl);
+  const cost = upgradeCost(uid, stat, lvl);
   if (st.gold < cost) return false;
   st.gold -= cost;
-  st.upg[st.age][type][stat]++;
+  rec[stat] = lvl + 1;
   return true;
 }
 
@@ -1125,17 +1081,6 @@ function trySellTower(side, slot) {
   const s = st.towerUpg.spd[t.type - 1];
   st.gold += towerSellValue(t.type, st.age, d, s);
   st.towers[slot] = null;
-  return true;
-}
-
-function tryBuySpecial(side, type) {
-  const st = G[side];
-  if (st.specials[type]) return false;                       // ya comprado
-  if (unitLevel(st.upg[st.age][type], false, type) < SPECIAL_LEVEL) return false; // requiere Nv6
-  const cost = specialCost(type);
-  if (st.gold < cost) return false;
-  st.gold -= cost;
-  st.specials[type] = true;
   return true;
 }
 
@@ -1227,7 +1172,6 @@ function stepSide(list, enemyList, side, enemyBaseX, enemyBaseSide, dt) {
   for (let i = 0; i < list.length; i++) {
     const u = list[i];
     if (u.fade < 1) u.fade = Math.min(1, u.fade + dt / 0.4);
-    if (u.regen && u.hp < u.maxHp) u.hp = Math.min(u.maxHp, u.hp + u.regen * dt); // regen del especial
     const prevX = u.x;
     let attacking = false;
 
@@ -1343,7 +1287,7 @@ function advanceAnim(u, dt, anim, loop) {
   if (!fr.length) return;
   let fps = anim === "attack" ? 14 : 12;
   if (anim === "attack" && !u.dying) {
-    const spdLvl = G[u.side].upg[u.age][u.type].spd;
+    const spdLvl = (u.uid != null ? getUpg(u.side, u.uid).spd : 0) || 0;
     fps = 14 * (1 + UPG_SPD * spdLvl);
   }
   u.frameTimer += dt;
@@ -1430,30 +1374,21 @@ function runAI(dt) {
     }
   }
 
-  // ---- MEJORAS de unidades: sube hasta el MÁX según dificultad ----
-  // Sube la stat de menor nivel (para subir de Nv parejo); al maxear las que
-  // cuentan, compra el especial y luego la armadura del tank (mejoras extra).
+  // ---- MEJORAS de unidades (POR UNIDAD): sube la stat de menor nivel hasta el MÁX ----
   if (ai.aiUpgTimer <= 0) {
     ai.aiUpgTimer = D.upgEvery * (0.7 + Math.random() * 0.6);
     const aiUnitOrder = UNIT_TYPES.filter(t => UnitDB.isStyleAvailable(t, ai.age)).sort(
       (a, b) => D.comp[TYPE_I[b]] - D.comp[TYPE_I[a]]);
     for (const t of aiUnitOrder) {
       if (D.comp[TYPE_I[t]] < 0.12) continue; // no invierte en tipos que casi no usa
-      const gating = UNIT_LEVEL_STATS[t];
-      // stat que cuenta para el nivel con menor progreso
+      const unit = UnitDB.getUnitForStyle(sideRace("enemy"), ai.age, t);
+      if (!unit) continue;
+      const rec = getUpg("enemy", unit.id);
       let lowStat = null, lowLvl = Infinity;
-      for (const s of gating) { const lv = ai.upg[ai.age][t][s]; if (lv < lowLvl) { lowLvl = lv; lowStat = s; } }
+      for (const s of unitUpgStats(unit.id)) { const lv = rec[s] || 0; if (lv < lowLvl) { lowLvl = lv; lowStat = s; } }
       if (lowLvl < MAX_UPG) {
-        const cost = upgradeCost(ai.age, t, lowStat, lowLvl);
-        if (ai.gold > cost * D.upgAfford) { tryUpgrade("enemy", t, lowStat); break; }
-      } else {
-        // ya está a Nv6: comprar especial (si la dificultad lo permite)
-        if (D.buySpecial && !ai.specials[t] && ai.gold > specialCost(t) * 1.15) { tryBuySpecial("enemy", t); break; }
-        // tank: subir armadura extra
-        if (t === "tank" && ai.upg[ai.age].tank.armor < MAX_UPG) {
-          const c = upgradeCost(ai.age, "tank", "armor", ai.upg[ai.age].tank.armor);
-          if (ai.gold > c * D.upgAfford) { tryUpgrade("enemy", "tank", "armor"); break; }
-        }
+        const cost = upgradeCost(unit.id, lowStat, lowLvl);
+        if (ai.gold > cost * D.upgAfford) { tryUpgrade("enemy", unit.id, lowStat); break; }
       }
     }
   }
@@ -1959,31 +1894,26 @@ function buildShop() {
   const upgRace = G.playerRace || "humans";
   const upgAge = G.player ? G.player.age : 0;
   const upgDeck = (currentDeck && currentDeck[upgRace]) ? (currentDeck[upgRace][upgAge] || []) : UnitDB.getAvailableIdsByRace(upgRace, upgAge);
-  const upgradeTypes = [...new Set(upgDeck.map(uid => (UNIT_CATALOG[uid] || {}).combatStyle).filter(Boolean))];
-  upgradeTypes.forEach((type, idx) => {
-    const u = UnitDB.getUnitForStyle(upgRace, upgAge, type);
+  // Una fila de mejoras POR UNIDAD del mazo en la era actual.
+  upgDeck.forEach((uid) => {
+    const u = UNIT_CATALOG[uid];
+    if (!u) return;
     const row = document.createElement("div");
     row.className = "upg-row";
     const grp = document.createElement("div");
     grp.className = "upg-group";
     const lbl = document.createElement("span");
     lbl.className = "upg-group-name";
-    lbl.textContent = u ? u.name : type;
+    lbl.textContent = u.name;
     grp.appendChild(lbl);
-    UNIT_UPGS[type].forEach((stat) => {
+    unitUpgStats(uid).forEach((stat) => {
       const btn = document.createElement("button");
       btn.className = "upg-pbtn";
-      btn.dataset.type = type;
+      btn.dataset.uid = uid;
       btn.dataset.stat = stat;
-      btn.addEventListener("click", () => playerUpgrade(type, stat));
+      btn.addEventListener("click", () => playerUpgrade(uid, stat));
       grp.appendChild(btn);
     });
-    // botón de especial (se desbloquea al Nv6)
-    const sbtn = document.createElement("button");
-    sbtn.className = "upg-pbtn upg-special";
-    sbtn.dataset.special = type;
-    sbtn.addEventListener("click", () => playerBuySpecial(type));
-    grp.appendChild(sbtn);
     row.appendChild(grp);
     unitCol.appendChild(row);
   });
@@ -2030,14 +1960,14 @@ function buildShop() {
   refreshShopAge();
 }
 
-function effStats(side, age, type, uid) {
-  const cs = computeStats(age, type, G[side].upg[age][type], G[side].specials[type], uid);
+function effStats(side, uid) {
+  const cs = computeStats(uid, G[side].age, getUpg(side, uid));
   return {
     hp: Math.round(cs.hp),
     dmg: Math.round(cs.dmg),
     spd: Math.round(cs.cd * 100) / 100,
     range: Math.round(cs.range),
-    armor: Math.round(cs.armor * 100),
+    armor: 0,
   };
 }
 
@@ -2081,16 +2011,14 @@ function syncUI() {
 
   for (const c of shopCards) {
     const s = unitBase(c.uid, p.age, c.type);
-    const es = effStats("player", p.age, c.type, c.uid);
-    const lv = unitLevel(p.upg[p.age][c.type], p.specials[c.type], c.type);
+    const es = effStats("player", c.uid);
+    const lv = unitLevel(getUpg("player", c.uid), c.uid);
     c.lvl.textContent = lv >= MAX_UNIT_LEVEL ? "Nv MAX" : "Nv " + lv;
     c.lvl.classList.toggle("maxed", lv >= MAX_UNIT_LEVEL);
     c.cost.textContent = s.cost + " 🪙";
     c.stats.textContent = c.type === "range"
       ? `❤${es.hp} ⚔${es.dmg} 🎯${es.range}`
-      : (c.type === "tank" && es.armor > 0
-          ? `❤${es.hp} ⚔${es.dmg} 🛡${es.armor}%`
-          : `❤${es.hp} ⚔${es.dmg} ⏱${es.spd}s`);
+      : `❤${es.hp} ⚔${es.dmg} ⏱${es.spd}s`;
     c.el.classList.toggle("disabled", !(p.gold >= s.cost && p.cd[c.type] <= 0));
   }
   // Cards de torres
@@ -2108,44 +2036,23 @@ function syncUI() {
   // panel de mejoras
   const upgBtns = document.querySelectorAll(".upg-pbtn");
   upgBtns.forEach((btn) => {
-    const type = btn.dataset.type;
+    const uid = btn.dataset.uid != null ? +btn.dataset.uid : null;
     const towerType = btn.dataset.towerType;
     const stat = btn.dataset.stat;
-    const special = btn.dataset.special;
-    if (special) {
-      const owned = p.specials[special];
-      const unlocked = unitLevel(p.upg[p.age][special], false, special) >= SPECIAL_LEVEL;
-      if (owned) {
-        btn.innerHTML = "★ ACTIVO";
-        btn.disabled = true;
-        btn.classList.add("owned");
-        btn.title = specialDesc(special);
-      } else if (!unlocked) {
-        btn.innerHTML = "★ Nv6";
-        btn.disabled = true;
-        btn.classList.remove("owned");
-        btn.title = "Sube las 3 mejoras al máximo (Nv6) para desbloquear el especial";
-      } else {
-        const sc = specialCost(special);
-        btn.innerHTML = `★ ESP<br>${sc}🪙`;
-        btn.disabled = p.gold < sc;
-        btn.classList.remove("owned");
-        btn.title = specialDesc(special) + ` · ${sc}🪙`;
-      }
-    } else if (type) {
-      // Mejora de unidad
-      const l = p.upg[p.age][type][stat];
+    if (uid != null) {
+      // Mejora de unidad (por unidad)
+      const l = getUpg("player", uid)[stat] || 0;
       if (l >= MAX_UPG) {
         btn.innerHTML = "★MÁX";
         btn.disabled = true;
       } else {
-        const uc = upgradeCost(p.age, type, stat, l);
+        const uc = upgradeCost(uid, stat, l);
         btn.innerHTML = `${UPG_LABEL[stat]} L${l+1}<br>${uc}🪙`;
-        const su = STATS[p.age][type];
+        const type = (UNIT_CATALOG[uid] || {}).combatStyle;
+        const su = unitBase(uid, p.age, type);
         const eff = stat === "dmg"   ? `+${Math.round(su.dmg * DMG_MULT * UPG_DMG * (DMG_UPG_RATE[type] || 1))} de daño`
                   : stat === "hp"    ? `+${Math.round(su.hp * UPG_HP)} de vida`
                   : stat === "range" ? `+${Math.round(su.range * UPG_RANGE)} de rango`
-                  : stat === "armor" ? `+${Math.round(UPG_ARMOR * 100)}% de armadura (menos daño recibido)`
                   : `+${Math.round(UPG_SPD * 100)}% vel. de ataque`;
         btn.title = `${eff}  (Nv ${l+1}/${MAX_UPG} · ${uc}🪙)`;
         btn.disabled = p.gold < uc;
@@ -2191,7 +2098,8 @@ function syncUI() {
     const ta = document.getElementById("tp-age"); if (ta) ta.textContent = AGE_NAMES[e.age];
     document.querySelectorAll("#test-panel [data-tlvl]").forEach((el) => {
       const t = el.dataset.tlvl;
-      const lv = unitLevel(e.upg[e.age][t], e.specials[t], t);
+      const unit = UnitDB.getUnitForStyle(sideRace("enemy"), e.age, t);
+      const lv = unit ? unitLevel(getUpg("enemy", unit.id), unit.id) : 1;
       el.textContent = lv >= MAX_UNIT_LEVEL ? "NvMAX" : "Nv" + lv;
     });
   }
@@ -2857,8 +2765,11 @@ testPanel.addEventListener("click", (ev) => {
   else if (b.dataset.tact === "evolve") tryEvolve("enemy");
   else if (b.dataset.tact === "villager") { e.gold += villagerCost(e.villagers); tryVillager("enemy"); }
   else if (b.dataset.tspawn) { e.cd[b.dataset.tspawn] = 0; trySpawn("enemy", b.dataset.tspawn); }
-  else if (b.dataset.tupg) { const [t, s] = b.dataset.tupg.split(":"); tryUpgrade("enemy", t, s); }
-  else if (b.dataset.tspec) tryBuySpecial("enemy", b.dataset.tspec);
+  else if (b.dataset.tupg) {
+    const [t, s] = b.dataset.tupg.split(":");
+    const unit = UnitDB.getUnitForStyle(sideRace("enemy"), e.age, t);
+    if (unit) tryUpgrade("enemy", unit.id, s);
+  }
 });
 
 document.getElementById("btn-vs-online").addEventListener("click", () => {
