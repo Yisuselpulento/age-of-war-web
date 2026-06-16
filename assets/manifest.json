@@ -1,47 +1,377 @@
 {
- "cave": {
-  "melee": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-  "range": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-  "tank":  { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "zerling": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "ultralisk": { "walk": 8, "attack": 8, "die": 8, "idle": 7 },
-   "larva": { "walk": 8, "attack": 7, "die": 8, "idle": 7 },
-   "insect": { "walk": 8, "attack": 8, "die": 8, "idle": 6 }
+  "cave": {
+    "melee": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 8
+    },
+    "range": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 8
+    },
+    "tank": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 8
+    },
+    "zerling": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    },
+    "ultralisk": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    },
+    "larva": {
+      "idle": 5,
+      "walk": 9,
+      "attack": 8,
+      "die": 10,
+      "spawn": 10
+    },
+    "insect": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 6
+    },
+    "valkir": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    },
+    "wormmint": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 6,
+      "spawn": 9
+    },
+    "xerath": {
+      "idle": 4,
+      "walk": 4,
+      "attack": 4,
+      "die": 4,
+      "spawn": 4
+    },
+    "kurkor": {
+      "idle": 5,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    }
   },
   "medival": {
-   "melee": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "range": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "tank":  { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "zerling": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "ultralisk": { "walk": 8, "attack": 8, "die": 8, "idle": 7 },
-   "larva": { "walk": 8, "attack": 7, "die": 8, "idle": 7 },
-   "insect": { "walk": 8, "attack": 8, "die": 8, "idle": 6 }
+    "melee": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 8
+    },
+    "range": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 8
+    },
+    "tank": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 8
+    },
+    "zerling": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    },
+    "ultralisk": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    },
+    "larva": {
+      "idle": 5,
+      "walk": 9,
+      "attack": 8,
+      "die": 10,
+      "spawn": 10
+    },
+    "insect": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 6
+    },
+    "valkir": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    },
+    "wormmint": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 6,
+      "spawn": 9
+    },
+    "xerath": {
+      "idle": 1,
+      "walk": 5,
+      "attack": 5,
+      "die": 3,
+      "spawn": 5
+    },
+    "kurkor": {
+      "idle": 5,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    }
   },
   "knight": {
-   "melee": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "range": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "tank":  { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "zerling": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "ultralisk": { "walk": 8, "attack": 8, "die": 8, "idle": 7 },
-   "larva": { "walk": 8, "attack": 7, "die": 8, "idle": 7 },
-   "insect": { "walk": 8, "attack": 8, "die": 8, "idle": 6 }
+    "melee": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 8
+    },
+    "range": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 8
+    },
+    "tank": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 8
+    },
+    "zerling": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    },
+    "ultralisk": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    },
+    "larva": {
+      "idle": 5,
+      "walk": 9,
+      "attack": 8,
+      "die": 10,
+      "spawn": 10
+    },
+    "insect": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 6
+    },
+    "valkir": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    },
+    "wormmint": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 6,
+      "spawn": 9
+    },
+    "xerath": {
+      "idle": 1,
+      "walk": 5,
+      "attack": 5,
+      "die": 3,
+      "spawn": 5
+    },
+    "kurkor": {
+      "idle": 5,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    }
   },
   "miltary": {
-   "melee": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "range": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "tank":  { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "zerling": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "ultralisk": { "walk": 8, "attack": 8, "die": 8, "idle": 7 },
-   "larva": { "walk": 8, "attack": 7, "die": 8, "idle": 7 },
-   "insect": { "walk": 8, "attack": 8, "die": 8, "idle": 6 }
+    "melee": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 8
+    },
+    "range": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 8
+    },
+    "tank": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 8
+    },
+    "zerling": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    },
+    "ultralisk": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    },
+    "larva": {
+      "idle": 5,
+      "walk": 9,
+      "attack": 8,
+      "die": 10,
+      "spawn": 10
+    },
+    "insect": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 6
+    },
+    "valkir": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    },
+    "wormmint": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 6,
+      "spawn": 9
+    },
+    "xerath": {
+      "idle": 1,
+      "walk": 5,
+      "attack": 5,
+      "die": 3,
+      "spawn": 5
+    },
+    "kurkor": {
+      "idle": 5,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    }
   },
   "future": {
-   "melee": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "range": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "tank":  { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "zerling": { "walk": 8, "attack": 8, "die": 8, "idle": 8 },
-   "ultralisk": { "walk": 8, "attack": 8, "die": 8, "idle": 7 },
-   "larva": { "walk": 8, "attack": 7, "die": 8, "idle": 7 },
-   "insect": { "walk": 8, "attack": 8, "die": 8, "idle": 6 }
- }
+    "melee": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 8
+    },
+    "range": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 8
+    },
+    "tank": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 8
+    },
+    "zerling": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    },
+    "ultralisk": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    },
+    "larva": {
+      "idle": 5,
+      "walk": 9,
+      "attack": 8,
+      "die": 10,
+      "spawn": 10
+    },
+    "insect": {
+      "walk": 8,
+      "attack": 8,
+      "die": 8,
+      "idle": 6
+    },
+    "valkir": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    },
+    "wormmint": {
+      "idle": 4,
+      "walk": 9,
+      "attack": 9,
+      "die": 6,
+      "spawn": 9
+    },
+    "xerath": {
+      "idle": 1,
+      "walk": 5,
+      "attack": 5,
+      "die": 3,
+      "spawn": 5
+    },
+    "kurkor": {
+      "idle": 5,
+      "walk": 9,
+      "attack": 9,
+      "die": 7,
+      "spawn": 9
+    }
+  }
 }

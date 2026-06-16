@@ -1,2 +1,4 @@
 node_modules/
-screenshot-*.png
+screenshot*.png
+*.test.mjs
+test_game.mjs

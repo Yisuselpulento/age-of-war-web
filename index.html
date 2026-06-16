@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Age of War — Web</title>
-<link rel="stylesheet" href="style.css?v=24">
+<link rel="stylesheet" href="style.css?v=36">
 </head>
 <body>
 
@@ -55,20 +55,26 @@
   <div id="deck-tabs"></div>
 
   <div id="deck-content">
+    <div id="deck-slots">
+      <div class="deck-slots-header">
+        <span class="deck-slots-title">📋 Mazo actual</span>
+        <span id="deck-count">0/6</span>
+      </div>
+      <div id="deck-slots-list"></div>
+    </div>
+
     <div id="deck-pool">
       <div class="deck-pool-header">
-        <span class="deck-pool-title">Unidades disponibles</span>
-        <input id="deck-filter" type="text" placeholder="Filtrar por nombre, tipo, counter…">
+        <span class="deck-pool-title">🎴 Unidades disponibles</span>
+        <input id="deck-filter" type="text" placeholder="Filtrar…">
       </div>
       <div id="deck-pool-list"></div>
     </div>
 
-    <div id="deck-slots">
-      <div class="deck-slots-header">
-        <span class="deck-slots-title">Mazo actual</span>
-        <span id="deck-count">0/4</span>
-      </div>
-      <div id="deck-slots-list"></div>
+    <div id="deck-info">
+      <div id="deck-info-sprite"></div>
+      <div id="deck-info-stats"></div>
+      <div id="deck-info-desc"></div>
     </div>
   </div>
 
@@ -76,7 +82,6 @@
     <button id="deck-back-btn" class="menu-btn back-btn">⬅ Volver</button>
     <span id="deck-error" class="hidden" style="color:#fc8181;font-size:13px"></span>
     <div class="deck-main-btns">
-      <button id="deck-reset-btn" class="menu-btn" style="background:#4a3a3a">🔄 Reiniciar mazo</button>
       <button id="deck-save-btn" class="menu-btn">💾 Guardar y Volver</button>
     </div>
   </div>
@@ -116,28 +121,6 @@
     </div>
   </div>
 
-  <!-- HUD debajo del canvas -->
-  <div id="topbar">
-    <div class="stat"><span class="ic">🪙</span><span id="gold">0</span></div>
-    <div class="xpwrap">
-      <div class="xplabel">XP <span id="xptext">0/0</span></div>
-      <div class="xpbar"><div id="xpfill"></div></div>
-    </div>
-    <div class="stat" id="ageName">Era I</div>
-    <div id="diffWrap">
-      <span class="difflbl">IA:</span>
-      <button class="diff" data-d="easy">Fácil</button>
-      <button class="diff active" data-d="medium">Medio</button>
-      <button class="diff" data-d="hard">Difícil</button>
-      <button class="diff" data-d="extreme">Extremo</button>
-    </div>
-    <button id="evolveBtn" disabled>⬆ Evolucionar</button>
-    <button id="speedBtn" title="Velocidad del juego" class="hidden">⏩ x1</button>
-    <button id="pauseBtn" title="Pausar" class="hidden">⏸</button>
-    <button id="configBtn" title="Configuración">⚙</button>
-    <button id="debugBtn" title="Test: oro + XP">🧪</button>
-  </div>
-
   <!-- Panel de configuración -->
   <div id="config-panel" class="hidden">
     <div class="cfg-title">⚙ Configuración</div>
@@ -166,7 +149,6 @@
     <div class="tp-row">
       <button data-tspawn="melee">+Melee</button>
       <button data-tspawn="range">+Range</button>
-      <button data-tspawn="tank">+Tank</button>
     </div>
     <div class="tp-row">
       <span class="tp-lbl">Melee <i data-tlvl="melee">Nv1</i></span>
@@ -180,24 +162,40 @@
       <button data-tupg="range:range">RNG</button>
       <button data-tupg="range:spd">VEL</button>
     </div>
-    <div class="tp-row">
-      <span class="tp-lbl">Tank <i data-tlvl="tank">Nv1</i></span>
-      <button data-tupg="tank:dmg">ATK</button>
-      <button data-tupg="tank:hp">HP</button>
-      <button data-tupg="tank:spd">VEL</button>
-    </div>
   </div>
 
   <div id="bottom-panel">
-    <div id="cards-area"></div>
-    <div id="upg-panel"></div>
-    <div id="econ-section"></div>
+    <div id="hud-row">
+      <div id="tower-section"></div>
+      <div id="cards-area"></div>
+      <div id="econ-section"></div>
+    </div>
+    <div id="botbar">
+      <span class="ic">🪙</span><span id="gold">0</span>
+      <div class="xpwrap">
+        <div class="xplabel">XP <span id="xptext">0/0</span></div>
+        <div class="xpbar"><div id="xpfill"></div></div>
+      </div>
+      <div class="stat" id="ageName">Era I</div>
+      <div id="diffWrap">
+        <span class="difflbl">IA:</span>
+        <button class="diff" data-d="easy">Fácil</button>
+        <button class="diff active" data-d="medium">Medio</button>
+        <button class="diff" data-d="hard">Difícil</button>
+        <button class="diff" data-d="extreme">Extremo</button>
+      </div>
+      <button id="evolveBtn" disabled>⬆ Evolucionar</button>
+      <button id="speedBtn" title="Velocidad del juego" class="hidden">⏩ x1</button>
+      <button id="pauseBtn" title="Pausar" class="hidden">⏸</button>
+      <button id="configBtn" title="Configuración">⚙</button>
+      <button id="debugBtn" title="Test: oro + XP">🧪</button>
+    </div>
   </div>
 
 </div>
 <div id="loading">Cargando assets…</div>
 <audio id="bgm" src="assets/audio/theme.mp3" loop preload="auto"></audio>
 
-<script src="game.js?v=24"></script>
+<script src="game.js?v=36"></script>
 </body>
 </html>

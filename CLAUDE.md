@@ -16,7 +16,8 @@ La dinámica cambió: las unidades ya **no** son 3 tipos genéricos por edad. Ah
 unidad es una entidad individual.
 
 ### Unidades individuales — `UNIT_CATALOG` (game.js, arriba del todo)
-Cada unidad tiene: `id, name, icon, spriteId, race, combatStyle (melee|ranged|tank),
+Cada unidad tiene: `id, name, icon, spriteId, race, combatStyle (melee|range — NO existe
+"tank": lo tanque lo dan las stats base + escalado individual de cada unidad),
 movementType (ground|aerial), homeEra, desc, tags, counters, strongVs, weakVs, inmun,
 cost, upgs[], availableEras[], specialAbility`.
 - `UNIT_IDS` lista los ids; `UnitDB` es el "DB" de consulta (getByRace, getByRaceAndEra,
@@ -55,7 +56,12 @@ Stats base era0 → era4 (con DMG_MULT 1.5 ya aplicado en dmg efectivo, Nv1 sin 
 
 ### Razas — `RACES` / `RACE_NAMES`
 `["humans","aliens","monsters","deaths","demons","magics"]`. Por ahora solo **humans**
-(roster completo, 5 eras × melee/ranged/tank) y **monsters** (zerling, ultralisk) tienen
+(roster completo, 5 eras × 3 unidades melee/range) y **monsters** (zerling, ultralisk, larva,
+insecto) tienen
+> Nota: `spriteId` "tank" sigue existiendo como **sprite** (unidades anchas: Forzudo, Paladín,
+> Blindado, Tanque, Mecha) y se usa para orientación (`FACE_RIGHT`) y espaciado (`half`). NO es
+> un combatStyle. `UNIT_TYPES`/`TYPE_I`/`cd.tank` siguen con la clave "tank" solo como bucket de
+> la serialización online (no tocar hasta retomar online).
 unidades. El resto están vacías = bloqueadas.
 
 ### Propiedad de razas (colección del jugador)
@@ -100,12 +106,34 @@ unidades. El resto están vacías = bloqueadas.
 ## Assets / extracción de sprites
 - `../age-of-war-src/extract_towers.py` extrae torres (frame 1 = reposo, no disparo).
   Edad future: turret_2/3 solo tienen 3 frames y siempre tienen glow de energía.
-- Sprites de unidades en `assets/units/<age>/<spriteId>/`. Monsters: zerling, ultralisk, larva, insect.
+- Sprites de unidades en `assets/units/<age>/<spriteId>/<anim>/<i>.png`. Monsters: zerling, ultralisk, larva, insect.
+- **Animaciones** (`ANIMS`): `idle, walk, attack, die, spawn`. `spawn` = nacimiento (la unidad
+  emerge en su sitio sin moverse ni atacar; `Unit.spawning` se apaga al llegar al último frame).
+  Conteos por unidad/era en `assets/manifest.json`. `ANIM_I` mapea anim→índice para el online (spawn=4).
+- **Sprite sheets NUEVOS (irregulares):** las hojas mejoradas no usan grid uniforme. Extractor
+  plantilla: `../age-of-war-src/extract_zerling.py` — detecta filas y frames por proyección de alfa,
+  separa frames pegados (cajas anchas), recorta tight y alinea al suelo (bottom-center) en un lienzo
+  uniforme. Correr con `--montage` para QA visual antes de desplegar. Orden de filas del zerling:
+  idle(4), walk(9), attack(9), die(7), spawn(9). Tras regenerar sprites: subir `ASSET_V` y `manifest`.
+- **Sonidos por unidad:** cada unidad define rutas en `UNIT_CATALOG[uid].sounds = {spawn, attack, die}`.
+  `playUnitSound(uid, kind)` clona un Audio base por ruta (permite solape), respeta mute/volumen y
+  throttlea 80ms. Estructura ordenada: `assets/audio/units/<spriteId>/<spawn|attack|die>.mp3`.
+  Zerling tiene `spawn.mp3`. `ultralisk` sigue con sprite viejo (sin idle/die buenos → usa walk/idle como fallback).
 - **Bases por raza**: `assets/bases/<age>/<archivo>.png`. Humanos = `base.png`; cada raza con base
   propia se mapea en `RACE_BASE` (monsters → `base_monsters.png`). `baseKey(age,race)` resuelve la
   ruta (fallback a humana). `sideRace(side)`: player = raza activa, enemy = humanos (IA) por ahora.
   La base evoluciona por era (un sprite por edad). Script: `extract_base_monster.py` (col0 aislada
   de `base_monster.png`, escala uniforme → la mayor a 250px como las humanas).
+
+## Infección del terreno (wallpaper por raza)
+- Cada raza tiene su wallpaper (`WALLPAPER_MAP`: humans/monsters). El terreno se "infecta"
+  desde cada base hacia el centro según avanzan las unidades.
+- `infectProg = {player, enemy}` (0..1): persigue LENTO (`INFECT_SPEED`) al frente de unidades
+  (`calcInfection`) y **nunca retrocede** (terreno infectado permanente). `updateInfection(dt)`
+  se llama en `update`; `resetInfection()` en `resetGame`.
+- Render: `drawInfection()` usa un canvas offscreen (`_infCv`) — dibuja el wallpaper de raza,
+  lo recorta con `destination-in` por un path de **borde irregular animado** (`infectNoise`,
+  suma de senos) + degradado en el filo (`INFECT_FADE`/`INFECT_AMP`). Da un borde orgánico, no recto.
 
 ## Git — flujo de 2 ramas
 - `stable` (y `main`): el **juego que funciona**. Solo ediciones sutiles que lo mantengan jugable.
