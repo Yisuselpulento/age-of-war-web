@@ -142,6 +142,14 @@ const RACE_NAMES = {
   deaths: "Muertes", demons: "Demonios", magics: "Mágicos",
 };
 
+// Base por raza: cada raza tiene su propia base, que evoluciona por era. Las razas
+// sin base propia usan la base humana ("base") por defecto.
+const RACE_BASE = { monsters: "base_monsters" };
+function baseFile(race) { return RACE_BASE[race] || "base"; }
+function baseKey(age, race) { return `assets/bases/${AGES[age]}/${baseFile(race)}.png`; }
+// Raza de cada bando. El enemigo (IA) es humano por ahora.
+function sideRace(side) { return side === "player" ? (G.playerRace || "humans") : "humans"; }
+
 // Simulación de base de datos de unidades
 const UnitDB = {
   getAll() { return UNIT_IDS.map(id => UNIT_CATALOG[id]); },
@@ -676,6 +684,7 @@ async function loadAll() {
   paths.push("assets/bg/background.png");
   for (const age of AGES) {
     paths.push(`assets/bases/${age}/base.png`);
+    for (const rf of Object.values(RACE_BASE)) paths.push(`assets/bases/${age}/${rf}.png`);
     for (const l of [1, 2, 3]) {
       paths.push(`assets/towers/${age}/t${l}.png`);
       const idx = AGES.indexOf(age) * 3 + (l - 1);
@@ -815,7 +824,7 @@ class Unit {
 
     this.dir = side === "player" ? 1 : -1; // +1 mueve a la derecha
     // nacen en la puerta (borde frontal de su base) y aparecen con un fundido
-    const baseImg = IMG[`assets/bases/${AGES[age]}/base.png`];
+    const baseImg = IMG[baseKey(age, sideRace(side))] || IMG[`assets/bases/${AGES[age]}/base.png`];
     const halfW = baseImg ? baseImg.width / 2 : 150;
     this.x = side === "player"
       ? PLAYER_BASE_X + halfW - 35
@@ -1524,7 +1533,7 @@ function drawBackground() {
 
 function drawBase(side) {
   const st = G[side];
-  const im = IMG[`assets/bases/${AGES[st.age]}/base.png`];
+  const im = IMG[baseKey(st.age, sideRace(side))] || IMG[`assets/bases/${AGES[st.age]}/base.png`];
   const x = side === "player" ? PLAYER_BASE_X : ENEMY_BASE_X;
   if (im) {
     const w = im.width, h = im.height;

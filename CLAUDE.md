@@ -93,7 +93,12 @@ unidades. El resto están vacías = bloqueadas.
 ## Assets / extracción de sprites
 - `../age-of-war-src/extract_towers.py` extrae torres (frame 1 = reposo, no disparo).
   Edad future: turret_2/3 solo tienen 3 frames y siempre tienen glow de energía.
-- Sprites de unidades en `assets/units/<age>/<spriteId>/`. Monsters: zerling, ultralisk.
+- Sprites de unidades en `assets/units/<age>/<spriteId>/`. Monsters: zerling, ultralisk, larva, insect.
+- **Bases por raza**: `assets/bases/<age>/<archivo>.png`. Humanos = `base.png`; cada raza con base
+  propia se mapea en `RACE_BASE` (monsters → `base_monsters.png`). `baseKey(age,race)` resuelve la
+  ruta (fallback a humana). `sideRace(side)`: player = raza activa, enemy = humanos (IA) por ahora.
+  La base evoluciona por era (un sprite por edad). Script: `extract_base_monster.py` (col0 aislada
+  de `base_monster.png`, escala uniforme → la mayor a 250px como las humanas).
 
 ## Git — flujo de 2 ramas
 - `stable` (y `main`): el **juego que funciona**. Solo ediciones sutiles que lo mantengan jugable.
