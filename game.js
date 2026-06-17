@@ -157,7 +157,7 @@ const UNIT_CATALOG = {
       inmun:[], cost:40, upgs:["dmg","hp","spd"],
       availableEras:[0,1,2,3,4], specialAbility:null, targetType:null,
       cooldown:0.5, sounds:{spawn:"assets/audio/units/zerling/spawn.mp3",attack:null,die:null},
-      stats:  { cost:40, hp:95, dmg:15, spd:70, range:55, g:22, xp:18, cd:0.50 },
+      stats:  { cost:40, hp:95, dmg:15, spd:85, range:55, g:22, xp:18, cd:0.50 },
       growth: { cost:1.72, hp:1.78, dmg:1.78, g:1.72, xp:1.72 } },
     17: { id:17, name:"Ultralisk", icon:"🦂", spriteId:"ultralisk", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
       desc:"Coloso blindado que arrasa líneas enemigas. Resistente y letal.",
@@ -243,7 +243,7 @@ const RACE_BASE_STATS = {
 };
 
 // Escala visual por spriteId (unidades monstruo son más grandes, se reducen)
-const UNIT_SCALE = { zerling: 0.55, larva: 0.38, insect: 0.5, valkir: 0.62, wormmint: 0.6, xerath: 0.55, kurkor: 0.65 };
+const UNIT_SCALE = { zerling: 0.55, larva: 0.48, insect: 0.5, valkir: 0.62, wormmint: 0.6, xerath: 0.55, kurkor: 0.65 };
 // Escala visual de bases por raza
 const BASE_SCALE = { monsters: 1.2 };
 
