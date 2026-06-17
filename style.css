@@ -877,18 +877,21 @@ canvas {
   .box h1 { font-size: 24px; }
   .box button { padding: 10px 16px; font-size: 14px; }
 
-  #botbar { font-size: 12px; overflow-y: auto; max-height: 20vh; }
+  #botbar { font-size: 12px; overflow-x: auto; flex-wrap: nowrap; justify-content: flex-start; -webkit-overflow-scrolling: touch; padding: 4px 6px; gap: 3px; }
+  #botbar > * { flex-shrink: 0; }
+  #configBtn { position: fixed; bottom: 8px; right: 8px; z-index: 999; width: 36px; height: 36px; border-radius: 50%; background: #2d3548; border: 1.5px solid #4a5a78; font-size: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.5); }
+  #pauseBtn { font-size: 13px; padding: 2px 5px !important; }
+  #speedBtn { font-size: 11px; padding: 2px 5px !important; }
+  #evolveBtn { padding: 4px 8px !important; font-size: 12px !important; }
+  .diff { padding: 1px 4px; font-size: 9px; }
   .stat { font-size: 12px; }
   .ic { font-size: 13px; }
   .xpwrap { max-width: 120px; }
   .xpbar { height: 6px; }
-  .diff { padding: 2px 5px; font-size: 10px; }
   .difflbl { font-size: 9px; }
-  #evolveBtn { padding: 6px 12px; font-size: 14px; }
   #gold { font-size: 18px; }
   .stat:first-child .ic { font-size: 17px; }
   #debugBtn { display: none !important; }
-  #pauseBtn { font-size: 14px; padding: 2px 6px !important; }
 
   #day-indicator { top: 36px; }
   #day-bar { width: 100px; height: 4px; }
@@ -907,6 +910,7 @@ canvas {
     max-height: 48vh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    padding-bottom: 50px;
   }
   #bottom-panel::-webkit-scrollbar { width: 6px; }
   #bottom-panel::-webkit-scrollbar-thumb { background: #3a4150; border-radius: 3px; }
@@ -938,12 +942,17 @@ canvas {
   /* Deck builder responsive */
   #deck-builder .menu-title { font-size: 20px; }
   .deck-subtitle { font-size: 11px; }
-  #deck-content { flex-direction: column; overflow-y: auto; }
+  #deck-content { flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   #deck-slots { width: 100%; max-height: none; }
   #deck-pool { max-height: none; }
   #deck-info { width: 100%; max-height: none; }
   #deck-pool-list { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
-  .deck-actions { flex-wrap: wrap; font-size: 12px; position: sticky; bottom: 0; z-index: 10; }
+  #deck-tabs, #deck-race-tabs { flex-wrap: wrap; gap: 3px; padding: 0 8px; }
+  .deck-tab { padding: 5px 10px; font-size: 10px; }
+  .deck-race-tab { padding: 4px 10px; font-size: 10px; }
+  .deck-actions { flex-wrap: wrap; font-size: 12px; position: sticky; bottom: 0; z-index: 10; background: linear-gradient(160deg, #0d0f17 0%, #141824 100%); border-top: 1px solid #2d3548; padding: 8px 10px; }
   .deck-main-btns { width: 100%; }
   .deck-main-btns .menu-btn { flex: 1; font-size: 13px; padding: 10px 8px; }
+  html { min-height: -webkit-fill-available; }
+  #deck-builder { min-height: 100vh; min-height: -webkit-fill-available; min-height: 100dvh; }
 }
