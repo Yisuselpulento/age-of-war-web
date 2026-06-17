@@ -14,213 +14,194 @@ const UNIT_NAMES = {
   7:"Espadachín",8:"Ballestero",9:"Blindado",
   10:"Soldado",11:"Francotirador",12:"Tanque",
   13:"Comando",14:"Centinela",15:"Mecha",
-  16:"Zerling",17:"Ultralisk",18:"Larva",19:"Insecto",
-  20:"Valkir",21:"Wormmint",22:"Xerath",23:"Kurkor",
+  16:"Zerling",17:"Ultralisk",18:"Larva",
+  20:"Valkir",21:"Wormmint",22:"Xerath",23:"Kurkor",24:"Hydralisk",
 };
-const UNIT_IDS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
+const UNIT_IDS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24];
 
 const UNIT_CATALOG = {
   // ── Era 0 (Cave) ──────────────────────────────────────
-    1: { id:1, name:"Troglodita", icon:"⚔️",  spriteId:"melee",  race:"humans",   combatStyle:"melee",  movementType:"ground", homeEra:0,
+     1: { id:1, name:"Troglodita", icon:"⚔️",  spriteId:"melee",  race:"humans",   combatStyle:"melee",  movementType:"ground", homeEra:0,
       desc:"Versátil luchador cuerpo a cuerpo. Efectivo contra arqueros.",
-      tags:["melee","ground"], counters:'Fuerte vs <b>Ranged</b> · Débil vs <b>Aéreo</b>',
-      inmun:[], cost:50, upgs:["dmg","hp","spd"],
-      availableEras:[0], specialAbility:null, targetType:null,
+      tags:["melee","ground"], class:"warrior", upgStats:["dmg","hp","spd"],
+      inmun:[], availableEras:[0], specialAbility:null, targetType:null,
       cooldown:0.6, sounds:{spawn:null,attack:null,die:null},
       stats: { cost:50, hp:120, dmg:18, spd:45, range:60, g:30, xp:25 },
-      growth: { cost:1, hp:1.05, dmg:1.05, g:1, xp:1 } },
-    2: { id:2, name:"Cazador", icon:"🏹",  spriteId:"range",  race:"humans",   combatStyle:"range", movementType:"ground", homeEra:0,
+      growth: { hp:1.05, dmg:1.05 } },
+     2: { id:2, name:"Cazador", icon:"🏹",  spriteId:"range",  race:"humans",   combatStyle:"range", movementType:"ground", homeEra:0,
       desc:"Ataca desde lejos. Ideal contra unidades aéreas.",
-      tags:["ranged","ground"], counters:'Fuerte vs <b>Aéreo</b> · Débil vs <b>Melee</b>',
-      inmun:[], cost:85, upgs:["dmg","range","spd"],
-      availableEras:[0], specialAbility:null, targetType:null,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"],
+      inmun:[], availableEras:[0], specialAbility:null, targetType:null,
       cooldown:1.0, sounds:{spawn:null,attack:null,die:null},
      stats: { cost:85, hp:70, dmg:14, spd:40, range:240, g:45, xp:35 },
-     growth: { cost:1, hp:1.05, dmg:1.05, g:1, xp:1 } },
-    3: { id:3, name:"Forzudo", icon:"🛡️", spriteId:"tank",   race:"humans",   combatStyle:"melee",   movementType:"ground", homeEra:0,
+     growth: { hp:1.05, dmg:1.05 } },
+     3: { id:3, name:"Forzudo", icon:"🛡️", spriteId:"tank",   race:"humans",   combatStyle:"melee",   movementType:"ground", homeEra:0,
       desc:"Alta resistencia y blindaje. Absorbe y retiene al enemigo.",
-      tags:["melee","ground"], counters:'Mucha vida · Lento · Aguanta el frente',
-      inmun:[], cost:200, upgs:["dmg","hp","spd"],
-      availableEras:[0], specialAbility:null, targetType:null,
+      tags:["melee","ground"], class:"tank", upgStats:["dmg","hp","spd"],
+      inmun:[], availableEras:[0], specialAbility:null, targetType:null,
       cooldown:1.5, sounds:{spawn:null,attack:null,die:null},
       stats: { cost:200, hp:400, dmg:30, spd:30, range:75, g:90, xp:70 },
-      growth: { cost:1, hp:1.05, dmg:1.05, g:1, xp:1 } },
+      growth: { hp:1.05, dmg:1.05 } },
 
   // ── Era 1 (Knight) ─────────────────────────────────────
-    4: { id:4, name:"Caballero", icon:"⚔️", spriteId:"melee", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:1,
+     4: { id:4, name:"Caballero", icon:"⚔️", spriteId:"melee", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:1,
       desc:"Guerrero montado con armadura de placas. Potencia en la carga.",
-      tags:["melee","ground"], counters:'Fuerte vs <b>Ranged</b> · Débil vs <b>Aéreo</b>',
-      inmun:[], cost:110, upgs:["dmg","hp","spd"],
-      availableEras:[1], specialAbility:null, targetType:null,
+      tags:["melee","ground"], class:"warrior", upgStats:["dmg","hp","spd"],
+      inmun:[], availableEras:[1], specialAbility:null, targetType:null,
       cooldown:0.6, sounds:{spawn:null,attack:null,die:null},
      stats: { cost:110, hp:230, dmg:30, spd:47, range:60, g:55, xp:45 },
-     growth: { cost:1, hp:1.05, dmg:1.05, g:1, xp:1 } },
-    5: { id:5, name:"Arquero", icon:"🏹", spriteId:"range", race:"humans", combatStyle:"range", movementType:"ground", homeEra:1,
+     growth: { hp:1.05, dmg:1.05 } },
+     5: { id:5, name:"Arquero", icon:"🏹", spriteId:"range", race:"humans", combatStyle:"range", movementType:"ground", homeEra:1,
       desc:"Arquero entrenado con arco compuesto. Alcance superior.",
-      tags:["ranged","ground"], counters:'Fuerte vs <b>Aéreo</b> · Débil vs <b>Melee</b>',
-      inmun:[], cost:170, upgs:["dmg","range","spd"],
-      availableEras:[1], specialAbility:null, targetType:null,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"],
+      inmun:[], availableEras:[1], specialAbility:null, targetType:null,
       cooldown:1.0, sounds:{spawn:null,attack:null,die:null},
       stats: { cost:170, hp:130, dmg:24, spd:42, range:250, g:80, xp:60 },
-      growth: { cost:1, hp:1.05, dmg:1.05, g:1, xp:1 } },
-    6: { id:6, name:"Paladín", icon:"🛡️", spriteId:"tank", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:1,
+      growth: { hp:1.05, dmg:1.05 } },
+     6: { id:6, name:"Paladín", icon:"🛡️", spriteId:"tank", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:1,
       desc:"Campeón sagrado con escudo y fe inquebrantable.",
-      tags:["melee","ground"], counters:'Mucha vida · Lento · Aguanta el frente',
-      inmun:[], cost:400, upgs:["dmg","hp","spd"],
-      availableEras:[1], specialAbility:null, targetType:null,
+      tags:["melee","ground"], class:"tank", upgStats:["dmg","hp","spd"],
+      inmun:[], availableEras:[1], specialAbility:null, targetType:null,
       cooldown:1.5, sounds:{spawn:null,attack:null,die:null},
       stats: { cost:400, hp:750, dmg:52, spd:32, range:75, g:160, xp:120 },
-     growth: { cost:1, hp:1.05, dmg:1.05, g:1, xp:1 } },
+     growth: { hp:1.05, dmg:1.05 } },
 
   // ── Era 2 (Medival) ────────────────────────────────────
-    7:  { id:7,  name:"Espadachín", icon:"⚔️", spriteId:"melee", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:2,
+     7:  { id:7,  name:"Espadachín", icon:"⚔️", spriteId:"melee", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:2,
       desc:"Experto en esgrima con espada larga. Golpes precisos y letales.",
-      tags:["melee","ground"], counters:'Fuerte vs <b>Ranged</b> · Débil vs <b>Aéreo</b>',
-      inmun:[], cost:220, upgs:["dmg","hp","spd"],
-      availableEras:[2], specialAbility:null, targetType:null,
+      tags:["melee","ground"], class:"warrior", upgStats:["dmg","hp","spd"],
+      inmun:[], availableEras:[2], specialAbility:null, targetType:null,
       cooldown:0.6, sounds:{spawn:null,attack:null,die:null},
       stats: { cost:220, hp:430, dmg:52, spd:50, range:65, g:100, xp:80 },
-      growth: { cost:1, hp:1.05, dmg:1.05, g:1, xp:1 } },
-    8:  { id:8,  name:"Ballestero", icon:"🏹", spriteId:"range", race:"humans", combatStyle:"range", movementType:"ground", homeEra:2,
+      growth: { hp:1.05, dmg:1.05 } },
+     8:  { id:8,  name:"Ballestero", icon:"🏹", spriteId:"range", race:"humans", combatStyle:"range", movementType:"ground", homeEra:2,
       desc:"Ballesta de repetición. Perfora blindajes con facilidad.",
-      tags:["ranged","ground"], counters:'Fuerte vs <b>Aéreo</b> · Débil vs <b>Melee</b>',
-      inmun:[], cost:320, upgs:["dmg","range","spd"],
-      availableEras:[2], specialAbility:null, targetType:null,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"],
+      inmun:[], availableEras:[2], specialAbility:null, targetType:null,
       cooldown:1.0, sounds:{spawn:null,attack:null,die:null},
       stats: { cost:320, hp:240, dmg:42, spd:44, range:260, g:140, xp:110 },
-      growth: { cost:1, hp:1.05, dmg:1.05, g:1, xp:1 } },
-    9:  { id:9,  name:"Blindado", icon:"🛡️", spriteId:"tank", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:2,
+      growth: { hp:1.05, dmg:1.05 } },
+     9:  { id:9,  name:"Blindado", icon:"🛡️", spriteId:"tank", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:2,
       desc:"Armadura de placas completa. Muro impenetrable.",
-      tags:["melee","ground"], counters:'Mucha vida · Lento · Muro impenetrable',
-      inmun:[], cost:700, upgs:["dmg","hp","spd"],
-      availableEras:[2], specialAbility:null, targetType:null,
+      tags:["melee","ground"], class:"tank", upgStats:["dmg","hp","spd"],
+      inmun:[], availableEras:[2], specialAbility:null, targetType:null,
       cooldown:1.5, sounds:{spawn:null,attack:null,die:null},
       stats: { cost:700, hp:1350, dmg:90, spd:34, range:80, g:280, xp:210 },
-      growth: { cost:1, hp:1.05, dmg:1.05, g:1, xp:1 } },
+      growth: { hp:1.05, dmg:1.05 } },
 
   // ── Era 3 (Miltary) ────────────────────────────────────
-    10: { id:10, name:"Soldado", icon:"⚔️", spriteId:"melee", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:3,
+     10: { id:10, name:"Soldado", icon:"⚔️", spriteId:"melee", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:3,
       desc:"Infantería moderna con fusil de asalto y granadas.",
-      tags:["melee","ground"], counters:'Fuerte vs <b>Ranged</b> · Débil vs <b>Aéreo</b>',
-      inmun:[], cost:420, upgs:["dmg","hp","spd"],
-      availableEras:[3], specialAbility:null, targetType:null,
+      tags:["melee","ground"], class:"warrior", upgStats:["dmg","hp","spd"],
+      inmun:[], availableEras:[3], specialAbility:null, targetType:null,
       cooldown:0.6, sounds:{spawn:null,attack:null,die:null},
       stats: { cost:420, hp:780, dmg:95, spd:55, range:70, g:180, xp:150 },
-      growth: { cost:1, hp:1.05, dmg:1.05, g:1, xp:1 } },
-    11: { id:11, name:"Francotirador", icon:"🎯", spriteId:"range", race:"humans", combatStyle:"range", movementType:"ground", homeEra:3,
+      growth: { hp:1.05, dmg:1.05 } },
+     11: { id:11, name:"Francotirador", icon:"🎯", spriteId:"range", race:"humans", combatStyle:"range", movementType:"ground", homeEra:3,
       desc:"Rifle de precisión de largo alcance. Elimina objetivos clave.",
-      tags:["ranged","ground"], counters:'Fuerte vs <b>Aéreo</b> · Débil vs <b>Melee</b>',
-      inmun:[], cost:600, upgs:["dmg","range","spd"],
-      availableEras:[3], specialAbility:null, targetType:null,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"],
+      inmun:[], availableEras:[3], specialAbility:null, targetType:null,
       cooldown:1.0, sounds:{spawn:null,attack:null,die:null},
       stats: { cost:600, hp:430, dmg:78, spd:48, range:285, g:260, xp:200 },
-      growth: { cost:1, hp:1.05, dmg:1.05, g:1, xp:1 } },
-    12: { id:12, name:"Tanque", icon:"🛡️", spriteId:"tank", race:"humans", combatStyle:"range", movementType:"ground", homeEra:3,
+      growth: { hp:1.05, dmg:1.05 } },
+     12: { id:12, name:"Tanque", icon:"🛡️", spriteId:"tank", race:"humans", combatStyle:"range", movementType:"ground", homeEra:3,
       desc:"Blindaje pesado con cañón rotatorio. Dispara a distancia.",
-      tags:["ranged","ground"], counters:'Mucha vida · Cañón a distancia',
-      inmun:[], cost:1300, upgs:["dmg","range","spd"],
-      availableEras:[3], specialAbility:null, targetType:null,
+      tags:["ranged","ground"], class:"tank", upgStats:["dmg","hp","spd"],
+      inmun:[], availableEras:[3], specialAbility:null, targetType:null,
       cooldown:1.0, sounds:{spawn:null,attack:null,die:null},
       stats: { cost:1300, hp:2400, dmg:160, spd:36, range:210, g:520, xp:380 },
-      growth: { cost:1, hp:1.05, dmg:1.05, g:1, xp:1 } },
+      growth: { hp:1.05, dmg:1.05 } },
 
   // ── Era 4 (Future) ─────────────────────────────────────
-    13: { id:13, name:"Comando", icon:"⚔️", spriteId:"melee", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:4,
+     13: { id:13, name:"Comando", icon:"⚔️", spriteId:"melee", race:"humans", combatStyle:"melee", movementType:"ground", homeEra:4,
       desc:"Operaciones especiales con exoesqueleto potenciado.",
-      tags:["melee","ground"], counters:'Fuerte vs <b>Ranged</b> · Débil vs <b>Aéreo</b>',
-      inmun:[], cost:800, upgs:["dmg","hp","spd"],
-      availableEras:[4], specialAbility:null, targetType:null,
+      tags:["melee","ground"], class:"assassin", upgStats:["dmg","spd"],
+      inmun:[], availableEras:[4], specialAbility:null, targetType:null,
       cooldown:0.6, sounds:{spawn:null,attack:null,die:null},
       stats: { cost:800, hp:1400, dmg:175, spd:60, range:75, g:340, xp:280 },
-      growth: { cost:1, hp:1.05, dmg:1.05, g:1, xp:1 } },
-    14: { id:14, name:"Centinela", icon:"🎯", spriteId:"range", race:"humans", combatStyle:"range", movementType:"ground", homeEra:4,
+      growth: { hp:1.05, dmg:1.05 } },
+     14: { id:14, name:"Centinela", icon:"🎯", spriteId:"range", race:"humans", combatStyle:"range", movementType:"ground", homeEra:4,
       desc:"Torreta automatizada con sistema de puntería láser.",
-      tags:["ranged","ground"], counters:'Fuerte vs <b>Aéreo</b> · Débil vs <b>Melee</b>',
-      inmun:[], cost:1150, upgs:["dmg","range","spd"],
-      availableEras:[4], specialAbility:null, targetType:null,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"],
+      inmun:[], availableEras:[4], specialAbility:null, targetType:null,
       cooldown:1.0, sounds:{spawn:null,attack:null,die:null},
       stats: { cost:1150, hp:780, dmg:145, spd:52, range:305, g:480, xp:360 },
-      growth: { cost:1, hp:1.05, dmg:1.05, g:1, xp:1 } },
-    15: { id:15, name:"Mecha", icon:"🛡️", spriteId:"tank", race:"humans", combatStyle:"range", movementType:"ground", homeEra:4,
+      growth: { hp:1.05, dmg:1.05 } },
+     15: { id:15, name:"Mecha", icon:"🛡️", spriteId:"tank", race:"humans", combatStyle:"range", movementType:"ground", homeEra:4,
       desc:"Robot de combate gigante con blindaje de aleación. Cañón de largo alcance.",
-      tags:["ranged","ground"], counters:'Mucha vida · Cañón a distancia',
-      inmun:[], cost:2400, upgs:["dmg","range","spd"],
-      availableEras:[4], specialAbility:null, targetType:null,
+      tags:["ranged","ground"], class:"tank", upgStats:["dmg","hp","spd"],
+      inmun:[], availableEras:[4], specialAbility:null, targetType:null,
       cooldown:1.5, sounds:{spawn:null,attack:null,die:null},
       stats: { cost:2400, hp:4400, dmg:300, spd:40, range:250, g:950, xp:700 },
-      growth: { cost:1, hp:1.05, dmg:1.05, g:1, xp:1 } },
+      growth: { hp:1.05, dmg:1.05 } },
 
   // ── Monsters (escalado INDIVIDUAL: stats base + growth^(lv-1) por nivel) ──
      16: { id:16, name:"Zerling", icon:"👾", spriteId:"zerling", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
       desc:"Criatura rápida que ataca en enjambre. Devastadora en grupo.",
-      tags:["melee","ground"], counters:'Rápido · Poca vida · Débil vs <b>Ranged</b>',
-      inmun:[], cost:40, upgs:["dmg","hp","spd"],
-      availableEras:[0,1,2,3,4], specialAbility:null, targetType:null,
+      tags:["melee","ground"], class:"assassin", upgStats:["dmg","spd"],
+      inmun:[], availableEras:[0,1,2,3,4], specialAbility:null, targetType:"ground",
       cooldown:0.5, sounds:{spawn:"assets/audio/units/zerling/spawn.mp3",attack:null,die:null},
-      stats:  { cost:40, hp:95, dmg:15, spd:85, range:55, g:22, xp:18, cd:0.50 },
-      growth: { cost:1.72, hp:1.78, dmg:1.78, g:1.72, xp:1.72 } },
-    17: { id:17, name:"Ultralisk", icon:"🦂", spriteId:"ultralisk", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
+      stats:  { cost:55, hp:70, dmg:10, spd:100, range:55, g:22, xp:18, cd:0.50 },
+      growth: { hp:1.10, dmg:1.10 } },
+     17: { id:17, name:"Ultralisk", icon:"🦂", spriteId:"ultralisk", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
       desc:"Coloso blindado que arrasa líneas enemigas. Resistente y letal.",
-      tags:["melee","ground"], counters:'Mucha vida · Lento · Débil vs <b>Ranged</b>',
-      inmun:[], cost:150, upgs:["dmg","hp","spd"],
-      availableEras:[0,1,2,3,4], specialAbility:null, targetType:null,
+      tags:["melee","ground"], class:"tank", upgStats:["dmg","hp","spd"],
+      inmun:[], availableEras:[3,4], specialAbility:null, targetType:"ground",
       cooldown:5, sounds:{spawn:null,attack:null,die:null},
       stats:  { cost:150, hp:500, dmg:34, spd:24, range:70, g:90, xp:70, cd:0.75 },
-      growth: { cost:1.76, hp:1.80, dmg:1.78, g:1.74, xp:1.74 } },
-    18: { id:18, name:"Larva", icon:"🐛", spriteId:"larva", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
+      growth: { hp:1.12, dmg:1.12 } },
+     18: { id:18, name:"Larva", icon:"🐛", spriteId:"larva", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
       desc:"Cría barata y frágil. Inunda el frente con números puros.",
-      tags:["melee","ground"], counters:'Muy barata · Frágil · Débil vs <b>Ranged</b>',
-      inmun:[], cost:30, upgs:["dmg","hp","spd"],
-      availableEras:[0,1,2,3,4], specialAbility:null, targetType:null,
+      tags:["melee","ground"], class:"warrior", upgStats:["hp","spd"],
+      inmun:[], availableEras:[0,1,2,3,4], specialAbility:{ type:"transform", after:15, into:[16,24] }, targetType:"ground",
       cooldown:0.6, sounds:{spawn:null,attack:null,die:null},
-      stats:  { cost:30, hp:80, dmg:10, spd:38, range:55, g:18, xp:15, cd:0.60 },
-      growth: { cost:1.70, hp:1.75, dmg:1.72, g:1.70, xp:1.70 } },
-    19: { id:19, name:"Insecto", icon:"🦗", spriteId:"insect", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
-      desc:"Bestia acorazada de empuje. Aguanta el daño y rompe líneas.",
-      tags:["melee","ground"], counters:'Resistente · Empuje · Débil vs <b>Ranged</b>',
-      inmun:[], cost:120, upgs:["dmg","hp","spd"],
-      availableEras:[0,1,2,3,4], specialAbility:null, targetType:null,
-      cooldown:0.62, sounds:{spawn:null,attack:null,die:null},
-      stats:  { cost:120, hp:260, dmg:26, spd:42, range:60, g:55, xp:45, cd:0.62 },
-      growth: { cost:1.75, hp:1.82, dmg:1.76, g:1.74, xp:1.74 } },
-    20: { id:20, name:"Valkir", icon:"🦇", spriteId:"valkir", race:"monsters", combatStyle:"range", movementType:"aerial", homeEra:1,
+      stats:  { cost:30, hp:80, dmg:5, spd:30, range:55, g:18, xp:15, cd:0.60 },
+      growth: { hp:1.10, dmg:1.10 } },
+
+     20: { id:20, name:"Valkir", icon:"🦇", spriteId:"valkir", race:"monsters", combatStyle:"range", movementType:"aerial", homeEra:1,
       desc:"Bestia alada que ataca con orbes de energía desde el cielo. Frágil pero letal.",
-      tags:["ranged","aerial"], counters:'Aéreo · Cañón de cristal · Débil vs <b>Ranged</b>',
-      inmun:[], cost:300, upgs:["dmg","range","spd"],
-      availableEras:[1,2,3], specialAbility:null, targetType:null,
+      tags:["ranged","aerial"], class:"ranger", upgStats:["dmg","range","spd"],
+      inmun:[], availableEras:[1,2,3], specialAbility:null, targetType:null,
       cooldown:0.85, sounds:{spawn:null,attack:null,die:null},
       stats:  { cost:300, hp:360, dmg:46, spd:52, range:250, g:130, xp:110, cd:0.85 },
-      growth: { cost:1.62, hp:1.70, dmg:1.68, g:1.62, xp:1.62 } },
+      growth: { hp:1.12, dmg:1.12 } },
      21: { id:21, name:"Wormmint", icon:"🧠", spriteId:"wormmint", race:"monsters", combatStyle:"range", movementType:"ground", homeEra:3,
        desc:"Soporte psíquico. No hace daño: controla la mente de un enemigo al azar hasta su muerte.",
-       tags:["ranged","ground","support"], counters:'Sin daño · Control mental (cd 20s) · Débil vs <b>Melee</b>',
-       inmun:[], cost:1400, upgs:["dmg","range","spd"],
-       availableEras:[3,4], specialAbility:{ type:"mindControl", cd:20 }, targetType:null,
+       tags:["ranged","ground","support"], class:"support", upgStats:["hp","range","spd"],
+       inmun:[], availableEras:[3,4], specialAbility:{ type:"mindControl", cd:20 }, targetType:null,
        cooldown:10, sounds:{spawn:null,attack:null,die:null},
        stats:  { cost:1400, hp:300, dmg:0, spd:26, range:190, g:420, xp:320, cd:1.5 },
-       growth: { cost:1.50, hp:1.55, dmg:1, g:1.50, xp:1.50 } },
+       growth: { hp:1.08, dmg:1 } },
 
   // ── Xerath (Monstruo — solo ataca aéreos) ────────────────────────────
-    22: { id:22, name:"Xerath", icon:"🦞", spriteId:"xerath", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
+     22: { id:22, name:"Xerath", icon:"🦞", spriteId:"xerath", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
       desc:"Criatura abisal que ataca objetivos aéreos con sus tenazas. Inútil contra terrestres.",
-      tags:["melee","ground","antiair"], counters:'Solo ataca <b>Aéreos</b> · Frágil vs <b>Melee terrestre</b>',
-      inmun:["ground"], cost:80, upgs:["dmg","hp","spd"],
-      availableEras:[0,1,2,3,4], specialAbility:null,
+      tags:["melee","ground","antiair"], class:"assassin", upgStats:["dmg","spd"],
+      inmun:["ground"], availableEras:[2,3], specialAbility:null,
       targetType:"aerial",
       cooldown:0.65, sounds:{spawn:null,attack:null,die:null},
       stats:  { cost:80, hp:160, dmg:28, spd:50, range:65, g:38, xp:30, cd:0.65 },
-      growth: { cost:1.75, hp:1.78, dmg:1.80, g:1.74, xp:1.74 } },
+      growth: { hp:1.12, dmg:1.12 } },
 
   // ── Kurkor (Monstruo — solo ataca terrestres) ────────────────────────
-    23: { id:23, name:"Kurkor", icon:"🦎", spriteId:"kurkor", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
+     23: { id:23, name:"Kurkor", icon:"🦎", spriteId:"kurkor", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
       desc:"Bestia acorazada de embestida. Ignora unidades aéreas y aplasta terrestres.",
-      tags:["melee","ground"], counters:'Solo ataca <b>Terrestres</b> · Ignorado por aéreos',
-      inmun:["aerial"], cost:130, upgs:["dmg","hp","spd"],
-      availableEras:[0,1,2,3,4], specialAbility:null,
+      tags:["melee","ground"], class:"tank", upgStats:["dmg","hp","spd"],
+      inmun:["aerial"], availableEras:[0,1], specialAbility:null,
       targetType:"ground",
       cooldown:0.72, sounds:{spawn:null,attack:null,die:null},
-      stats:  { cost:130, hp:400, dmg:24, spd:35, range:70, g:60, xp:48, cd:0.72 },
-      growth: { cost:1.73, hp:1.80, dmg:1.76, g:1.73, xp:1.73 } },
+      stats:  { cost:130, hp:400, dmg:24, spd:28, range:70, g:60, xp:48, cd:0.72 },
+      growth: { hp:1.10, dmg:1.10 } },
+
+  // ── Hydralisk (Monstruo — range, ataca aéreo y terrestre) ────────────
+     24: { id:24, name:"Hydralisk", icon:"🐍", spriteId:"hydralisk", race:"monsters", combatStyle:"range", movementType:"ground", homeEra:0,
+      desc:"Escupe púas a distancia. Versátil: alcanza tanto a unidades terrestres como aéreas.",
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"],
+      inmun:[], availableEras:[1,2,3,4], specialAbility:null,
+      targetType:null,
+      cooldown:2.5, sounds:{spawn:null,attack:null,die:null},
+      stats:  { cost:110, hp:220, dmg:30, spd:40, range:210, g:55, xp:45, cd:0.80 },
+      growth: { hp:1.10, dmg:1.10 } },
 };
 
 // Razas disponibles (cada unidad pertenece a una raza)
@@ -238,12 +219,12 @@ function baseKey(age, race) { return `assets/bases/${AGES[age]}/${baseFile(race)
 
 // HP de base por raza (base + crecimiento por edad, regen/s)
 const RACE_BASE_STATS = {
-  humans:  { base: 2000, perAge: 800,  regen: 0  },
-  monsters:{ base: 1500, perAge: 1000, regen: 4  },
+  humans:  { base: 2000, perAge: 1200, regen: [0, 0] },
+  monsters:{ base: 1500, perAge: 1500, regen: [4, 3] },
 };
 
 // Escala visual por spriteId (unidades monstruo son más grandes, se reducen)
-const UNIT_SCALE = { zerling: 0.55, larva: 0.48, insect: 0.5, valkir: 0.62, wormmint: 0.6, xerath: 0.55, kurkor: 0.65 };
+const UNIT_SCALE = { zerling: 0.55, larva: 0.48, valkir: 0.62, wormmint: 0.7, xerath: 0.65, kurkor: 0.8, hydralisk: 0.7, ultralisk: 1.3 };
 // Escala visual de bases por raza
 const BASE_SCALE = { monsters: 1.2 };
 
@@ -374,17 +355,17 @@ const STATS = [
 ];
 
 let paused = false;
-const EVOLVE_COST = [400, 1000, 2000, 3500]; // xp para pasar de edad i a i+1
+const EVOLVE_COST = [600, 1200, 2400, 4000]; // xp para pasar de edad i a i+1
 const BASE_DMG_MULT = 2.5; // las unidades pegan más fuerte a la base
 const SPEED_MULT = 1.5; // multiplicador global de velocidad de unidades
 const DMG_MULT = 1.5;   // multiplicador global de daño (ritmo de combate)
-const PASSIVE_GOLD = 14;       // oro/seg pasivo
-const AGE_GOLD = 6;            // oro/seg extra por cada edad alcanzada
+const PASSIVE_GOLD = 10;       // oro/seg pasivo
+const AGE_GOLD = 5;            // oro/seg extra por cada edad alcanzada
 const SPAWN_CD = 0.8;          // s entre spawns
 const DIE_TIME = 2.0;          // s que el cadáver permanece antes de desaparecer
 const DIE_FADE_START = 1.3;    // s en que el cadáver empieza a desvanecerse
 const FLIGHT_H = 115;           // px que las unidades aéreas vuelan sobre el suelo
-const PLAYER_PASSIVE_XP = 5;   // xp/seg pasivo para el jugador (evoluciona por tiempo)
+const PLAYER_PASSIVE_XP = 3;   // xp/seg pasivo para el jugador (evoluciona por tiempo)
 const AI_PASSIVE_XP = 6;        // xp/seg pasivo para la IA
 
 // ---- Config multijugador online ----------------------------------------
@@ -589,17 +570,52 @@ function drawDayFilter() {
 
 // ---- Sistema de mejoras (POR UNIDAD) ---------------------------------
 const MAX_UPG = 5;
-const UPG_DMG = 0.16;        // +16% daño por nivel de mejora
-const UPG_HP = 0.16;         // +16% vida por nivel de mejora
-const UPG_SPD = 0.12;        // -12% cooldown de ataque por nivel de mejora
-const UPG_RANGE = 0.05;      // +5% rango por nivel (mejora del range)
-const DMG_UPG_RATE = { melee: 1, range: 0.5 }; // el range gana menos daño por mejora
-const MAX_UNIT_LEVEL = 1 + MAX_UPG; // Nv6 = las 3 mejoras al máximo
+const UPG_DMG = 0.16;
+const UPG_HP = 0.16;
+const UPG_SPD = 0.12;
+const UPG_RANGE = 0.05;
+const MAX_UNIT_LEVEL = 1 + MAX_UPG;
 
-// Mejoras de cada unidad: range = [dmg, range, spd]; el resto = [dmg, hp, spd].
+// Sistema de clases: cada clase tiene una fórmula base que escala por era.
+// stat(era) = base * (1 + growth)^era
+const CLASS_BASE = {
+  warrior: {
+    hp: [120, 0.85], dmg: [18, 0.76], spd: [45, 3],
+    range: 60, cd: 0.7, costMult: 1.0, goldMult: 0.45, xpMult: 0.35,
+  },
+  tank: {
+    hp: [400, 0.82], dmg: [30, 0.78], spd: [30, 3],
+    range: 70, cd: 1.2, costMult: 1.5, goldMult: 0.50, xpMult: 0.40,
+  },
+  assassin: {
+    hp: [70, 0.80], dmg: [25, 0.75], spd: [55, 5],
+    range: 55, cd: 0.5, costMult: 0.85, goldMult: 0.45, xpMult: 0.35,
+  },
+  ranger: {
+    hp: [70, 0.82], dmg: [14, 0.80], spd: [40, 3],
+    range: 240, cd: 1.0, costMult: 1.2, goldMult: 0.50, xpMult: 0.40,
+  },
+  support: {
+    hp: [300, 0.55], dmg: [0, 0], spd: [26, 2],
+    range: 190, cd: 1.5, costMult: 1.3, goldMult: 0.45, xpMult: 0.35,
+  },
+};
+const CLASS_UPG_DEFAULTS = {
+  warrior: ["dmg", "hp", "spd"],
+  tank:    ["dmg", "hp", "spd"],
+  assassin:["dmg", "spd"],
+  ranger:  ["dmg", "range", "spd"],
+  support: ["hp", "range", "spd"],
+};
+const RACE_COST_MULT = { humans: 1.0, monsters: 0.55 };
+
+
+// Mejoras de cada unidad: usa upgStats de la unidad, o fallback por clase.
 function unitUpgStats(uid) {
   const u = UNIT_CATALOG[uid];
-  return (u && u.combatStyle === "range") ? ["dmg", "range", "spd"] : ["dmg", "hp", "spd"];
+  if (u && u.upgStats) return u.upgStats;
+  if (u && u.class && CLASS_UPG_DEFAULTS[u.class]) return CLASS_UPG_DEFAULTS[u.class];
+  return ["dmg", "hp", "spd"];
 }
 const UPG_LABEL = { dmg: "+ATK", hp: "+HP", spd: "+VEL", range: "+RNG" };
 const UPG_COST_MULT = { dmg: 1.4, hp: 1.2, spd: 1.8, range: 1.5 };
@@ -628,8 +644,8 @@ function unitLevel(uupg, uid) {
   return 1 + (m === Infinity ? 0 : m);
 }
 
-// Stats base de una unidad (sin mejoras ni nivel). Todas las unidades tienen
-// `stats` propio con valores fijos (sin escalado por edad).
+// Stats base de una unidad (sin mejoras ni nivel).
+// Usa `stats` del catálogo si existe; si no, calcula desde CLASS_BASE.
 function unitBase(uid, age, type) {
   const u = uid != null ? UNIT_CATALOG[uid] : null;
   if (u && u.stats) {
@@ -637,12 +653,33 @@ function unitBase(uid, age, type) {
     return { cost: b.cost, hp: b.hp, dmg: b.dmg, spd: b.spd,
              range: b.range, g: b.g, xp: b.xp, cd: b.cd };
   }
+  // Fallback: generar desde la clase
+  if (u && u.class && CLASS_BASE[u.class]) {
+    const f = CLASS_BASE[u.class];
+    const race = u.race || "humans";
+    const raceM = RACE_COST_MULT[race] || 1.0;
+    const era = age || 0;
+    const calc = (base, growth) => Math.round(base * Math.pow(1 + growth, era));
+    const hp = f.hp[1] > 0 ? calc(f.hp[0], f.hp[1]) : f.hp[0];
+    const dmg = f.dmg[1] > 0 ? calc(f.dmg[0], f.dmg[1]) : f.dmg[0];
+    const spd = f.spd[1] > 0 ? calc(f.spd[0], f.spd[1]) : f.spd[0];
+    const rawPower = hp * 0.35 + dmg * 3;
+    const costMult = f.costMult || 1.0;
+    const cost = Math.round(rawPower * costMult * raceM);
+    return {
+      cost, hp, dmg, spd,
+      range: f.range,
+      g: Math.round(cost * (f.goldMult || 0.4)),
+      xp: Math.round(cost * (f.xpMult || 0.3)),
+      cd: f.cd,
+    };
+  }
   return STATS[age][type];
 }
 
 // Stats efectivos de una unidad (centralizado: lo usan Unit, las cards y la IA).
-// `uupg` = registro de mejoras de ESA unidad. El bonus de nivel escala TODAS
-// las stats mediante `growth^level` (individual por unidad).
+// `uupg` = registro de mejoras de ESA unidad. Solo aplica mejoras para stats
+// que aparecen en unitUpgStats(uid).
 function computeStats(uid, age, uupg) {
   const u = UNIT_CATALOG[uid] || {};
   const type = u.combatStyle || "melee";
@@ -651,11 +688,13 @@ function computeStats(uid, age, uupg) {
   const lv = unitLevel(uupg, uid);
   const g = u.growth || {};
   const gb = (k) => Math.pow(g[k] != null ? g[k] : 1, lv - 1);
-  const hp    = s.hp  * (1 + UPG_HP  * (uupg.hp  || 0)) * gb("hp");
-  const dmg   = s.dmg * DMG_MULT * (1 + UPG_DMG * (DMG_UPG_RATE[type] || 1) * (uupg.dmg || 0)) * gb("dmg");
-  const cd    = baseCd * (1 - UPG_SPD * (uupg.spd || 0)) * gb("cd");
+  const upgs = unitUpgStats(uid);
+  const has = (k) => upgs.includes(k);
+  const hp    = s.hp  * (1 + (has("hp")  ? UPG_HP  * (uupg.hp  || 0) : 0)) * gb("hp");
+  const dmg   = s.dmg * DMG_MULT * (1 + (has("dmg") ? UPG_DMG * (uupg.dmg || 0) : 0)) * gb("dmg");
+  const cd    = baseCd * (1 - (has("spd") ? UPG_SPD * (uupg.spd || 0) : 0)) * gb("cd");
   const spd   = s.spd * SPEED_MULT * gb("spd");
-  const range = s.range * (1 + UPG_RANGE * (uupg.range || 0)) * gb("range");
+  const range = s.range * (1 + (has("range") ? UPG_RANGE * (uupg.range || 0) : 0)) * gb("range");
   return { hp, dmg, cd, spd, range, resist: null, armor: 0, regen: 0, lvl: lv };
 }
 
@@ -666,12 +705,12 @@ function getBaseCD(age, type) {
 }
 
 // ---- Economía: aldeanos (oro/seg + oro/muerte + mejora) --------------
-const VILLAGER_GOLD = 4;
-const MAX_VILLAGERS = 10;
-const VILLAGER_KILL_BONUS = 3;
+const VILLAGER_GOLD = 5;
+const MAX_VILLAGERS = 8;
+const VILLAGER_KILL_BONUS = 4;
 const MAX_VILLAGER_LVL = 5;
-function villagerCost(n) { return Math.round(300 * Math.pow(1.65, n)); }
-function villagerLvlCost(lvl) { return Math.round(600 * Math.pow(1.85, lvl)); }
+function villagerCost(n) { return Math.round(250 * Math.pow(1.55, n)); }
+function villagerLvlCost(lvl) { return Math.round(500 * Math.pow(1.7, lvl)); }
 
 // ---- Torres defensivas -----------------------------------------------
 const MAX_SLOTS = 4;
@@ -761,7 +800,7 @@ const TOWER_ATTACK_FRAMES = [
 
 // ---- Carga de assets -------------------------------------------------
 const IMG = {}; // cache de imágenes por ruta
-const ASSET_V = "20"; // versión de assets (cache-busting); subir al regenerar sprites
+const ASSET_V = "21"; // versión de assets (cache-busting); subir al regenerar sprites
 let manifest = null;
 
 function loadImage(src, retries) {
@@ -852,22 +891,28 @@ const ctx = CV.getContext("2d");
 // recorre con la cámara. WORLD_W define cuán separadas están las bases.
 const WORLD_W = 1280, WORLD_H = 540;
 const W = WORLD_W, H = WORLD_H; // alias para código de gameplay
-const GROUND_Y = WORLD_H - 135;
+const GROUND_Y = WORLD_H - 240;
 const PLAYER_BASE_X = 90;
 const ENEMY_BASE_X = WORLD_W - 90;
 
 // ---- Cámara ----------------------------------------------------------
-let BW = 1280, BH = 540;       // tamaño del buffer del canvas (px reales)
-let camX = 0, camY = 0;        // desplazamiento de cámara (unidades de mundo)
-let camScale = 1;              // px de buffer por unidad de mundo
-let viewW = WORLD_W, viewH = WORLD_H; // mundo visible
-let pxToWorld = 1;             // unidades de mundo por px CSS (para drag)
+let BW = 1280, BH = 540;
+let camX = 0, camY = 0;
+let camScale = 1;
+let viewW = WORLD_W, viewH = WORLD_H;
+let pxToWorld = 1;
+let zoomLevel = 1;
+const ZOOM_MIN = 0.4, ZOOM_MAX = 2.5, ZOOM_STEP = 0.1;
 
 function clampCam() {
-  camX = Math.max(0, Math.min(camX, Math.max(0, WORLD_W - viewW)));
-  // vertical: anclar para que el suelo/unidades queden cerca del borde inferior
-  const desiredY = GROUND_Y + 40 - viewH;
-  camY = Math.max(0, Math.min(WORLD_H - viewH, Math.max(0, desiredY)));
+  const maxCamX = Math.max(0, WORLD_W - viewW);
+  camX = Math.max(0, Math.min(camX, maxCamX));
+  if (viewH > WORLD_H) {
+    camY = (WORLD_H - viewH) / 2;
+  } else {
+    const desiredY = GROUND_Y + 40 - viewH;
+    camY = Math.max(0, Math.min(WORLD_H - viewH, Math.max(0, desiredY)));
+  }
 }
 
 function resizeCanvas() {
@@ -879,11 +924,16 @@ function resizeCanvas() {
   if (CV.width !== BW) CV.width = BW;
   if (CV.height !== BH) CV.height = BH;
   // "cover" del mundo: llena el canvas sin huecos (recorta el lado sobrante)
-  camScale = Math.max(BW / WORLD_W, BH / WORLD_H);
+  camScale = Math.min(BW / WORLD_W, BH / WORLD_H) * zoomLevel;
   viewW = BW / camScale;
   viewH = BH / camScale;
-  pxToWorld = dpr / camScale; // 1 px CSS = pxToWorld unidades de mundo
+  pxToWorld = dpr / camScale;
   clampCam();
+}
+
+function updateZoom(delta) {
+  zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoomLevel + delta));
+  resizeCanvas();
 }
 window.addEventListener("resize", resizeCanvas);
 
@@ -906,8 +956,14 @@ CV.addEventListener("touchmove", (e) => {
 }, { passive: false });
 window.addEventListener("touchend", camPointerUp);
 CV.addEventListener("wheel", (e) => {
-  camX += (e.deltaX || e.deltaY) * pxToWorld;
-  clampCam();
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    const dir = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+    updateZoom(dir);
+  } else {
+    camX += (e.deltaX || e.deltaY) * pxToWorld;
+    clampCam();
+  }
   e.preventDefault();
 }, { passive: false });
 
@@ -995,6 +1051,18 @@ class Unit {
     // balanceo vertical si vuela
     const bob = this.flying && !this.dying ? Math.sin(performance.now() / 380 + this.bobPhase) * 7 : 0;
     const drawY = this.y + bob;
+    // Sombra en el suelo (con blur para que no se vea tan falsa)
+    const shadowAlpha = this.dying ? Math.max(0, 1 - this.dieTimer / DIE_TIME) : (this.fade < 1 ? this.fade : 1);
+    const shadowW = w * 0.6, shadowH = w * 0.12;
+    const shadowY = GROUND_Y - 2 + (this.flying ? Math.sin(performance.now() / 380 + this.bobPhase) * 3 : 0);
+    ctx.save();
+    ctx.filter = "blur(3px)";
+    ctx.globalAlpha = shadowAlpha * 0.3;
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.beginPath(); ctx.ellipse(this.x, shadowY, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.filter = "none";
+    ctx.restore();
+
     ctx.save();
     ctx.translate(this.x, drawY);
     if (flip) ctx.scale(-1, 1);
@@ -1330,8 +1398,9 @@ function update(dt) {
   for (const s of ["player","enemy"]) {
     const st = G[s];
     const r = RACE_BASE_STATS[st.race] || RACE_BASE_STATS.humans;
-    if (r.regen > 0 && st.baseHp < baseMaxHp(st.age, st.race)) {
-      st.baseHp = Math.min(baseMaxHp(st.age, st.race), st.baseHp + r.regen * dt);
+    const rVal = Array.isArray(r.regen) ? r.regen[0] + r.regen[1] * st.age : (r.regen || 0);
+    if (rVal > 0 && st.baseHp < baseMaxHp(st.age, st.race)) {
+      st.baseHp = Math.min(baseMaxHp(st.age, st.race), st.baseHp + rVal * dt);
     }
     // Animación idle de la base (cambia frame cada 0.25s, 5 frames)
     st.baseAnimTimer += dt;
@@ -1406,21 +1475,29 @@ function stepSide(list, enemyList, side, enemyBaseX, enemyBaseSide, dt) {
       if (u.frame >= sf.length - 1) u.spawning = false;
       continue;
     }
-    // Unidades con habilidad en cooldown (ej: Wormmint) se quedan idle (solo tras primer uso)
-    if (u.ability && u.abilityUsed && u.abilityCd > 0) {
-      advanceAnim(u, dt, "idle", true);
+    // Unidades de soporte (ej: Wormmint): tras el primer uso se quedan fijas.
+    // Animación: "attack" mientras canaliza (su víctima sigue controlada y viva),
+    // "idle" mientras recarga (víctima muerta o control liberado).
+    if (u.ability && u.abilityUsed) {
+      const t = u.charmTarget;
+      const channeling = t && !t.dead && !t.dying && t.cc && t.cc.charmed && t.side === u.side;
+      advanceAnim(u, dt, channeling ? "attack" : "idle", true);
       continue;
     }
     const prevX = u.x;
     let attacking = false;
 
     const tdist = frontEnemy ? Math.abs(frontEnemy.x - u.x) : Infinity;
+    const enemyInRange = frontEnemy && tdist <= u.range;
 
-    if (frontEnemy && tdist <= u.range) {
+    if (enemyInRange && u.dmg > 0) {
       attacking = true;
       u.atkTimer -= dt;
       if (u.atkTimer <= 0) { u.atkTimer = u.cd; dealAttack(u, frontEnemy); }
-    } else if (!frontEnemy && u.targetType !== "aerial" && Math.abs(enemyBaseX - u.x) <= u.range) {
+    } else if (enemyInRange && u.dmg <= 0) {
+      // Soporte (Wormmint): no ataca; se queda quieto en idle (recargando habilidad)
+      // attacking se queda en false -> abajo cae a "idle"
+    } else if (!enemyInRange && u.targetType !== "aerial" && u.dmg > 0 && Math.abs(enemyBaseX - u.x) <= u.range) {
       attacking = true;
       u.atkTimer -= dt;
       if (u.atkTimer <= 0) {
@@ -1434,14 +1511,9 @@ function stepSide(list, enemyList, side, enemyBaseX, enemyBaseSide, dt) {
         G.floats.push(new FloatText(enemyBaseX, GROUND_Y - 150, "-" + Math.round(bdmg), "#ff7a5c"));
       }
     } else {
-      // avanzar respetando el espaciado con el aliado de delante (list[i-1])
       let nextX = u.x + dir * u.spd * dt;
-      // Spacing con aliados: se stackean (Battle Cats-style), solo no atravesar
-      const ahead = list[i - 1];
-      if (ahead) {
-        if (side === "player") nextX = Math.max(u.x, Math.min(nextX, ahead.x));
-        else nextX = Math.min(u.x, Math.max(nextX, ahead.x));
-      }
+      // Aliados: se traspasan libremente (no se bloquean entre sí); cada unidad
+      // sigue caminando hasta toparse con un enemigo. Solo los enemigos detienen.
       // Colisión con enemigos: no atravesar unidades enemigas (Battle Cats-style)
       if (enemyList.length > 0) {
         const fe = enemyList[0];
@@ -1483,7 +1555,7 @@ function updateAbilities(dt) {
       const foes = G.units.filter(t =>
         t.side !== u.side && !t.dead && !t.dying && !t.spawning && !(t.cc && t.cc.charmed));
       if (!foes.length) { u.abilityCd = 0.5; continue; } // sin objetivo: reintenta pronto
-      mindControl(foes[(Math.random() * foes.length) | 0], u.side);
+      mindControl(foes[(Math.random() * foes.length) | 0], u);
       u.abilityCd = u.ability.cd;
       u.abilityUsed = true;
     }
@@ -1491,13 +1563,14 @@ function updateAbilities(dt) {
 }
 
 // Controla la mente de una unidad: cambia su bando por 5 segundos.
-function mindControl(victim, newSide) {
+function mindControl(victim, caster) {
   if (!victim.cc) victim.cc = {};
   victim.cc.originalSide = victim.side;
-  victim.side = newSide;
+  victim.side = caster.side;
   victim.cc.charmed = true;
   victim.cc.charmedTime = 5;
   victim.atkTimer = 0;
+  caster.charmTarget = victim;   // el caster canaliza mientras esta víctima viva
   G.floats.push(new FloatText(victim.x, victim.y - 70, "🧠 ¡Controlado!", "#c77dff"));
 }
 
@@ -1752,8 +1825,11 @@ function runAI(dt) {
 
 // ---- Render ----------------------------------------------------------
 function drawBackground() {
+  // Fondo sólido que cubre todo el canvas visible (más allá del mundo si el zoom muestra extra)
+  ctx.fillStyle = "#0a0c12";
+  ctx.fillRect(-WORLD_W, -WORLD_H, WORLD_W * 3, WORLD_H * 3);
   const initImg = IMG["assets/bg/wallpaper_init.png"] || IMG["assets/bg/wallpaper.png"] || IMG["assets/bg/background.png"];
-  if (!initImg) { ctx.fillStyle = "#3a4d6b"; ctx.fillRect(0, 0, WORLD_W, WORLD_H); return; }
+  if (!initImg) return;
 
   const scale = Math.max(WORLD_W / initImg.width, WORLD_H / initImg.height);
   const sw = initImg.width * scale, sh = initImg.height * scale;
@@ -1920,8 +1996,10 @@ function render(paused) {
   for (const p of G.projectiles) p.draw();
   for (const f of G.floats) f.draw();
 
-  // overlay de pausa en espacio de pantalla
+  // overlay oscuro permanente + overlay de pausa en espacio de pantalla
   ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = "rgba(5,8,25,0.25)";
+  ctx.fillRect(0, 0, BW, BH);
   if (paused) {
     ctx.fillStyle = "rgba(0,0,0,.45)";
     ctx.fillRect(0, 0, BW, BH);
@@ -2429,7 +2507,7 @@ function syncUI() {
       btn.innerHTML = `${UPG_LABEL[stat]} L${l+1}<br>${uc}🪙`;
       const type = (UNIT_CATALOG[uid] || {}).combatStyle;
       const su = unitBase(uid, p.age, type);
-      const eff = stat === "dmg"   ? `+${Math.round(su.dmg * DMG_MULT * UPG_DMG * (DMG_UPG_RATE[type] || 1))} de daño`
+      const eff = stat === "dmg"   ? `+${Math.round(su.dmg * DMG_MULT * UPG_DMG)} de daño`
                 : stat === "hp"    ? `+${Math.round(su.hp * UPG_HP)} de vida`
                 : stat === "range" ? `+${Math.round(su.range * UPG_RANGE)} de rango`
                 : `+${Math.round(UPG_SPD * 100)}% vel. de ataque`;
@@ -2540,7 +2618,7 @@ function startGame() {
   resetGame();
   G.mode = "ai";
   buildShop();
-  requestAnimationFrame(resizeCanvas); // el canvas ya es visible
+  resizeCanvas();
   startMusic();
   if (!loopRunning) { loopRunning = true; requestAnimationFrame(loop); }
 }
@@ -2562,7 +2640,7 @@ function startTestGame() {
   G.mode = "test";
   G.player.gold += 5000; G.enemy.gold += 5000;
   buildShop();
-  requestAnimationFrame(resizeCanvas);
+  resizeCanvas();
   startMusic();
   if (!loopRunning) { loopRunning = true; requestAnimationFrame(loop); }
 }
@@ -2584,7 +2662,7 @@ function startOnlineGame() {
   buildShop();
   G.mode = "online";
   document.getElementById("restartBtn").disabled = false;
-  requestAnimationFrame(resizeCanvas);
+  resizeCanvas();
   startMusic();
   if (!loopRunning) { loopRunning = true; requestAnimationFrame(loop); }
 }
@@ -2816,8 +2894,10 @@ function defaultDeck() {
   }
   // Solo humanos tiene unidades por ahora (y zerling para monsters)
   for (let a = 0; a < AGES.length; a++) {
-    d["humans"][a] = UnitDB.getAvailableIdsByRace("humans", a);
-    d["monsters"][a] = UnitDB.getAvailableIdsByRace("monsters", a);
+    // cap a DECK_MAX: si hay más unidades disponibles que slots, el jugador
+    // elige el resto en el editor (mazo por defecto = las primeras DECK_MAX).
+    d["humans"][a] = UnitDB.getAvailableIdsByRace("humans", a).slice(0, DECK_MAX);
+    d["monsters"][a] = UnitDB.getAvailableIdsByRace("monsters", a).slice(0, DECK_MAX);
   }
   return d;
 }
@@ -2963,7 +3043,8 @@ function renderDeckInfo(uid) {
   const s = u.stats || {};
   const g = u.growth || {};
   const lines = [
-    { label: "🏛 Eras", value: u.availableEras.map(e => AGE_NAMES[e]).join(", ") },
+    { label: "🏛 Eras", value: u.availableEras.map(e => AGE_NAMES[e].replace("Era ", "")).join(", ") },
+    { label: "📋 Clase", value: u.class ? (u.class.charAt(0).toUpperCase() + u.class.slice(1)) : "—" },
     { label: "❤ Vida", value: s.hp || "—" },
     { label: "⚔ Daño", value: s.dmg || "—" },
     { label: "🏃 Velocidad", value: s.spd || "—" },
@@ -3021,7 +3102,6 @@ function renderDeckPool() {
     return u.name.toLowerCase().includes(filter)
       || String(u.id).includes(filter)
       || u.tags.some(t => t.includes(filter))
-      || u.counters.toLowerCase().includes(filter)
       || u.desc.toLowerCase().includes(filter);
   });
   for (const uid of available) {
@@ -3034,7 +3114,7 @@ function renderDeckPool() {
     card.innerHTML = `
       <div class="dci">${thumb}</div>
       <span class="dcn">${u.name}</span>
-      <span class="dcc">🪙${u.cost}</span>
+      <span class="dcc">🪙${u.stats.cost}</span>
       <div class="dtags">
         ${u.tags.map(t => `<span class="dctag dctag-tag-${t}">${t}</span>`).join("")}
       </div>`;
@@ -3068,7 +3148,7 @@ function renderDeckSlots() {
         <div class="dbody">
           <div class="dtop">
             <span class="dcn">${u.name}</span>
-            <span class="dcc">🪙${u.cost}</span>
+            <span class="dcc">🪙${u.stats.cost}</span>
           </div>
           <div class="dtags">
             ${u.tags.map(t => `<span class="dctag dctag-tag-${t}">${t}</span>`).join("")}
@@ -3125,7 +3205,6 @@ document.getElementById("deck-save-btn").addEventListener("click", () => {
     }
   }
   saveDeck(currentDeck);
-  closeDeckBuilder();
 });
 
 window.addEventListener("keydown", (e) => {
