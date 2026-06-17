@@ -658,7 +658,7 @@ canvas {
 
 #deck-content {
   display: flex; gap: 14px; flex: 1;
-  padding: 0 20px; min-height: 0;
+  padding: 0 20px; min-height: 0; overflow-y: auto;
 }
 
 /* Slots del mazo (izquierda) */
@@ -825,6 +825,8 @@ canvas {
 .deck-actions {
   display: flex; align-items: center; gap: 12px;
   padding: 12px 20px; justify-content: space-between;
+  background: linear-gradient(160deg, #0d0f17 0%, #141824 50%, #1a1f2e 100%);
+  flex-shrink: 0;
 }
 #deck-error { font-size: 12px; }
 .deck-main-btns { display: flex; gap: 8px; }
@@ -934,15 +936,14 @@ canvas {
   #econ-section .econ-card { padding: 3px 6px; }
 
   /* Deck builder responsive */
-  #deck-builder { overflow-y: auto; }
   #deck-builder .menu-title { font-size: 20px; }
   .deck-subtitle { font-size: 11px; }
-  #deck-content { flex-direction: column; }
+  #deck-content { flex-direction: column; overflow-y: auto; }
   #deck-slots { width: 100%; max-height: none; }
   #deck-pool { max-height: none; }
   #deck-info { width: 100%; max-height: none; }
   #deck-pool-list { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
-  .deck-actions { flex-wrap: wrap; font-size: 12px; }
+  .deck-actions { flex-wrap: wrap; font-size: 12px; position: sticky; bottom: 0; z-index: 10; }
   .deck-main-btns { width: 100%; }
   .deck-main-btns .menu-btn { flex: 1; font-size: 13px; padding: 10px 8px; }
 }
