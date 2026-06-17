@@ -361,8 +361,8 @@ canvas {
   flex-shrink: 0;
 }
 .card-slot.empty .card {
-  opacity: 0.25;
-  border: 1px dashed rgba(255,255,255,.14);
+  opacity: 0.45;
+  border: 1px dashed rgba(255,255,255,.25);
   cursor: default;
   pointer-events: none;
 }
@@ -907,11 +907,13 @@ canvas {
 
   canvas { min-height: 30vh; }
   #bottom-panel {
-    max-height: 48vh;
+    max-height: 60vh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 50px;
   }
+  #cards-area { min-width: min(600px, max-content); }
+  #cards-area::after { content: ""; min-width: 8px; }
   #bottom-panel::-webkit-scrollbar { width: 6px; }
   #bottom-panel::-webkit-scrollbar-thumb { background: #3a4150; border-radius: 3px; }
 
