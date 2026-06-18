@@ -962,3 +962,146 @@ canvas {
   #deck-builder { min-height: 100%; }
 }
 audio#bgm { display: none; }
+
+/* ══════════ RAREZAS (borde por color; legendaria = amarillo) ══════════ */
+.rarity-common    { --rar: #9aa0a6; }
+.rarity-uncommon  { --rar: #4fd16b; }
+.rarity-rare      { --rar: #4a90e2; }
+.rarity-epic      { --rar: #a64ee0; }
+.rarity-legendary { --rar: #f5c518; }
+
+/* Cards del editor (pool) */
+.dcard[class*="rarity-"]        { border-color: var(--rar); }
+.dcard[class*="rarity-"]:hover  { border-color: var(--rar); box-shadow: 0 4px 16px rgba(0,0,0,.3); transform: translateY(-2px); }
+.dcard.rarity-epic, .dcard.rarity-legendary { box-shadow: 0 0 12px -3px var(--rar); }
+.dcard.selected { box-shadow: 0 0 0 2px #f0c940, 0 0 16px rgba(240,201,64,.3); }
+.dcard { position: relative; }
+.dcard .dcount {
+  position: absolute; top: 4px; right: 4px; z-index: 2;
+  background: #0d0f17; color: #f0c940; border: 1px solid var(--rar, #555);
+  font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 6px;
+}
+.dctag-rar { border: none; }
+
+/* Slots del mazo */
+.deck-slot[class*="rarity-"] { border-style: solid; border-color: var(--rar); }
+.deck-slot.rarity-epic, .deck-slot.rarity-legendary { box-shadow: 0 0 10px -3px var(--rar); }
+
+/* Cards en partida */
+.card[class*="rarity-"] { border: 2px solid var(--rar); }
+.card.rarity-epic, .card.rarity-legendary { box-shadow: 0 0 10px -2px var(--rar); }
+
+.deck-pool-empty { grid-column: 1/-1; text-align: center; color: #8a93a6; padding: 28px 12px; font-size: 13px; line-height: 1.6; }
+
+/* ══════════ Monedas en menú ══════════ */
+.menu-coins {
+  text-align: center; font-size: 20px; font-weight: 800; color: #f0c940;
+  margin: -6px 0 14px; letter-spacing: .5px;
+}
+
+/* ══════════ TIENDA ══════════ */
+#shop {
+  position: fixed; inset: 0; z-index: 60; overflow-y: auto;
+  background: linear-gradient(160deg, #0d0f17 0%, #141824 100%);
+  padding: 24px 16px 60px; display: flex; flex-direction: column; align-items: center;
+}
+.shop-coins { font-size: 18px; font-weight: 800; color: #f0c940; margin-bottom: 4px; }
+#shop-packs {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px; width: 100%; max-width: 760px; margin: 18px 0;
+}
+.pack-card {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 14px; border-radius: 14px; border: 2px solid #2d3548;
+  background: linear-gradient(160deg, rgba(30,36,52,.6), rgba(20,25,38,.6));
+}
+.pack-art {
+  width: 96px; height: 128px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; font-size: 48px;
+  box-shadow: inset 0 0 24px rgba(0,0,0,.45), 0 4px 14px rgba(0,0,0,.4);
+}
+.pack-name { font-size: 16px; font-weight: 800; color: #e8eef6; }
+.pack-sub  { font-size: 11px; color: #8a93a6; margin-top: -4px; }
+.pack-buy  { padding: 8px 18px !important; font-size: 14px !important; }
+.pack-buy:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Apertura de sobre (overlay) */
+#shop-reveal {
+  position: fixed; inset: 0; z-index: 70; display: flex;
+  align-items: center; justify-content: center; background: rgba(5,7,12,.88);
+}
+.shop-reveal-box {
+  background: linear-gradient(160deg, #161b28, #0e1118); border: 1px solid #2d3548;
+  border-radius: 16px; padding: 24px; max-width: 720px; width: 92%;
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
+}
+#shop-reveal-cards {
+  display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+}
+.reveal-card {
+  position: relative; width: 116px; min-height: 150px; padding: 10px 8px;
+  border-radius: 12px; border: 2px solid var(--rar, #555);
+  background: linear-gradient(160deg, rgba(30,36,52,.85), rgba(18,22,34,.85));
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  animation: revealPop .35s ease both;
+}
+.reveal-card.rarity-epic, .reveal-card.rarity-legendary { box-shadow: 0 0 18px -2px var(--rar); }
+.reveal-card.lucky::before {
+  content: "★"; position: absolute; top: -10px; right: -6px; font-size: 20px;
+  color: #f5c518; text-shadow: 0 0 6px #f5c518;
+}
+.reveal-card.wasted { opacity: .5; filter: grayscale(.5); }
+.reveal-card .rv-thumb {
+  width: 78px; height: 78px; display: flex; align-items: center; justify-content: center;
+  font-size: 40px; background: rgba(13,15,23,.5); border-radius: 8px;
+}
+.reveal-card .rv-thumb img { width: 70px; height: 70px; object-fit: contain; image-rendering: pixelated; }
+.reveal-card .rv-name { font-size: 12px; font-weight: 700; color: #e8eef6; text-align: center; }
+.reveal-card .rv-rar  { font-size: 11px; font-weight: 800; }
+.rv-tag { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; }
+.rv-new   { background: rgba(80,200,120,.2); color: #6adb80; }
+.rv-dup   { background: rgba(74,144,226,.2); color: #7ab0ec; }
+.rv-waste { background: rgba(160,90,90,.2); color: #e08a8a; }
+@keyframes revealPop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ══════════ Panel de investigación (árbol tecnológico, derecha del HUD) ══════════ */
+#research-section {
+  display: flex; flex-direction: column; gap: 5px;
+  width: 372px; max-height: 280px; flex: 0 0 auto;
+  background: linear-gradient(160deg, rgba(20,26,40,.55), rgba(14,18,28,.55));
+  border: 1px solid #2a3450; border-radius: 10px; padding: 7px 8px;
+  box-sizing: border-box;
+}
+.rs-cols { display: flex; gap: 8px; min-height: 0; flex: 1; }
+.rs-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.rs-col + .rs-col { border-left: 1px solid #2a3450; padding-left: 8px; }
+.rs-title { font-size: 11px; font-weight: 800; color: #cdd6e6; letter-spacing: .3px; text-align: center; }
+.rs-title-race { color: #ffd98a; }
+.rs-empty { font-size: 9px; color: #6b7488; text-align: center; font-style: italic; padding: 6px 2px; }
+.rs-ugroup { display: flex; flex-direction: column; gap: 3px; margin-bottom: 3px; }
+.rs-uname { font-size: 10px; font-weight: 800; color: #b8c2d6; padding: 1px 2px; }
+.rs-uname small { font-weight: 600; color: #7f8aa0; font-size: 8.5px; }
+.rs-utech { background: rgba(40,34,58,.7); border-color: #463a6a; }
+.rs-utech:hover:not(:disabled) { border-color: #c79bff; background: rgba(58,48,84,.85); }
+.rs-list { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; padding-right: 2px; flex: 1; min-height: 0; }
+.rs-list::-webkit-scrollbar { width: 6px; }
+.rs-list::-webkit-scrollbar-thumb { background: #2f3a55; border-radius: 3px; }
+.rs-tech {
+  display: flex; align-items: center; gap: 7px; width: 100%;
+  background: rgba(34,42,62,.7); border: 1px solid #313c58; border-radius: 7px;
+  padding: 6px 8px; cursor: pointer; color: #e6ecf5; transition: all .1s; text-align: left;
+}
+.rs-tech:hover:not(:disabled) { border-color: #f7c948; background: rgba(48,58,84,.8); }
+.rs-tech:disabled { opacity: .45; cursor: not-allowed; }
+.rs-tech.maxed { opacity: .7; border-color: #4fd16b55; }
+.rs-ico { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+.rs-name { flex: 1; min-width: 0; font-size: 11.5px; font-weight: 700; line-height: 1.2; display: flex; flex-direction: column; }
+.rs-name small { font-weight: 500; font-size: 9px; color: #8a93a6; }
+.rs-lvl { font-size: 11px; font-weight: 700; color: #9fd8ff; flex-shrink: 0; }
+.rs-cost { font-size: 11px; font-weight: 700; color: #f0c940; flex-shrink: 0; min-width: 44px; text-align: right; }
+.rs-tech.maxed .rs-cost { color: #4fd16b; }
+.rs-locked { font-size: 9px; color: #6b7488; text-align: center; font-style: italic; }
+@media (max-width: 767px) {
+  #research-section { width: 100%; max-height: 120px; }
+}

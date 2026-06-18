@@ -4,22 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Age of War — Web</title>
-<link rel="stylesheet" href="style.css?v=42">
+<link rel="stylesheet" href="style.css?v=62">
 </head>
 <body>
 
 <!-- Menú principal -->
 <div id="main-menu" class="hidden">
   <h1 class="menu-title">⚔ AGE OF WAR ⚔</h1>
+  <div class="menu-coins">🪙 <span id="menu-coins-val">0</span></div>
   <div class="menu-buttons">
     <button id="btn-vs-ia" class="menu-btn">🤖 VS IA (Local)</button>
     <button id="btn-vs-online" class="menu-btn">🌐 VS Online</button>
     <button id="btn-deck" class="menu-btn">📜 Editor de Mazo</button>
+    <button id="btn-shop" class="menu-btn">🛒 Tienda</button>
     <button id="btn-vs-test" class="menu-btn">🧪 Zona de Test</button>
   </div>
   <div class="menu-race-select">
     <label>Raza activa:</label>
     <select id="main-race-select"></select>
+  </div>
+  <div class="menu-race-select">
+    <label>🤖 Raza de la IA:</label>
+    <select id="ai-race-select"></select>
   </div>
   <p class="menu-footer">Selecciona modo de juego</p>
 </div>
@@ -83,6 +89,24 @@
     <span id="deck-error" class="hidden" style="color:#fc8181;font-size:13px"></span>
     <div class="deck-main-btns">
       <button id="deck-save-btn" class="menu-btn">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tienda de sobres -->
+<div id="shop" class="hidden">
+  <h1 class="menu-title">🛒 Tienda de Sobres</h1>
+  <div class="shop-coins">Saldo: 🪙 <span id="shop-coins-val">0</span></div>
+  <p class="deck-subtitle">Compra sobres de cada raza · 5 cartas · la última carta puede salir más rara · máx. 2 copias por carta</p>
+  <div id="shop-packs"></div>
+  <div class="deck-actions">
+    <button id="shop-back-btn" class="menu-btn back-btn">⬅ Volver</button>
+  </div>
+  <div id="shop-reveal" class="hidden">
+    <div class="shop-reveal-box">
+      <h2 class="menu-title">✨ ¡Sobre abierto!</h2>
+      <div id="shop-reveal-cards"></div>
+      <button id="shop-reveal-close" class="menu-btn">Continuar</button>
     </div>
   </div>
 </div>
@@ -169,6 +193,7 @@
       <div id="tower-section"></div>
       <div id="cards-area"></div>
       <div id="econ-section"></div>
+      <div id="research-section"></div>
     </div>
     <div id="botbar">
       <span class="ic">🪙</span><span id="gold">0</span>
@@ -196,6 +221,6 @@
 <div id="loading">Cargando assets…</div>
 <audio id="bgm" src="assets/audio/theme.mp3" loop preload="auto"></audio>
 
-<script src="game.js?v=42"></script>
+<script src="game.js?v=62"></script>
 </body>
 </html>

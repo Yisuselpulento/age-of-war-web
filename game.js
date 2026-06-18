@@ -16,8 +16,18 @@ const UNIT_NAMES = {
   13:"Comando",14:"Centinela",15:"Mecha",
   16:"Zerling",17:"Ultralisk",18:"Larva",
   20:"Valkir",21:"Wormmint",22:"Xerath",23:"Kurkor",24:"Hydralisk",
+  // Aliens (estilo Protoss)
+  25:"Zealot",26:"Dragoon",27:"Stalker",28:"Inmortal",29:"Arconte",30:"Fénix",31:"Explorador",32:"Alto Templario",33:"Coloso",34:"Centinela",
+  // Muertes (no-muertos / nigromantes)
+  35:"Esqueleto",36:"Zombi",37:"Nigromante",38:"Espectro",39:"Gólem Óseo",40:"Liche",41:"Caballero de la Muerte",42:"Banshee",43:"Abominación",44:"Señor Sepulcral",
+  // Demonios (agresivos)
+  45:"Diablillo",46:"Sabueso Infernal",47:"Súcubo",48:"Berserker",49:"Cerbero",50:"Íncubo",51:"Balrog",52:"Demonesa",53:"Señor del Foso",54:"Guardián Maldito",
+  // Mágicos (defensivos / hostigamiento)
+  55:"Aprendiz",56:"Acólito",57:"Clérigo",58:"Mago de Batalla",59:"Guardián",60:"Archimago",61:"Sacerdote",62:"Elemental",63:"Paladín Sagrado",64:"Hechicero",
 };
-const UNIT_IDS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24];
+const UNIT_IDS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24,
+  25,26,27,28,29,30,31,32,33,34, 35,36,37,38,39,40,41,42,43,44,
+  45,46,47,48,49,50,51,52,53,54, 55,56,57,58,59,60,61,62,63,64];
 
 const UNIT_CATALOG = {
   // ── Era 0 (Cave) ──────────────────────────────────────
@@ -40,7 +50,7 @@ const UNIT_CATALOG = {
       tags:["melee","ground"], class:"tank", upgStats:["dmg","hp","spd"],
       inmun:[], availableEras:[0], specialAbility:null, targetType:null,
       cooldown:1.5, sounds:{spawn:null,attack:null,die:null},
-      stats: { cost:200, hp:400, dmg:30, spd:30, range:75, g:90, xp:70 },
+      stats: { cost:200, hp:560, dmg:32, spd:30, range:72, g:90, xp:70 },
       growth: { hp:1.05, dmg:1.05 } },
 
   // ── Era 1 (Knight) ─────────────────────────────────────
@@ -140,8 +150,8 @@ const UNIT_CATALOG = {
       desc:"Criatura rápida que ataca en enjambre. Devastadora en grupo.",
       tags:["melee","ground"], class:"assassin", upgStats:["dmg","spd"],
       inmun:[], availableEras:[0,1,2,3,4], specialAbility:null, targetType:"ground",
-      cooldown:0.5, sounds:{spawn:"assets/audio/units/zerling/spawn.mp3",attack:null,die:null},
-      stats:  { cost:55, hp:70, dmg:10, spd:100, range:55, g:22, xp:18, cd:0.50 },
+      cooldown:0.45, sounds:{spawn:"assets/audio/units/zerling/spawn.mp3",attack:null,die:null},
+      stats:  { cost:38, hp:72, dmg:11, spd:100, range:55, g:18, xp:14, cd:0.50 },
       growth: { hp:1.10, dmg:1.10 } },
      17: { id:17, name:"Ultralisk", icon:"🦂", spriteId:"ultralisk", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
       desc:"Coloso blindado que arrasa líneas enemigas. Resistente y letal.",
@@ -151,11 +161,11 @@ const UNIT_CATALOG = {
       stats:  { cost:150, hp:500, dmg:34, spd:24, range:70, g:90, xp:70, cd:0.75 },
       growth: { hp:1.12, dmg:1.12 } },
      18: { id:18, name:"Larva", icon:"🐛", spriteId:"larva", race:"monsters", combatStyle:"melee", movementType:"ground", homeEra:0,
-      desc:"Cría barata y frágil. Inunda el frente con números puros.",
+      desc:"Cría barata y frágil. A los 10 s muta en Zerling o Hydralisk.",
       tags:["melee","ground"], class:"warrior", upgStats:["hp","spd"],
-      inmun:[], availableEras:[0,1,2,3,4], specialAbility:{ type:"transform", after:15, into:[16,24] }, targetType:"ground",
+      inmun:[], availableEras:[0,1,2,3,4], specialAbility:{ type:"transform", after:10, into:[16,24] }, targetType:"ground",
       cooldown:0.6, sounds:{spawn:null,attack:null,die:null},
-      stats:  { cost:30, hp:80, dmg:5, spd:30, range:55, g:18, xp:15, cd:0.60 },
+      stats:  { cost:30, hp:80, dmg:5, spd:22, range:55, g:18, xp:15, cd:0.60 },
       growth: { hp:1.10, dmg:1.10 } },
 
      20: { id:20, name:"Valkir", icon:"🦇", spriteId:"valkir", race:"monsters", combatStyle:"range", movementType:"aerial", homeEra:1,
@@ -202,6 +212,174 @@ const UNIT_CATALOG = {
       cooldown:2.5, sounds:{spawn:null,attack:null,die:null},
       stats:  { cost:110, hp:220, dmg:30, spd:40, range:210, g:55, xp:45, cd:0.80 },
       growth: { hp:1.10, dmg:1.10 } },
+
+  // ════════════ ALIENS (estilo Protoss — tecnología psiónica, escudos) ════════════
+     25: { id:25, name:"Zealot", icon:"⚔️", spriteId:"a_zealot", race:"aliens", combatStyle:"melee", movementType:"ground", homeEra:0,
+      desc:"Guerrero psiónico con hojas de energía. Sólido y veloz cuerpo a cuerpo.", psize:1.0,
+      tags:["melee","ground"], class:"warrior", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[0,1], specialAbility:null, targetType:null,
+      cooldown:0.6, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:60, hp:150, dmg:22, spd:48, range:62, g:32, xp:26, cd:0.55 }, growth:{ hp:1.11, dmg:1.11 } },
+     26: { id:26, name:"Dragoon", icon:"🔫", spriteId:"a_dragoon", race:"aliens", combatStyle:"range", movementType:"ground", homeEra:1,
+      desc:"Caminante acorazado que dispara descargas de fase a distancia.", psize:1.1,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[1,2], specialAbility:null, targetType:null,
+      cooldown:0.9, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:180, hp:170, dmg:26, spd:42, range:245, g:72, xp:55, cd:0.9 }, growth:{ hp:1.11, dmg:1.11 } },
+     27: { id:27, name:"Stalker", icon:"🟣", spriteId:"a_stalker", race:"aliens", combatStyle:"range", movementType:"ground", homeEra:2,
+      desc:"Acechador que lanza ráfagas psiónicas concentradas a un enemigo lejano.", psize:1.1,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[2,3], specialAbility:{ type:"bolt", cd:3, dmg:55, range:300 }, targetType:null,
+      cooldown:0.85, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:340, hp:280, dmg:40, spd:50, range:250, g:120, xp:95, cd:0.85 }, growth:{ hp:1.11, dmg:1.11 } },
+     28: { id:28, name:"Inmortal", icon:"🛡️", spriteId:"a_immortal", race:"aliens", combatStyle:"melee", movementType:"ground", homeEra:3,
+      desc:"Coloso con escudo de endurecimiento. Muralla de contención casi imparable.", psize:1.35,
+      tags:["melee","ground"], class:"tank", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[3,4], specialAbility:null, targetType:null,
+      cooldown:0.8, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:900, hp:1500, dmg:110, spd:34, range:72, g:300, xp:230, cd:0.8 }, growth:{ hp:1.10, dmg:1.10 } },
+     29: { id:29, name:"Arconte", icon:"⚡", spriteId:"a_archon", race:"aliens", combatStyle:"melee", movementType:"ground", homeEra:4,
+      desc:"Energía psiónica pura. Descarga tormentas que fulminan a distancia.", psize:1.25,
+      tags:["melee","ground"], class:"assassin", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[4], specialAbility:{ type:"bolt", cd:2.5, dmg:120, range:170 }, targetType:null,
+      cooldown:0.7, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:1300, hp:1600, dmg:160, spd:40, range:90, g:420, xp:330, cd:0.7 }, growth:{ hp:1.10, dmg:1.10 } },
+     30: { id:30, name:"Fénix", icon:"🛩️", spriteId:"a_phoenix", race:"aliens", combatStyle:"range", movementType:"aerial", homeEra:2,
+      desc:"Caza aéreo que barre el cielo con haces de iones.", psize:1.0,
+      tags:["ranged","aerial"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[2,3], specialAbility:null, targetType:null,
+      cooldown:0.85, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:360, hp:300, dmg:42, spd:54, range:250, g:130, xp:100, cd:0.85 }, growth:{ hp:1.11, dmg:1.11 } },
+     31: { id:31, name:"Explorador", icon:"✈️", spriteId:"a_scout", race:"aliens", combatStyle:"range", movementType:"aerial", homeEra:3,
+      desc:"Interceptor pesado con baterías antimateria.", psize:1.1,
+      tags:["ranged","aerial"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[3,4], specialAbility:null, targetType:null,
+      cooldown:0.8, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:760, hp:520, dmg:90, spd:56, range:260, g:270, xp:210, cd:0.8 }, growth:{ hp:1.11, dmg:1.11 } },
+     32: { id:32, name:"Alto Templario", icon:"🔮", spriteId:"a_templar", race:"aliens", combatStyle:"range", movementType:"ground", homeEra:3,
+      desc:"Soporte psiónico: restaura los escudos del aliado más herido.", psize:1.0,
+      tags:["ranged","ground","support"], class:"support", upgStats:["dmg","range","spd"], inmun:[], availableEras:[3,4], specialAbility:{ type:"heal", cd:4, amount:160, range:240 }, targetType:null,
+      cooldown:1.0, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:1000, hp:420, dmg:30, spd:30, range:200, g:320, xp:250, cd:1.2 }, growth:{ hp:1.10, dmg:1.10 } },
+     33: { id:33, name:"Coloso", icon:"🦿", spriteId:"a_colossus", race:"aliens", combatStyle:"range", movementType:"ground", homeEra:4,
+      desc:"Andador gigante con lanzas térmicas de largísimo alcance.", psize:1.4,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[4], specialAbility:{ type:"bolt", cd:3, dmg:90, range:340 }, targetType:null,
+      cooldown:0.9, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:1180, hp:1450, dmg:150, spd:40, range:305, g:400, xp:320, cd:0.9 }, growth:{ hp:1.10, dmg:1.10 } },
+     34: { id:34, name:"Centinela", icon:"🟡", spriteId:"a_sentry", race:"aliens", combatStyle:"range", movementType:"ground", homeEra:1,
+      desc:"Robot de apoyo que hostiga con descargas de iones.", psize:0.9,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[1,2], specialAbility:null, targetType:null,
+      cooldown:0.85, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:175, hp:135, dmg:24, spd:40, range:240, g:70, xp:55, cd:0.85 }, growth:{ hp:1.11, dmg:1.11 } },
+
+  // ════════════ DEATHS (no-muertos — resucitan e invocan) ════════════
+     35: { id:35, name:"Esqueleto", icon:"💀", spriteId:"d_skeleton", race:"deaths", combatStyle:"melee", movementType:"ground", homeEra:0,
+      desc:"Hueso reanimado, barato y desechable. Carne de cañón eterna.", psize:0.95,
+      tags:["melee","ground"], class:"warrior", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[0,1], specialAbility:null, targetType:null,
+      cooldown:0.55, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:40, hp:90, dmg:16, spd:46, range:60, g:22, xp:18, cd:0.55 }, growth:{ hp:1.11, dmg:1.11 } },
+     36: { id:36, name:"Zombi", icon:"🧟", spriteId:"d_zombie", race:"deaths", combatStyle:"melee", movementType:"ground", homeEra:0,
+      desc:"Lento pero resistente. Avanza sin descanso devorando todo.", psize:1.05,
+      tags:["melee","ground"], class:"warrior", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[0,1], specialAbility:null, targetType:null,
+      cooldown:0.7, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:70, hp:170, dmg:18, spd:30, range:62, g:30, xp:26, cd:0.7 }, growth:{ hp:1.11, dmg:1.11 } },
+     37: { id:37, name:"Nigromante", icon:"☠️", spriteId:"d_necromancer", race:"deaths", combatStyle:"range", movementType:"ground", homeEra:1,
+      desc:"Invoca esqueletos sin cesar mientras lanza energía oscura.", psize:1.0,
+      tags:["ranged","ground","summoner"], class:"support", upgStats:["dmg","range","spd"], inmun:[], availableEras:[1,2], specialAbility:{ type:"summon", cd:9, into:35, count:1 }, targetType:null,
+      cooldown:0.95, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:220, hp:160, dmg:22, spd:34, range:230, g:90, xp:70, cd:0.95 }, growth:{ hp:1.11, dmg:1.11 } },
+     38: { id:38, name:"Espectro", icon:"👻", spriteId:"d_wraith", race:"deaths", combatStyle:"range", movementType:"aerial", homeEra:2,
+      desc:"Aparición flotante que drena vida con gritos espectrales.", psize:1.0,
+      tags:["ranged","aerial"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[2,3], specialAbility:null, targetType:null,
+      cooldown:0.85, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:340, hp:280, dmg:40, spd:52, range:250, g:120, xp:95, cd:0.85 }, growth:{ hp:1.11, dmg:1.11 } },
+     39: { id:39, name:"Gólem Óseo", icon:"🦴", spriteId:"d_bonegolem", race:"deaths", combatStyle:"melee", movementType:"ground", homeEra:2,
+      desc:"Mole de huesos fusionados. Tanque que aplasta líneas enemigas.", psize:1.35,
+      tags:["melee","ground"], class:"tank", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[2,3], specialAbility:null, targetType:null,
+      cooldown:0.8, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:620, hp:900, dmg:70, spd:32, range:70, g:230, xp:180, cd:0.8 }, growth:{ hp:1.10, dmg:1.10 } },
+     40: { id:40, name:"Liche", icon:"🪦", spriteId:"d_lich", race:"deaths", combatStyle:"range", movementType:"ground", homeEra:3,
+      desc:"Archimago no-muerto que levanta hordas de esqueletos.", psize:1.05,
+      tags:["ranged","ground","summoner"], class:"support", upgStats:["dmg","range","spd"], inmun:[], availableEras:[3,4], specialAbility:{ type:"summon", cd:8, into:35, count:2 }, targetType:null,
+      cooldown:0.9, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:820, hp:460, dmg:85, spd:34, range:260, g:280, xp:230, cd:0.9 }, growth:{ hp:1.11, dmg:1.11 } },
+     41: { id:41, name:"Caballero de la Muerte", icon:"⚰️", spriteId:"d_deathknight", race:"deaths", combatStyle:"melee", movementType:"ground", homeEra:3,
+      desc:"Al caer, su maldición levanta esqueletos de su cadáver.", psize:1.15,
+      tags:["melee","ground"], class:"warrior", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[3,4], specialAbility:{ type:"reanimate", into:35, count:2 }, targetType:null,
+      cooldown:0.75, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:880, hp:900, dmg:100, spd:40, range:70, g:300, xp:240, cd:0.75 }, growth:{ hp:1.10, dmg:1.10 } },
+     42: { id:42, name:"Banshee", icon:"🦇", spriteId:"d_banshee", race:"deaths", combatStyle:"range", movementType:"aerial", homeEra:3,
+      desc:"Lamento aéreo que desgarra a distancia con alaridos sónicos.", psize:1.05,
+      tags:["ranged","aerial"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[3,4], specialAbility:null, targetType:null,
+      cooldown:0.8, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:780, hp:540, dmg:95, spd:54, range:260, g:270, xp:210, cd:0.8 }, growth:{ hp:1.11, dmg:1.11 } },
+     43: { id:43, name:"Abominación", icon:"🧌", spriteId:"d_abomination", race:"deaths", combatStyle:"melee", movementType:"ground", homeEra:4,
+      desc:"Amasijo colosal de cadáveres. Al morir escupe esqueletos.", psize:1.45,
+      tags:["melee","ground"], class:"tank", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[4], specialAbility:{ type:"reanimate", into:35, count:3 }, targetType:null,
+      cooldown:0.85, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:1300, hp:1700, dmg:150, spd:34, range:80, g:420, xp:330, cd:0.85 }, growth:{ hp:1.10, dmg:1.10 } },
+     44: { id:44, name:"Señor Sepulcral", icon:"👑", spriteId:"d_gravelord", race:"deaths", combatStyle:"range", movementType:"ground", homeEra:4,
+      desc:"Soberano de los muertos: invoca esqueletos en masa sin parar.", psize:1.2,
+      tags:["ranged","ground","summoner"], class:"support", upgStats:["dmg","range","spd"], inmun:[], availableEras:[4], specialAbility:{ type:"summon", cd:7, into:35, count:2 }, targetType:null,
+      cooldown:0.9, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:1200, hp:1500, dmg:140, spd:36, range:280, g:400, xp:320, cd:0.9 }, growth:{ hp:1.10, dmg:1.10 } },
+
+  // ════════════ DEMONS (agresivos — frenesí, robo de vida, daño alto) ════════════
+     45: { id:45, name:"Diablillo", icon:"👹", spriteId:"m_imp", race:"demons", combatStyle:"melee", movementType:"ground", homeEra:0,
+      desc:"Pequeño y rabioso. Enjambre veloz de garras ardientes.", psize:0.85,
+      tags:["melee","ground"], class:"assassin", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[0,1], specialAbility:null, targetType:null,
+      cooldown:0.5, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:55, hp:100, dmg:24, spd:58, range:60, g:28, xp:24, cd:0.5 }, growth:{ hp:1.12, dmg:1.12 } },
+     46: { id:46, name:"Sabueso Infernal", icon:"🐺", spriteId:"m_hellhound", race:"demons", combatStyle:"melee", movementType:"ground", homeEra:0,
+      desc:"Depredador que se cura con cada mordisco (robo de vida).", psize:1.0,
+      tags:["melee","ground"], class:"assassin", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[0,1], specialAbility:{ type:"lifesteal", frac:0.3 }, targetType:null,
+      cooldown:0.55, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:75, hp:130, dmg:26, spd:62, range:62, g:32, xp:28, cd:0.55 }, growth:{ hp:1.12, dmg:1.12 } },
+     47: { id:47, name:"Súcubo", icon:"💋", spriteId:"m_succubus", race:"demons", combatStyle:"range", movementType:"ground", homeEra:1,
+      desc:"Lanza látigos de fuego a distancia media.", psize:1.0,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[1,2], specialAbility:null, targetType:null,
+      cooldown:0.85, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:190, hp:140, dmg:30, spd:44, range:235, g:78, xp:60, cd:0.85 }, growth:{ hp:1.12, dmg:1.12 } },
+     48: { id:48, name:"Berserker", icon:"🪓", spriteId:"m_berserker", race:"demons", combatStyle:"melee", movementType:"ground", homeEra:2,
+      desc:"Entra en frenesí: aumenta su daño y velocidad de golpe.", psize:1.1,
+      tags:["melee","ground"], class:"warrior", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[2,3], specialAbility:{ type:"frenzy", cd:9, dur:4, dmgMul:1.6, spdMul:1.3 }, targetType:null,
+      cooldown:0.6, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:360, hp:520, dmg:70, spd:52, range:66, g:140, xp:110, cd:0.6 }, growth:{ hp:1.11, dmg:1.11 } },
+     49: { id:49, name:"Cerbero", icon:"🐕", spriteId:"m_cerberus", race:"demons", combatStyle:"melee", movementType:"ground", homeEra:2,
+      desc:"Bestia de tres cabezas que devora vida con cada ataque.", psize:1.25,
+      tags:["melee","ground"], class:"assassin", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[2,3], specialAbility:{ type:"lifesteal", frac:0.35 }, targetType:null,
+      cooldown:0.6, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:380, hp:560, dmg:66, spd:56, range:66, g:150, xp:120, cd:0.6 }, growth:{ hp:1.11, dmg:1.11 } },
+     50: { id:50, name:"Íncubo", icon:"🔥", spriteId:"m_incubus", race:"demons", combatStyle:"range", movementType:"aerial", homeEra:2,
+      desc:"Demonio alado que arroja bolas de fuego desde el cielo.", psize:1.0,
+      tags:["ranged","aerial"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[2,3], specialAbility:null, targetType:null,
+      cooldown:0.85, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:360, hp:300, dmg:48, spd:54, range:250, g:130, xp:100, cd:0.85 }, growth:{ hp:1.11, dmg:1.11 } },
+     51: { id:51, name:"Balrog", icon:"👿", spriteId:"m_balrog", race:"demons", combatStyle:"melee", movementType:"ground", homeEra:3,
+      desc:"Titán de fuego que entra en frenesí devastador.", psize:1.4,
+      tags:["melee","ground"], class:"warrior", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[3,4], specialAbility:{ type:"frenzy", cd:8, dur:5, dmgMul:1.7, spdMul:1.3 }, targetType:null,
+      cooldown:0.8, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:980, hp:1300, dmg:150, spd:44, range:80, g:330, xp:260, cd:0.8 }, growth:{ hp:1.10, dmg:1.10 } },
+     52: { id:52, name:"Demonesa", icon:"😈", spriteId:"m_demoness", race:"demons", combatStyle:"range", movementType:"ground", homeEra:3,
+      desc:"Hechicera infernal que castiga a distancia con maldiciones.", psize:1.05,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[3,4], specialAbility:null, targetType:null,
+      cooldown:0.85, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:800, hp:470, dmg:100, spd:44, range:270, g:280, xp:220, cd:0.85 }, growth:{ hp:1.11, dmg:1.11 } },
+     53: { id:53, name:"Señor del Foso", icon:"🟥", spriteId:"m_pitlord", race:"demons", combatStyle:"melee", movementType:"ground", homeEra:4,
+      desc:"Comandante demoníaco que se sacia de vida en combate.", psize:1.4,
+      tags:["melee","ground"], class:"tank", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[4], specialAbility:{ type:"lifesteal", frac:0.4 }, targetType:null,
+      cooldown:0.85, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:1350, hp:1600, dmg:180, spd:46, range:85, g:430, xp:340, cd:0.85 }, growth:{ hp:1.10, dmg:1.10 } },
+     54: { id:54, name:"Guardián Maldito", icon:"🦂", spriteId:"m_doomguard", race:"demons", combatStyle:"range", movementType:"aerial", homeEra:4,
+      desc:"Heraldo alado del apocalipsis. Bombardea sin piedad.", psize:1.2,
+      tags:["ranged","aerial"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[4], specialAbility:null, targetType:null,
+      cooldown:0.8, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:1180, hp:780, dmg:150, spd:56, range:270, g:400, xp:320, cd:0.8 }, growth:{ hp:1.11, dmg:1.11 } },
+
+  // ════════════ MAGICS (defensivos — curación, escudos, hostigamiento directo) ════════════
+     55: { id:55, name:"Aprendiz", icon:"🔵", spriteId:"g_apprentice", race:"magics", combatStyle:"range", movementType:"ground", homeEra:0,
+      desc:"Joven mago que hostiga con dardos arcanos a un enemigo lejano.", psize:0.9,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[0,1], specialAbility:{ type:"bolt", cd:3, dmg:24, range:280 }, targetType:null,
+      cooldown:0.9, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:85, hp:80, dmg:16, spd:40, range:240, g:40, xp:32, cd:0.9 }, growth:{ hp:1.11, dmg:1.11 } },
+     56: { id:56, name:"Acólito", icon:"✨", spriteId:"g_acolyte", race:"magics", combatStyle:"melee", movementType:"ground", homeEra:0,
+      desc:"Defensor con barrera mágica. Aguanta el frente con templanza.", psize:1.0,
+      tags:["melee","ground"], class:"tank", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[0,1], specialAbility:null, targetType:null,
+      cooldown:0.7, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:60, hp:160, dmg:16, spd:40, range:62, g:30, xp:26, cd:0.7 }, growth:{ hp:1.11, dmg:1.11 } },
+     57: { id:57, name:"Clérigo", icon:"⛪", spriteId:"g_cleric", race:"magics", combatStyle:"range", movementType:"ground", homeEra:1,
+      desc:"Sanador que restaura la vida del aliado más herido.", psize:1.0,
+      tags:["ranged","ground","support"], class:"support", upgStats:["dmg","range","spd"], inmun:[], availableEras:[1,2], specialAbility:{ type:"heal", cd:3.5, amount:120, range:240 }, targetType:null,
+      cooldown:1.0, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:200, hp:180, dmg:14, spd:34, range:200, g:80, xp:64, cd:1.2 }, growth:{ hp:1.11, dmg:1.10 } },
+     58: { id:58, name:"Mago de Batalla", icon:"🪄", spriteId:"g_battlemage", race:"magics", combatStyle:"range", movementType:"ground", homeEra:2,
+      desc:"Lanza proyectiles y descarga rayos arcanos de hostigamiento.", psize:1.05,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[2,3], specialAbility:{ type:"bolt", cd:2.5, dmg:60, range:320 }, targetType:null,
+      cooldown:0.85, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:340, hp:280, dmg:44, spd:42, range:260, g:120, xp:95, cd:0.85 }, growth:{ hp:1.11, dmg:1.11 } },
+     59: { id:59, name:"Guardián", icon:"🛡️", spriteId:"g_guardian", race:"magics", combatStyle:"melee", movementType:"ground", homeEra:2,
+      desc:"Centinela con escudo de runas. Pared defensiva inquebrantable.", psize:1.35,
+      tags:["melee","ground"], class:"tank", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[2,3], specialAbility:null, targetType:null,
+      cooldown:0.8, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:620, hp:1000, dmg:55, spd:34, range:70, g:230, xp:180, cd:0.8 }, growth:{ hp:1.10, dmg:1.10 } },
+     60: { id:60, name:"Archimago", icon:"🌟", spriteId:"g_archmage", race:"magics", combatStyle:"range", movementType:"ground", homeEra:3,
+      desc:"Maestro arcano que castiga sin tregua con rayos de poder.", psize:1.1,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[3,4], specialAbility:{ type:"bolt", cd:2, dmg:90, range:340 }, targetType:null,
+      cooldown:0.8, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:820, hp:460, dmg:90, spd:40, range:280, g:280, xp:230, cd:0.8 }, growth:{ hp:1.11, dmg:1.11 } },
+     61: { id:61, name:"Sacerdote", icon:"🙏", spriteId:"g_priest", race:"magics", combatStyle:"range", movementType:"ground", homeEra:3,
+      desc:"Sanador supremo: regenera grandes cantidades de vida aliada.", psize:1.05,
+      tags:["ranged","ground","support"], class:"support", upgStats:["dmg","range","spd"], inmun:[], availableEras:[3,4], specialAbility:{ type:"heal", cd:3, amount:280, range:260 }, targetType:null,
+      cooldown:1.0, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:900, hp:420, dmg:20, spd:32, range:210, g:300, xp:240, cd:1.2 }, growth:{ hp:1.10, dmg:1.10 } },
+     62: { id:62, name:"Elemental", icon:"💧", spriteId:"g_elemental", race:"magics", combatStyle:"range", movementType:"ground", homeEra:3,
+      desc:"Ser de pura energía que arroja torrentes elementales.", psize:1.15,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[3,4], specialAbility:null, targetType:null,
+      cooldown:0.85, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:800, hp:520, dmg:100, spd:40, range:270, g:280, xp:220, cd:0.85 }, growth:{ hp:1.11, dmg:1.11 } },
+     63: { id:63, name:"Paladín Sagrado", icon:"⚜️", spriteId:"g_paladin", race:"magics", combatStyle:"melee", movementType:"ground", homeEra:4,
+      desc:"Campeón sagrado con armadura bendecida. Muro inquebrantable.", psize:1.4,
+      tags:["melee","ground"], class:"tank", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[4], specialAbility:null, targetType:null,
+      cooldown:0.85, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:1300, hp:1800, dmg:140, spd:38, range:80, g:430, xp:340, cd:0.85 }, growth:{ hp:1.10, dmg:1.10 } },
+     64: { id:64, name:"Hechicero", icon:"🌀", spriteId:"g_sorcerer", race:"magics", combatStyle:"range", movementType:"ground", homeEra:4,
+      desc:"Hostigador supremo: rayos arcanos de altísimo alcance.", psize:1.1,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[4], specialAbility:{ type:"bolt", cd:2, dmg:130, range:360 }, targetType:null,
+      cooldown:0.8, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:1180, hp:780, dmg:140, spd:42, range:300, g:400, xp:320, cd:0.8 }, growth:{ hp:1.11, dmg:1.11 } },
 };
 
 // Razas disponibles (cada unidad pertenece a una raza)
@@ -221,7 +399,105 @@ function baseKey(age, race) { return `assets/bases/${AGES[age]}/${baseFile(race)
 const RACE_BASE_STATS = {
   humans:  { base: 2000, perAge: 1200, regen: [0, 0] },
   monsters:{ base: 1500, perAge: 1500, regen: [4, 3] },
+  aliens:  { base: 1900, perAge: 1300, regen: [3, 2] },  // escudos: regen ligera
+  deaths:  { base: 1700, perAge: 1250, regen: [2, 2] },
+  demons:  { base: 1600, perAge: 1400, regen: [0, 0] },  // agresivos: sin regen, más hp por era
+  magics:  { base: 2300, perAge: 1300, regen: [6, 4] },  // defensivos: más vida + regen alta
 };
+
+// Paleta procedural por raza (para unidades sin sprite sheet: se dibujan a canvas).
+// Aliens = estilo Protoss (oro/turquesa con brillo psiónico).
+const PROC_THEME = {
+  aliens: { body:"#2bd4c8", edge:"#f0c674", glow:"#7ff5ec", eye:"#fff7d6", dark:"#15706b" },
+  deaths: { body:"#d9d3bf", edge:"#7a7a6a", glow:"#9bff9b", eye:"#9bff9b", dark:"#4a4a40" },
+  demons: { body:"#8e1b14", edge:"#ff7a2b", glow:"#ff5230", eye:"#ffd24a", dark:"#3d0a07" },
+  magics: { body:"#3a6bd6", edge:"#b07aff", glow:"#9fd8ff", eye:"#e8f4ff", dark:"#1c2f6b" },
+};
+
+// ════════════ RAREZAS / COLECCIÓN / MONEDA ════════════
+// Orden de menor a mayor; legendary es la más alta (borde amarillo).
+const RARITY_ORDER = ["common", "uncommon", "rare", "epic", "legendary"];
+const RARITY = {
+  common:    { name: "Común",      color: "#9aa0a6" },
+  uncommon:  { name: "Poco común", color: "#4fd16b" },
+  rare:      { name: "Rara",       color: "#4a90e2" },
+  epic:      { name: "Épica",      color: "#a64ee0" },
+  legendary: { name: "Legendaria", color: "#f5c518" },
+};
+// Rareza por unidad (mapa aparte para no tocar cada entrada del catálogo).
+const UNIT_RARITY = {
+  // Humanos
+  1:"common",2:"common",3:"uncommon", 4:"common",5:"uncommon",6:"rare",
+  7:"uncommon",8:"uncommon",9:"rare", 10:"uncommon",11:"epic",12:"epic", 13:"epic",14:"uncommon",15:"legendary",
+  // Monsters (legendarias forzadas: zerling, ultralisk, larva, wormmint, hydralisk)
+  16:"legendary",17:"legendary",18:"legendary",20:"rare",21:"legendary",22:"uncommon",23:"uncommon",24:"legendary",
+  // Aliens
+  25:"common",26:"common",27:"rare",28:"epic",29:"legendary",30:"uncommon",31:"uncommon",32:"epic",33:"legendary",34:"uncommon",
+  // Deaths
+  35:"common",36:"common",37:"uncommon",38:"uncommon",39:"rare",40:"epic",41:"rare",42:"epic",43:"legendary",44:"legendary",
+  // Demons
+  45:"common",46:"uncommon",47:"common",48:"rare",49:"rare",50:"uncommon",51:"epic",52:"rare",53:"legendary",54:"legendary",
+  // Magics
+  55:"common",56:"common",57:"uncommon",58:"rare",59:"rare",60:"epic",61:"epic",62:"rare",63:"legendary",64:"legendary",
+};
+function unitRarity(uid) { return UNIT_RARITY[uid] || "common"; }
+function rarityRank(r) { return RARITY_ORDER.indexOf(r); }
+
+const MAX_COPIES = 2;     // máximo de copias por carta; una extra "no se ve"
+const PACK_PRICE = 200;   // precio de un sobre
+const PACK_SIZE = 5;      // cartas por sobre
+const WIN_REWARD = { easy: 60, medium: 120, hard: 220, extreme: 400 };
+
+// ---- Colección (cartas poseídas) -------------------------------------
+// "Piso" garantizado: lo que el jugador ya tenía antes de la tienda.
+//  - HUMANOS y MONSTERS completos (eran las razas jugables desde siempre).
+//  - Común/poco común de TODAS las razas (arranque básico de las razas nuevas).
+//  - Cobertura: cada (raza, era) con unidades tiene ≥1 carta poseída.
+function floorCollection() {
+  const c = {};
+  for (const uid of UNIT_IDS) {
+    const u = UNIT_CATALOG[uid];
+    const r = unitRarity(uid);
+    if (u.race === "humans" || u.race === "monsters" || r === "common" || r === "uncommon") c[uid] = 1;
+  }
+  // Torres existentes (humanas) desbloqueadas de arranque; las nuevas se ganan en sobres.
+  for (const tid of TOWER_IDS) if (TOWER_CATALOG[tid].race === "humans") c[tid] = 1;
+  for (const race of RACES) for (let a = 0; a < AGES.length; a++) {
+    const ids = UnitDB.getAvailableIdsByRace(race, a);
+    if (ids.length && !ids.some(id => c[id])) {
+      let best = ids[0];
+      for (const id of ids) if ((UNIT_CATALOG[id].stats.cost || 1e9) < (UNIT_CATALOG[best].stats.cost || 1e9)) best = id;
+      c[best] = 1;
+    }
+  }
+  return c;
+}
+function defaultCollection() { return floorCollection(); }
+function getCollection() {
+  let col = null;
+  try { const raw = localStorage.getItem("aow_collection"); if (raw) col = JSON.parse(raw); } catch {}
+  const hadStored = !!col;
+  if (!col) col = {};
+  // Auto-reparación: garantiza el piso (NUNCA quita cartas; solo añade lo básico que falte).
+  const floor = floorCollection();
+  let changed = false;
+  for (const uid in floor) if (!((col[uid] || 0) >= 1)) { col[uid] = 1; changed = true; }
+  if (changed || !hadStored) saveCollection(col);
+  return col;
+}
+function saveCollection(c) { try { localStorage.setItem("aow_collection", JSON.stringify(c)); } catch {} }
+function ownsUnit(uid) { return (getCollection()[uid] || 0) >= 1; }
+
+// ---- Moneda ----------------------------------------------------------
+function getCoins() { const v = parseInt(localStorage.getItem("aow_coins"), 10); return isNaN(v) ? 0 : v; }
+function setCoins(n) { localStorage.setItem("aow_coins", String(Math.max(0, Math.floor(n)))); updateCoinDisplays(); }
+function addCoins(n) { setCoins(getCoins() + n); }
+function updateCoinDisplays() {
+  const v = getCoins();
+  const a = document.getElementById("menu-coins-val"); if (a) a.textContent = v;
+  const b = document.getElementById("shop-coins-val"); if (b) b.textContent = v;
+}
+if (localStorage.getItem("aow_coins") === null) localStorage.setItem("aow_coins", "300"); // saldo inicial
 
 // Escala visual por spriteId (unidades monstruo son más grandes, se reducen)
 const UNIT_SCALE = { zerling: 0.55, larva: 0.48, valkir: 0.62, wormmint: 0.7, xerath: 0.65, kurkor: 0.8, hydralisk: 0.7, ultralisk: 1.3 };
@@ -364,6 +640,7 @@ const AGE_GOLD = 5;            // oro/seg extra por cada edad alcanzada
 const SPAWN_CD = 0.8;          // s entre spawns
 const DIE_TIME = 2.0;          // s que el cadáver permanece antes de desaparecer
 const DIE_FADE_START = 1.3;    // s en que el cadáver empieza a desvanecerse
+const DIE_FALL_TIME = 0.85;    // s que tardan las unidades aéreas en caer al suelo al morir
 const FLIGHT_H = 115;           // px que las unidades aéreas vuelan sobre el suelo
 const PLAYER_PASSIVE_XP = 3;   // xp/seg pasivo para el jugador (evoluciona por tiempo)
 const AI_PASSIVE_XP = 6;        // xp/seg pasivo para la IA
@@ -404,7 +681,8 @@ function sendCmd(cmd) {
 function handleGuestCmd(c) {
   switch (c.type) {
     case "spawn":       trySpawn("enemy", c.unitType, (UNIT_CATALOG[c.unitId]||{}).spriteId, c.unitId); break;
-    case "upgrade":     tryUpgrade("enemy", c.uid, c.stat); break;
+    case "tech":        tryTech("enemy", c.techId); break;
+    case "uupg":        tryUnitUpg("enemy", c.uid, c.upKey); break;
     case "evolve":      tryEvolve("enemy"); break;
     case "villager":    tryVillager("enemy"); break;
     case "villagerupg": tryVillagerUpgrade("enemy"); break;
@@ -423,8 +701,8 @@ function sideSnap(s) {
   return {
     g: Math.round(s.gold), x: Math.round(s.xp), a: s.age, h: Math.round(s.baseHp),
     c: Object.fromEntries(Object.entries(s.cd).map(([k,v]) => [k, +v.toFixed(2)])),
-    u: s.upg, t: s.towerUpg, v: s.villagers, vl: s.villagerLvl, sl: s.slots,
-    tw: s.towers.map((t) => t ? [t.type, +(t.angle || 0).toFixed(2), +(t.fireAnim || 0).toFixed(2), t.animFrame | 0] : 0),
+    u: s.tech, uu: s.uupg, t: s.towerUpg, v: s.villagers, vl: s.villagerLvl, sl: s.slots,
+    tw: s.towers.map((t) => t ? [t.tid, +(t.angle || 0).toFixed(2), +(t.fireAnim || 0).toFixed(2), t.animFrame | 0] : 0),
   };
 }
 function serializeState() {
@@ -435,6 +713,7 @@ function serializeState() {
       Math.round(un.x), Math.round(un.y), Math.round(un.hp), Math.round(un.maxHp),
       ANIM_I[un.anim] || 0, un.frame | 0, un.dying ? 1 : 0, +un.dieTimer.toFixed(2), +un.fade.toFixed(2),
       un.lvl || 1, Math.round(un.dmg || 0), +(un.cd || 0).toFixed(2),
+      un.uid != null ? un.uid : -1, // [15] uid: para que el guest renderice el sprite correcto
     ]);
   }
   const pr = [];
@@ -450,9 +729,9 @@ function serializeState() {
 function applySideSnap(dst, s) {
   dst.gold = s.g; dst.xp = s.x; dst.age = s.a; dst.baseHp = s.h;
   dst.cd = {...s.c};
-  dst.upg = s.u || {}; dst.towerUpg = s.t;
+  dst.tech = s.u || {}; dst.uupg = s.uu || {}; dst.towerUpg = s.t;
   dst.villagers = s.v; dst.villagerLvl = s.vl; dst.slots = s.sl;
-  dst.towers = s.tw.map((t) => t ? { type: t[0], angle: t[1], fireAnim: t[2], animFrame: t[3], cd: 0, animTimer: 0 } : null);
+  dst.towers = s.tw.map((t) => t ? { tid: t[0], angle: t[1], fireAnim: t[2], animFrame: t[3], cd: 0, animTimer: 0 } : null);
 }
 // El guest se ve a sí mismo a la IZQUIERDA: host.player = mi rival, host.enemy = yo.
 function applyState(state) {
@@ -469,6 +748,16 @@ function applyState(state) {
     u.dying = !!a[9]; u.dieTimer = a[10]; u.fade = a[11];
     u.lvl = a[12] || 1; u.dmg = a[13] || 0; u.cd = a[14] || 0;
     u.dead = false;
+    // Reconstruir datos de render desde el catálogo (uid) para el sprite correcto.
+    const uid = (a[15] != null && a[15] >= 0) ? a[15] : null;
+    const def = uid != null ? (UNIT_CATALOG[uid] || {}) : {};
+    u.uid = uid;
+    u.spriteId = def.spriteId || u.type;
+    u.race = def.race || null;
+    u.flying = def.movementType === "aerial";
+    u.psize = def.psize || 1;
+    u.targetType = def.targetType || null;
+    u.cc = {}; u.buffT = 0; u.bobPhase = 0; u.frameTimer = 0;
     units.push(u);
   }
   G.units = units;
@@ -491,11 +780,6 @@ function playerSpawn(uid) {
   if (!u) return false;
   if (isGuest()) return sendCmd({ type: "spawn", unitType: u.combatStyle, unitId: uid });
   return trySpawn("player", u.combatStyle, u.spriteId, uid);
-}
-function playerUpgrade(uid, stat) {
-  if (paused) return;
-  if (isGuest()) return sendCmd({ type: "upgrade", uid, stat });
-  return tryUpgrade("player", uid, stat);
 }
 function playerEvolve() {
   if (paused) return;
@@ -568,13 +852,11 @@ function drawDayFilter() {
   ctx.fillRect(0, 0, W, H);
 }
 
-// ---- Sistema de mejoras (POR UNIDAD) ---------------------------------
-const MAX_UPG = 5;
-const UPG_DMG = 0.16;
-const UPG_HP = 0.16;
-const UPG_SPD = 0.12;
-const UPG_RANGE = 0.05;
-const MAX_UNIT_LEVEL = 1 + MAX_UPG;
+// ---- Sistema de mejoras: ÁRBOL TECNOLÓGICO POR RAZA ------------------
+// Cada raza tiene techs propios que se DESBLOQUEAN POR ERA y dan bonos a
+// categorías de unidades (melee/range, aéreo/terrestre o todas). Se compran
+// con oro en partida; el bono se "hornea" en cada unidad al nacer.
+const MAX_UNIT_LEVEL = 6; // (compat: display de nivel)
 
 // Sistema de clases: cada clase tiene una fórmula base que escala por era.
 // stat(era) = base * (1 + growth)^era
@@ -617,31 +899,204 @@ function unitUpgStats(uid) {
   if (u && u.class && CLASS_UPG_DEFAULTS[u.class]) return CLASS_UPG_DEFAULTS[u.class];
   return ["dmg", "hp", "spd"];
 }
-const UPG_LABEL = { dmg: "+ATK", hp: "+HP", spd: "+VEL", range: "+RNG" };
-const UPG_COST_MULT = { dmg: 1.4, hp: 1.2, spd: 1.8, range: 1.5 };
+// ════════════ ÁRBOL TECNOLÓGICO (RACE_TECH) ════════════
+// stat keys: dmg, hp, atkspd (reduce el cd de ataque), range, movespd.
+const TECH_PER = { dmg: 0.12, hp: 0.12, atkspd: 0.08, range: 0.08, movespd: 0.10 };
+const TECH_STAT_LABEL = { dmg: "Daño", hp: "Vida", atkspd: "Vel. ataque", range: "Alcance", movespd: "Vel. mov." };
+const TECH_STAT_ICON  = { dmg: "⚔", hp: "❤", atkspd: "⏱", range: "🎯", movespd: "🏃" };
+const TECH_SCOPE_LABEL = { melee: "Melee", range: "Rango", aerial: "Aéreas", ground: "Terrestres", all: "Todas" };
 
-// Costo de una mejora: depende del costo base (era0) de la unidad y del nivel de la mejora.
-function upgradeCost(uid, stat, lvl) {
-  const base = unitBase(uid, 0, (UNIT_CATALOG[uid] || {}).combatStyle).cost;
-  return Math.round(base * UPG_COST_MULT[stat] * (lvl + 1));
+// Helper para declarar techs de forma compacta.
+function _T(name, era, stat, maxLvl, baseCost, scope) {
+  const t = { name, era, stat, per: TECH_PER[stat], maxLvl, baseCost, scopeLabel: "all" };
+  if (scope) { if (scope.style) { t.style = scope.style; t.scopeLabel = scope.style; } if (scope.move) { t.move = scope.move; t.scopeLabel = scope.move; } }
+  return t;
 }
+const _ME = { style: "melee" }, _RA = { style: "range" }, _GR = { move: "ground" }, _AI = { move: "aerial" };
+const RACE_TECH = {
+  humans: [
+    _T("Filo afilado",       0, "dmg",    3, 110, _ME),
+    _T("Armadura de cuero",  0, "hp",     3, 110, _ME),
+    _T("Flechas pesadas",    1, "dmg",    3, 240, _RA),
+    _T("Arcos largos",       1, "range",  2, 240, _RA),
+    _T("Acero templado",     2, "dmg",    3, 480, _ME),
+    _T("Cota de malla",      2, "hp",     3, 480, null),
+    _T("Munición perforante",3, "dmg",    3, 850, _RA),
+    _T("Tácticas de asalto", 3, "atkspd", 3, 850, null),
+    _T("Doctrina de guerra", 4, "dmg",    4, 1400, null),
+    _T("Blindaje compuesto", 4, "hp",     4, 1400, null),
+  ],
+  monsters: [
+    _T("Garras afiladas",    0, "dmg",    3, 100, _ME),
+    _T("Instinto veloz",     0, "movespd",3, 120, _GR),
+    _T("Carapacho",          1, "hp",     3, 230, _ME),
+    _T("Escupitajo ácido",   1, "dmg",    3, 230, _RA),
+    _T("Frenesí de enjambre",2, "atkspd", 3, 460, _ME),
+    _T("Mutación rápida",    2, "movespd",3, 460, _GR),
+    _T("Biomasa superior",   3, "dmg",    3, 820, null),
+    _T("Regeneración densa",  3, "hp",     3, 820, null),
+    _T("Evolución suprema",  4, "dmg",    4, 1350, null),
+    _T("Furia primigenia",   4, "atkspd", 3, 1350, null),
+  ],
+  aliens: [
+    _T("Escudos de plasma",  1, "hp",     3, 230, null),
+    _T("Lentes de fase",     1, "dmg",    3, 230, _RA),
+    _T("Matriz de escudos",  2, "hp",     3, 470, null),
+    _T("Emisores prismáticos",2,"range",  2, 470, _RA),
+    _T("Sobrecarga psiónica",3, "dmg",    3, 830, null),
+    _T("Aceleradores iónicos",3,"atkspd", 3, 830, _RA),
+    _T("Egida del Khala",    4, "hp",     4, 1400, null),
+    _T("Singularidad",       4, "dmg",    3, 1400, null),
+  ],
+  deaths: [
+    _T("Huesos endurecidos", 0, "hp",     3, 100, _ME),
+    _T("Filo maldito",       0, "dmg",    3, 110, _ME),
+    _T("Carne profana",      1, "hp",     3, 230, null),
+    _T("Magia necrótica",    1, "dmg",    3, 230, _RA),
+    _T("Plaga corrosiva",    2, "dmg",    3, 460, null),
+    _T("Vigor no-muerto",    2, "atkspd", 3, 460, _ME),
+    _T("Legión eterna",      3, "hp",     3, 820, null),
+    _T("Maldición mayor",    3, "dmg",    3, 820, null),
+    _T("Apocalipsis",        4, "dmg",    4, 1350, null),
+    _T("Inmortalidad",       4, "hp",     4, 1350, null),
+  ],
+  demons: [
+    _T("Garras infernales",  0, "dmg",    3, 100, _ME),
+    _T("Pezuñas veloces",    0, "movespd",3, 120, _GR),
+    _T("Furia ardiente",     1, "dmg",    3, 220, null),
+    _T("Sed de sangre",      1, "atkspd", 3, 240, _ME),
+    _T("Llama abisal",       2, "dmg",    3, 450, null),
+    _T("Embestida demoníaca",2, "movespd",3, 460, _GR),
+    _T("Cólera del averno",  3, "dmg",    3, 800, null),
+    _T("Frenesí infernal",   3, "atkspd", 3, 820, null),
+    _T("Cataclismo",         4, "dmg",    4, 1300, null),
+    _T("Estampida del foso", 4, "movespd",3, 1300, null),
+  ],
+  magics: [
+    _T("Dardos arcanos",     1, "dmg",    3, 220, _RA),
+    _T("Focos de poder",     1, "range",  2, 230, _RA),
+    _T("Barrera rúnica",     2, "hp",     3, 460, null),
+    _T("Canalización rápida",2, "atkspd", 3, 470, _RA),
+    _T("Saber prohibido",    3, "dmg",    3, 820, _RA),
+    _T("Esferas mayores",    3, "range",  2, 820, _RA),
+    _T("Convergencia astral",4, "dmg",    3, 1350, null),
+    _T("Égida arcana",       4, "hp",     4, 1350, null),
+  ],
+};
+// Asigna ids únicos por raza.
+for (const race in RACE_TECH) RACE_TECH[race].forEach((t, i) => { t.id = race + "_" + i; t.race = race; });
 
-// Registro de mejoras de una unidad para un bando (lazy init).
-function getUpg(side, uid) {
-  const st = G[side];
-  if (!st.upg[uid]) {
-    const rec = {};
-    for (const s of unitUpgStats(uid)) rec[s] = 0;
-    st.upg[uid] = rec;
+function techMatches(t, u) {
+  if (t.style && u.combatStyle !== t.style) return false;
+  if (t.move && u.movementType !== t.move) return false;
+  return true;
+}
+function techCost(t, lvl) { return Math.round(t.baseCost * (1 + lvl * 0.8)); }
+function availableTechs(race, age) { return (RACE_TECH[race] || []).filter(t => t.era <= age); }
+// Suma de bonos (fracción) que aplica el bando `side` a la unidad `uid` para `stat`.
+function techBonus(side, uid, stat) {
+  const u = UNIT_CATALOG[uid]; if (!u) return 0;
+  const list = RACE_TECH[u.race] || [];
+  const rec = (G[side] && G[side].tech) || {};
+  let sum = 0;
+  for (const t of list) {
+    if (t.stat !== stat) continue;
+    const lv = rec[t.id] || 0; if (!lv) continue;
+    if (!techMatches(t, u)) continue;
+    sum += t.per * lv;
   }
-  return st.upg[uid];
+  return sum;
 }
-
-// Nivel de la unidad: 1 + el mínimo de sus mejoras. Subir las 3 a Nv1 -> Nv2, etc.
-function unitLevel(uupg, uid) {
-  let m = Infinity;
-  for (const s of unitUpgStats(uid)) m = Math.min(m, (uupg && uupg[s]) || 0);
-  return 1 + (m === Infinity ? 0 : m);
+function tryTech(side, techId) {
+  const st = G[side];
+  const t = (RACE_TECH[st.race] || []).find(x => x.id === techId);
+  if (!t || t.era > st.age) return false;
+  const lvl = st.tech[techId] || 0;
+  if (lvl >= t.maxLvl) return false;
+  const cost = techCost(t, lvl);
+  if (st.gold < cost) return false;
+  st.gold -= cost;
+  st.tech[techId] = lvl + 1;
+  return true;
+}
+function playerTech(techId) {
+  if (paused) return;
+  if (isGuest()) return sendCmd({ type: "tech", techId });
+  return tryTech("player", techId);
+}
+// ════════════ MEJORAS POR UNIDAD (UNIT_UPG) ════════════
+// Cada unidad tiene mejoras PROPIAS (solo afectan a esa unidad), independientes
+// del árbol de raza. Se desbloquean por era (escalonadas a partir de su homeEra)
+// y suben el "nivel" de la unidad. Más estrechas que las de raza → un poco más
+// fuertes por nivel. La clave upgStats "spd" representa VELOCIDAD DE ATAQUE.
+const UNIT_UPG_PER = { dmg: 0.14, hp: 0.14, atkspd: 0.09, range: 0.09, movespd: 0.11 };
+const UPG_STAT_MAP = { dmg: "dmg", hp: "hp", spd: "atkspd", range: "range", movespd: "movespd" };
+const UPG_STAT_LABEL = { dmg: "Daño", hp: "Vida", atkspd: "Vel. ataque", range: "Alcance", movespd: "Vel. mov." };
+const UPG_STAT_ICON  = { dmg: "⚔", hp: "❤", atkspd: "⏱", range: "🎯", movespd: "🏃" };
+const UNIT_UPG = {}; // uid -> [ { key, stat, label, era, maxLvl, baseCost, per } ]
+(function buildUnitUpg() {
+  for (const uid of UNIT_IDS) {
+    const u = UNIT_CATALOG[uid]; if (!u) continue;
+    const home = u.homeEra || 0;
+    const rarity = unitRarity(uid);
+    const baseLvl = { common: 2, uncommon: 2, rare: 3, epic: 3, legendary: 3 }[rarity] || 2;
+    const ranged = u.combatStyle === "range";
+    const hasDmg = (u.stats && u.stats.dmg) > 0;
+    // Conjunto de mejoras propias (4 por unidad: ofensiva, ritmo, alcance/movilidad, defensa).
+    // Unidades sin daño (soporte) cambian daño por utilidad.
+    let statSet;
+    if (hasDmg) statSet = ranged ? ["dmg", "atkspd", "range", "hp"] : ["dmg", "atkspd", "movespd", "hp"];
+    else        statSet = ranged ? ["hp", "range", "atkspd", "movespd"] : ["hp", "movespd", "atkspd"];
+    const cost0 = (u.stats && u.stats.cost) || 100;
+    UNIT_UPG[uid] = statSet.map((stat, i) => {
+      // Las 2 primeras se desbloquean al subir 1 era desde su debut; el resto escalonadas.
+      const era = i < 2 ? Math.min(4, home + 1) : Math.min(4, home + i);
+      // legendarias: +1 nivel en su stat primaria (más profundas)
+      const maxLvl = (rarity === "legendary" && i === 0) ? baseLvl + 1 : baseLvl;
+      const baseCost = Math.max(45, Math.round(cost0 * 0.5 * (i === 0 ? 1 : 0.9)));
+      return { key: stat, stat, label: UPG_STAT_LABEL[stat] || stat,
+               era, maxLvl, baseCost, per: UNIT_UPG_PER[stat] || 0.10 };
+    });
+  }
+})();
+function unitUpgCost(up, lvl) { return Math.round(up.baseCost * (1 + lvl * 0.85)); }
+function availableUnitUpgs(uid, age) { return (UNIT_UPG[uid] || []).filter(up => up.era <= age); }
+function unitUpgBonus(side, uid, stat) {
+  const list = UNIT_UPG[uid]; if (!list) return 0;
+  const rec = (G[side] && G[side].uupg && G[side].uupg[uid]) || {};
+  let sum = 0;
+  for (const up of list) { if (up.stat !== stat) continue; const lv = rec[up.key] || 0; if (lv) sum += up.per * lv; }
+  return sum;
+}
+function tryUnitUpg(side, uid, upKey) {
+  const st = G[side]; if (!st) return false;
+  const up = (UNIT_UPG[uid] || []).find(x => x.key === upKey);
+  if (!up || up.era > st.age) return false;
+  if (!st.uupg) st.uupg = {};
+  const rec = st.uupg[uid] || (st.uupg[uid] = {});
+  const lvl = rec[upKey] || 0;
+  if (lvl >= up.maxLvl) return false;
+  const cost = unitUpgCost(up, lvl);
+  if (st.gold < cost) return false;
+  st.gold -= cost;
+  rec[upKey] = lvl + 1;
+  return true;
+}
+function playerUnitUpg(uid, upKey) {
+  if (paused) return;
+  if (isGuest()) return sendCmd({ type: "uupg", uid, upKey });
+  return tryUnitUpg("player", uid, upKey);
+}
+// Nivel de una unidad = 1 + suma de niveles de SUS mejoras propias (no las de raza).
+function unitLevel(side, uid) {
+  if (side == null || uid == null) return 1;
+  const rec = (G[side] && G[side].uupg && G[side].uupg[uid]) || {};
+  let n = 1; for (const k in rec) n += rec[k];
+  return n;
+}
+function unitMaxLevel(uid) {
+  let n = 1; for (const up of (UNIT_UPG[uid] || [])) n += up.maxLvl;
+  return n;
 }
 
 // Stats base de una unidad (sin mejoras ni nivel).
@@ -680,22 +1135,20 @@ function unitBase(uid, age, type) {
 // Stats efectivos de una unidad (centralizado: lo usan Unit, las cards y la IA).
 // `uupg` = registro de mejoras de ESA unidad. Solo aplica mejoras para stats
 // que aparecen en unitUpgStats(uid).
-function computeStats(uid, age, uupg) {
+function computeStats(uid, age, side) {
+  side = side || "player";
   const u = UNIT_CATALOG[uid] || {};
   const type = u.combatStyle || "melee";
   const s = unitBase(uid, age, type);
   const baseCd = (s.cd != null) ? s.cd : getBaseCD(age, type);
-  const lv = unitLevel(uupg, uid);
-  const g = u.growth || {};
-  const gb = (k) => Math.pow(g[k] != null ? g[k] : 1, lv - 1);
-  const upgs = unitUpgStats(uid);
-  const has = (k) => upgs.includes(k);
-  const hp    = s.hp  * (1 + (has("hp")  ? UPG_HP  * (uupg.hp  || 0) : 0)) * gb("hp");
-  const dmg   = s.dmg * DMG_MULT * (1 + (has("dmg") ? UPG_DMG * (uupg.dmg || 0) : 0)) * gb("dmg");
-  const cd    = baseCd * (1 - (has("spd") ? UPG_SPD * (uupg.spd || 0) : 0)) * gb("cd");
-  const spd   = s.spd * SPEED_MULT * gb("spd");
-  const range = s.range * (1 + (has("range") ? UPG_RANGE * (uupg.range || 0) : 0)) * gb("range");
-  return { hp, dmg, cd, spd, range, resist: null, armor: 0, regen: 0, lvl: lv };
+  // Bonos = árbol de RAZA + mejoras propias de la UNIDAD (horneados al nacer).
+  const bon = (st) => techBonus(side, uid, st) + unitUpgBonus(side, uid, st);
+  const hp    = s.hp  * (1 + bon("hp"));
+  const dmg   = s.dmg * DMG_MULT * (1 + bon("dmg"));
+  const cd    = baseCd * Math.max(0.25, 1 - bon("atkspd"));
+  const spd   = s.spd * SPEED_MULT * (1 + bon("movespd"));
+  const range = s.range * (1 + bon("range"));
+  return { hp, dmg, cd, spd, range, resist: null, armor: 0, regen: 0, lvl: unitLevel(side, uid) };
 }
 
 // ---- Ataque base desde sprites ----------------------------------------
@@ -745,28 +1198,74 @@ const TOWER_BASE = [
     { dmg: 50,  cd: 0.6, range: 400 },
   ],
 ];
-function towerBuyCost(age, type) {
-  const base = [180, 450, 1000];
-  return Math.round(base[type - 1] * (1 + age * 0.3));
-}
-function towerUpgCost(age, type, kind, lvl) {
-  // El precio depende solo del tipo de torre y del nivel de mejora, NO de la edad.
-  const baseCost = kind === "dmg" ? 100 : 80;
-  return Math.round(baseCost * type * (lvl + 1));
-}
-function towerStats(age, type, upgDmg, upgSpd) {
-  const b = TOWER_BASE[age][type - 1];
+// ════════════ CATÁLOGO DE TORRES (cards por tid) ════════════
+// Existentes (humanos) tid 201-215: reutilizan sprites por era/tier.
+// Nuevas tid 301+: procedurales, temáticas por raza, salen en sobres.
+const TOWER_CATALOG = {};
+const TOWER_IDS = [];
+const TOWER_TIER_NAME = ["Ligera", "Pesada", "Asedio"];
+const TOWER_RARITY_BY_TIER = ["uncommon", "rare", "epic"];
+const ERA_ROMAN = ["I", "II", "III", "IV", "V"];
+function towerTidFor(age, tier) { return 200 + age * 3 + tier; } // existentes
+(function buildTowerCatalog() {
+  for (let a = 0; a < 5; a++) for (let tier = 1; tier <= 3; tier++) {
+    const tid = towerTidFor(a, tier);
+    const b = TOWER_BASE[a][tier - 1];
+    TOWER_CATALOG[tid] = {
+      tid, name: `Torre ${TOWER_TIER_NAME[tier - 1]} ${ERA_ROMAN[a]}`, icon: "🗼",
+      race: "humans", proc: false, spriteAge: a, tier, upgTier: tier,
+      availableEras: [a], rarity: TOWER_RARITY_BY_TIER[tier - 1],
+      dmg: Math.round(b.dmg * DMG_MULT * (1 + a * 0.5)), cd: b.cd, range: b.range,
+      cost: Math.round([180, 450, 1000][tier - 1] * (1 + a * 0.3)),
+    };
+    TOWER_IDS.push(tid);
+  }
+  const NEW = [
+    { tid: 301, name: "Cañón Pilón",         race: "aliens", eras: [1, 2], rarity: "rare",      dmg: 130, cd: 1.1,  range: 460, cost: 600,  upgTier: 2 },
+    { tid: 302, name: "Aguja del Vacío",     race: "aliens", eras: [3, 4], rarity: "epic",      dmg: 230, cd: 0.8,  range: 490, cost: 1400, upgTier: 3 },
+    { tid: 303, name: "Escupehuesos",        race: "deaths", eras: [1, 2], rarity: "rare",      dmg: 95,  cd: 0.9,  range: 430, cost: 580,  upgTier: 2 },
+    { tid: 304, name: "Cañón de Almas",      race: "deaths", eras: [3, 4], rarity: "epic",      dmg: 250, cd: 1.4,  range: 500, cost: 1350, upgTier: 3 },
+    { tid: 305, name: "Torreta Ígnea",       race: "demons", eras: [2, 3], rarity: "rare",      dmg: 150, cd: 0.85, range: 450, cost: 700,  upgTier: 2 },
+    { tid: 306, name: "Aguja Apocalíptica",  race: "demons", eras: [4],    rarity: "legendary", dmg: 360, cd: 1.1,  range: 520, cost: 1600, upgTier: 3 },
+    { tid: 307, name: "Obelisco Rúnico",     race: "magics", eras: [2, 3], rarity: "epic",      dmg: 170, cd: 0.7,  range: 480, cost: 900,  upgTier: 3 },
+    { tid: 308, name: "Faro Celestial",      race: "magics", eras: [4],    rarity: "legendary", dmg: 300, cd: 0.55, range: 540, cost: 1500, upgTier: 3 },
+  ];
+  for (const t of NEW) {
+    TOWER_CATALOG[t.tid] = { tid: t.tid, name: t.name, icon: "🗼", race: t.race, proc: true,
+      availableEras: t.eras, rarity: t.rarity, dmg: t.dmg, cd: t.cd, range: t.range, cost: t.cost, upgTier: t.upgTier };
+    TOWER_IDS.push(t.tid);
+  }
+})();
+function isTowerId(id) { return id >= 200; }
+function towerStats(tid, upgDmg, upgSpd) {
+  const e = TOWER_CATALOG[tid];
+  if (!e) return { dmg: 0, range: 300, cd: 1 };
   return {
-    dmg: Math.round(b.dmg * DMG_MULT * (1 + age * 0.5) * (1 + 0.3 * upgDmg)),
-    range: b.range,
-    cd: Math.max(0.3, b.cd * (1 - 0.12 * upgSpd)),
+    dmg: Math.round(e.dmg * (1 + 0.3 * (upgDmg || 0))),
+    range: e.range,
+    cd: Math.max(0.3, e.cd * (1 - 0.12 * (upgSpd || 0))),
   };
 }
-function towerSellValue(type, age, upgDmg, upgSpd) {
-  let inv = towerBuyCost(age, type);
-  for (let l = 0; l < upgDmg; l++) inv += towerUpgCost(age, type, "dmg", l);
-  for (let l = 0; l < upgSpd; l++) inv += towerUpgCost(age, type, "spd", l);
+function towerBuyCost(tid) { const e = TOWER_CATALOG[tid]; return e ? e.cost : 999999; }
+function towerUpgCost(tid, kind, lvl) {
+  const e = TOWER_CATALOG[tid];
+  const baseCost = kind === "dmg" ? 100 : 80;
+  return Math.round(baseCost * (e ? e.upgTier : 1) * (lvl + 1));
+}
+function towerSellValue(tid, upgDmg, upgSpd) {
+  let inv = towerBuyCost(tid);
+  for (let l = 0; l < upgDmg; l++) inv += towerUpgCost(tid, "dmg", l);
+  for (let l = 0; l < upgSpd; l++) inv += towerUpgCost(tid, "spd", l);
   return Math.round(inv * 0.5);
+}
+function getTowerUpg(side, tid, kind) {
+  const m = G[side].towerUpg[kind];
+  return (m && m[tid]) || 0;
+}
+// Torres que el jugador POSEE y puede construir en la era actual.
+function ownedTowersForEra(age) {
+  const col = getCollection();
+  return TOWER_IDS.filter(tid => (col[tid] || 0) >= 1 && TOWER_CATALOG[tid].availableEras.includes(age));
 }
 
 // Config de proyectiles por torre (index = age*3 + type-1)
@@ -800,7 +1299,7 @@ const TOWER_ATTACK_FRAMES = [
 
 // ---- Carga de assets -------------------------------------------------
 const IMG = {}; // cache de imágenes por ruta
-const ASSET_V = "21"; // versión de assets (cache-busting); subir al regenerar sprites
+const ASSET_V = "22"; // versión de assets (cache-busting); subir al regenerar sprites
 let manifest = null;
 
 function loadImage(src, retries) {
@@ -858,8 +1357,10 @@ async function loadAll() {
     // Cargar sprites desde el catálogo (cada unidad tiene su spriteId)
     const spriteIds = [...new Set(UNIT_IDS.map(id => UNIT_CATALOG[id].spriteId))];
     for (const sid of spriteIds) {
+      const sheet = manifest[age][sid]; // unidades procedurales (sin sprites) no están en el manifest
+      if (!sheet) continue;
       for (const anim of ANIMS) {
-        const n = manifest[age][sid][anim] || 0;
+        const n = sheet[anim] || 0;
         for (let i = 0; i < n; i++) paths.push(`assets/units/${age}/${sid}/${anim}/${i}.png`);
       }
     }
@@ -875,7 +1376,8 @@ function frames(age, u, anim) {
   let arr = FCACHE.get(key);
   if (arr) return arr;
   arr = [];
-  const n = manifest[age][u][anim] || 0;
+  const sheet = manifest[age][u];
+  const n = sheet ? (sheet[anim] || 0) : 0; // procedurales: sin frames -> array vacío
   for (let i = 0; i < n; i++) {
     const im = IMG[`assets/units/${age}/${u}/${anim}/${i}.png`];
     if (im) arr.push(im);
@@ -902,16 +1404,19 @@ let camScale = 1;
 let viewW = WORLD_W, viewH = WORLD_H;
 let pxToWorld = 1;
 let zoomLevel = 1;
-const ZOOM_MIN = 0.4, ZOOM_MAX = 2.5, ZOOM_STEP = 0.1;
+// ZOOM_MIN = 1 → el nivel más alejado ya rellena el canvas entero (cover). No se
+// puede alejar más (eso mostraría el vacío negro fuera del mundo). Solo acercar.
+const ZOOM_MIN = 1.0, ZOOM_MAX = 2.5, ZOOM_STEP = 0.1;
 
 function clampCam() {
   const maxCamX = Math.max(0, WORLD_W - viewW);
   camX = Math.max(0, Math.min(camX, maxCamX));
-  if (viewH > WORLD_H) {
-    camY = (WORLD_H - viewH) / 2;
+  if (viewH >= WORLD_H) {
+    // El mundo no llena el alto: anclar el suelo abajo; el exceso es cielo arriba.
+    camY = WORLD_H - viewH;
   } else {
-    const desiredY = GROUND_Y + 40 - viewH;
-    camY = Math.max(0, Math.min(WORLD_H - viewH, Math.max(0, desiredY)));
+    // Con zoom: se puede desplazar verticalmente dentro del mundo (arrastre libre).
+    camY = Math.max(0, Math.min(WORLD_H - viewH, camY));
   }
 }
 
@@ -923,8 +1428,9 @@ function resizeCanvas() {
   BH = Math.max(1, Math.round(cssH * dpr));
   if (CV.width !== BW) CV.width = BW;
   if (CV.height !== BH) CV.height = BH;
-  // "cover" del mundo: llena el canvas sin huecos (recorta el lado sobrante)
-  camScale = Math.min(BW / WORLD_W, BH / WORLD_H) * zoomLevel;
+  // Nivel base (zoomLevel=1): ajustar el ANCHO completo del mundo → ambas bases
+  // siempre visibles. El exceso vertical (pantallas 16:9) se rellena con cielo.
+  camScale = (BW / WORLD_W) * zoomLevel;
   viewW = BW / camScale;
   viewH = BH / camScale;
   pxToWorld = dpr / camScale;
@@ -937,34 +1443,40 @@ function updateZoom(delta) {
 }
 window.addEventListener("resize", resizeCanvas);
 
-// Arrastre de cámara (mouse + touch)
-let dragging = false, dragStartX = 0, camStart = 0;
-function camPointerDown(clientX) { dragging = true; dragStartX = clientX; camStart = camX; }
-function camPointerMove(clientX) {
+// Arrastre de cámara (mouse + touch) — horizontal y vertical (con zoom).
+let dragging = false, dragStartX = 0, dragStartY = 0, camStartX = 0, camStartY = 0;
+function camPointerDown(clientX, clientY) { dragging = true; dragStartX = clientX; dragStartY = clientY; camStartX = camX; camStartY = camY; }
+function camPointerMove(clientX, clientY) {
   if (!dragging) return;
-  camX = camStart - (clientX - dragStartX) * pxToWorld;
+  camX = camStartX - (clientX - dragStartX) * pxToWorld;
+  camY = camStartY - (clientY - dragStartY) * pxToWorld;
   clampCam();
 }
 function camPointerUp() { dragging = false; }
 
-CV.addEventListener("mousedown", (e) => camPointerDown(e.clientX));
-window.addEventListener("mousemove", (e) => camPointerMove(e.clientX));
+CV.addEventListener("mousedown", (e) => camPointerDown(e.clientX, e.clientY));
+window.addEventListener("mousemove", (e) => camPointerMove(e.clientX, e.clientY));
 window.addEventListener("mouseup", camPointerUp);
-CV.addEventListener("touchstart", (e) => { if (e.touches[0]) camPointerDown(e.touches[0].clientX); }, { passive: true });
+CV.addEventListener("touchstart", (e) => { if (e.touches[0]) camPointerDown(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
 CV.addEventListener("touchmove", (e) => {
-  if (e.touches[0]) { camPointerMove(e.touches[0].clientX); e.preventDefault(); }
+  if (e.touches[0]) { camPointerMove(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }
 }, { passive: false });
 window.addEventListener("touchend", camPointerUp);
 CV.addEventListener("wheel", (e) => {
-  if (e.ctrlKey || e.metaKey) {
-    e.preventDefault();
-    const dir = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
-    updateZoom(dir);
-  } else {
-    camX += (e.deltaX || e.deltaY) * pxToWorld;
-    clampCam();
-  }
   e.preventDefault();
+  // Zoom con la rueda, manteniendo fijo el punto del mundo bajo el cursor (ambos ejes).
+  const rect = CV.getBoundingClientRect();
+  const px = (e.clientX - rect.left) * (CV.width / rect.width);
+  const py = (e.clientY - rect.top) * (CV.height / rect.height);
+  const wxBefore = px / camScale + camX;
+  const wyBefore = py / camScale + camY;
+  const dir = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+  updateZoom(dir);
+  const wxAfter = px / camScale + camX;
+  const wyAfter = py / camScale + camY;
+  camX += wxBefore - wxAfter;
+  camY += wyBefore - wyAfter;
+  clampCam();
 }, { passive: false });
 
 // ---- Entidades -------------------------------------------------------
@@ -976,7 +1488,7 @@ class Unit {
     this.uid = uid != null ? uid : null;
     this.spriteId = spriteId || type;
     const s = unitBase(uid, age, type);
-    const cs = computeStats(uid, age, getUpg(side, uid));
+    const cs = computeStats(uid, age, side);
     this.lvl = cs.lvl;            // nivel "horneado" al nacer
     this.cost = s.cost;
     this.maxHp = cs.hp;
@@ -995,10 +1507,19 @@ class Unit {
     // Movimiento aéreo (vuela sobre el suelo) + estado de control de masas (CC)
     const def = UNIT_CATALOG[uid] || {};
     this.flying = def.movementType === "aerial";
+    this.race = def.race || null;       // para render procedural (PROC_THEME)
+    this.psize = def.psize || 1;        // escala del placeholder procedural
     this.cc = {};                       // estados: { charmed, ... }
     this.ability = def.specialAbility || null;
-    this.abilityCd = this.ability ? 6 : 0; // delay inicial para caminar antes del primer cast
+    // abilityCd inicial: transform usa `after`; periódicas un pequeño retardo; pasivas/on-death = 0
+    this.abilityCd = this.ability
+      ? (this.ability.type === "transform" ? this.ability.after
+         : this.ability.cd != null ? Math.min(this.ability.cd, 6) : 0)
+      : 0;
     this.abilityUsed = false;
+    this.baseDmg = this.dmg;            // para restaurar tras frenesí
+    this.baseSpd = this.spd;
+    this.buffT = 0;                     // tiempo restante de buff (frenzy)
     this.targetType = def.targetType || null; // "aerial" | "ground" | null (any)
     // Nacimiento: si la unidad tiene animación "spawn", emerge antes de moverse.
     this.spawning = frames(age, this.spriteId, "spawn").length > 0;
@@ -1033,7 +1554,7 @@ class Unit {
 
   draw() {
     const fr = frames(this.age, this.spriteId, this.dying ? "die" : this.anim);
-    if (!fr.length) return;
+    if (!fr.length) { this.drawProc(); return; } // sin sprite sheet -> placeholder animado
     const im = fr[Math.min(this.frame, fr.length - 1)];
     if (!im) return;
 
@@ -1050,7 +1571,12 @@ class Unit {
     const w = im.width * scale, h = im.height * scale;
     // balanceo vertical si vuela
     const bob = this.flying && !this.dying ? Math.sin(performance.now() / 380 + this.bobPhase) * 7 : 0;
-    const drawY = this.y + bob;
+    let drawY = this.y + bob;
+    // las unidades aéreas caen al suelo al morir (gravedad acelerada)
+    if (this.flying && this.dying) {
+      const ft = Math.min(1, this.dieTimer / DIE_FALL_TIME);
+      drawY = this.y + (GROUND_Y - this.y) * ft * ft;
+    }
     // Sombra en el suelo (con blur para que no se vea tan falsa)
     const shadowAlpha = this.dying ? Math.max(0, 1 - this.dieTimer / DIE_TIME) : (this.fade < 1 ? this.fade : 1);
     const shadowW = w * 0.6, shadowH = w * 0.12;
@@ -1101,6 +1627,147 @@ class Unit {
     ctx.fillStyle = this.side === "player" ? "#4fd16b" : "#e0524a";
     ctx.fillRect(x, topY, bw * pct, bh);
   }
+
+  // Render procedural (placeholder animado) para unidades sin sprite sheet.
+  drawProc() {
+    const th = PROC_THEME[this.race] || PROC_THEME.aliens;
+    const t = performance.now() / 1000;
+    const s = this.psize || 1;
+    const bodyH = 56 * s, bodyW = 30 * s;
+    const ranged = this.combatStyle === "range";
+    const wantRight = this.side === "player";
+    const facing = wantRight ? 1 : -1;
+
+    // Caída + desvanecido al morir
+    let fallY = 0, alpha = this.fade < 1 ? this.fade : 1, tilt = 0;
+    if (this.dying) {
+      const df = Math.min(1, this.dieTimer / DIE_TIME);
+      alpha = Math.max(0, 1 - Math.max(0, this.dieTimer - DIE_FADE_START) / (DIE_TIME - DIE_FADE_START));
+      tilt = df * 1.3 * facing;            // se desploma
+      if (this.flying) fallY = (GROUND_Y - this.y) * Math.min(1, this.dieTimer / DIE_FALL_TIME) ** 2;
+    }
+    // Animación según estado
+    const walking = this.anim === "walk" && !this.dying;
+    const attacking = this.anim === "attack" && !this.dying;
+    const bobFly = this.flying && !this.dying ? Math.sin(t * 3 + this.bobPhase) * 6 : 0;
+    const stepBob = walking ? Math.abs(Math.sin(t * 8)) * 4 * s : 0;
+    const lunge = attacking ? Math.sin(t * 14) * 8 * s * facing : 0;
+    const legSwing = walking ? Math.sin(t * 8) * 6 * s : 0;
+
+    const cx = this.x + lunge;
+    const groundY = this.y + fallY;
+    const topY = groundY - bodyH - stepBob;
+
+    // Sombra
+    const shAlpha = this.dying ? alpha : (this.fade < 1 ? this.fade : 1);
+    ctx.save();
+    ctx.globalAlpha = shAlpha * 0.28;
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.filter = "blur(3px)";
+    ctx.beginPath(); ctx.ellipse(this.x, GROUND_Y - 2, bodyW * 0.7, bodyW * 0.22, 0, 0, 6.283); ctx.fill();
+    ctx.filter = "none"; ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(cx, groundY + bobFly);
+    ctx.rotate(tilt);
+    ctx.scale(facing, 1); // todo a la derecha; espejo según bando
+
+    // Brillo psiónico/infernal de fondo
+    const gy = -bodyH * 0.6;
+    const rg = ctx.createRadialGradient(0, gy, 2, 0, gy, bodyW * 1.6);
+    rg.addColorStop(0, th.glow); rg.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.save(); ctx.globalAlpha = alpha * (0.18 + 0.10 * Math.sin(t * 2 + this.bobPhase));
+    ctx.fillStyle = rg; ctx.beginPath(); ctx.ellipse(0, gy, bodyW * 1.6, bodyH * 0.9, 0, 0, 6.283); ctx.fill(); ctx.restore();
+
+    // Alas si vuela
+    if (this.flying) {
+      const flap = Math.sin(t * 9) * 0.5;
+      ctx.fillStyle = th.dark; ctx.globalAlpha = alpha * 0.9;
+      for (const dirW of [-1, 1]) {
+        ctx.save(); ctx.translate(0, -bodyH * 0.7); ctx.rotate(dirW * (0.5 + flap));
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(dirW * bodyW * 1.5, -bodyW * 0.4);
+        ctx.lineTo(dirW * bodyW * 1.2, bodyW * 0.5); ctx.closePath(); ctx.fill(); ctx.restore();
+      }
+      ctx.globalAlpha = alpha;
+    } else {
+      // Piernas (sólo terrestres)
+      ctx.strokeStyle = th.dark; ctx.lineWidth = 5 * s; ctx.lineCap = "round";
+      for (const dirL of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(dirL * bodyW * 0.22, -bodyH * 0.34);
+        ctx.lineTo(dirL * bodyW * 0.22 + dirL * legSwing * 0.4 + (dirL > 0 ? legSwing : -legSwing) * 0, 0);
+        ctx.stroke();
+      }
+    }
+
+    // Cuerpo
+    ctx.fillStyle = th.body; ctx.strokeStyle = th.edge; ctx.lineWidth = 2.5 * s;
+    ctx.beginPath();
+    const r = 7 * s;
+    roundRectPath(-bodyW / 2, -bodyH, bodyW, bodyH * (this.flying ? 0.75 : 0.7), r);
+    ctx.fill(); ctx.stroke();
+
+    // Cabeza
+    const headR = 11 * s, hy = -bodyH - headR * 0.2;
+    ctx.beginPath(); ctx.arc(0, hy, headR, 0, 6.283); ctx.fill(); ctx.stroke();
+    // Ojos brillantes
+    ctx.fillStyle = th.eye;
+    ctx.beginPath(); ctx.arc(headR * 0.4, hy - 1, 2.2 * s, 0, 6.283); ctx.fill();
+    ctx.beginPath(); ctx.arc(headR * 0.4, hy - 1, 2.2 * s, 0, 6.283); ctx.fill();
+
+    // Detalle por raza
+    if (this.race === "demons") { // cuernos
+      ctx.fillStyle = th.edge;
+      for (const dh of [-1, 1]) { ctx.beginPath(); ctx.moveTo(dh * headR * 0.6, hy - headR * 0.6); ctx.lineTo(dh * headR * 1.1, hy - headR * 1.7); ctx.lineTo(dh * headR * 0.2, hy - headR * 0.9); ctx.closePath(); ctx.fill(); }
+    } else if (this.race === "deaths") { // cuencas
+      ctx.fillStyle = th.dark; ctx.beginPath(); ctx.arc(headR * 0.4, hy, 3 * s, 0, 6.283); ctx.fill();
+    }
+
+    // Arma / orbe
+    if (ranged) {
+      const orbR = 6 * s, ox = bodyW * 0.65, oy = -bodyH * 0.5;
+      const og = ctx.createRadialGradient(ox, oy, 1, ox, oy, orbR * 1.8);
+      og.addColorStop(0, th.eye); og.addColorStop(0.5, th.glow); og.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = og; ctx.globalAlpha = alpha * (attacking ? 1 : 0.7);
+      ctx.beginPath(); ctx.arc(ox, oy, orbR * (attacking ? 1.4 : 1), 0, 6.283); ctx.fill();
+      ctx.globalAlpha = alpha;
+    } else {
+      // hoja/garra de melee
+      ctx.strokeStyle = th.edge; ctx.lineWidth = 4 * s;
+      ctx.beginPath(); ctx.moveTo(bodyW * 0.4, -bodyH * 0.55);
+      ctx.lineTo(bodyW * 1.1, -bodyH * 0.55 - 14 * s); ctx.stroke();
+    }
+
+    // Aura de frenesí (demonios buffados)
+    if (this.buffT > 0) {
+      ctx.globalAlpha = alpha * (0.4 + 0.3 * Math.sin(t * 12));
+      ctx.strokeStyle = "#ff3b1f"; ctx.lineWidth = 2 * s;
+      ctx.beginPath(); ctx.arc(0, -bodyH * 0.5, bodyW * 0.95, 0, 6.283); ctx.stroke();
+      ctx.globalAlpha = alpha;
+    }
+    ctx.restore();
+
+    // Aura control mental + barra de vida
+    if (!this.dying) {
+      this.drawHpBar(bodyH, bobFly + stepBob);
+      if (this.cc && this.cc.charmed) {
+        ctx.save(); ctx.font = "15px serif"; ctx.textAlign = "center";
+        ctx.fillText("🧠", this.x, topY - 18); ctx.restore();
+      }
+    }
+  }
+}
+
+// Helper: traza un rectángulo redondeado en el path actual.
+function roundRectPath(x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
 }
 
 class Projectile {
@@ -1208,8 +1875,9 @@ function freshSide(gold, race) {
     gold, xp: 0, age: 0, baseHp: cfg.base,
     cd: {},
     baseAnimTimer: 0, baseAnimFrame: 0,
-    upg: {},   // mejoras POR UNIDAD: { [uid]: {dmg,hp/range,spd} } (lazy via getUpg)
-    towerUpg: { dmg: [0, 0, 0], spd: [0, 0, 0] },
+    tech: {},  // árbol tecnológico de la raza: { [techId]: lvl }
+    uupg: {},  // mejoras propias por unidad: { [uid]: { [upgKey]: lvl } }
+    towerUpg: { dmg: {}, spd: {} }, // mejoras por tid: { dmg:{[tid]:lvl}, spd:{...} }
     villagers: 0,
     villagerLvl: 0,
     slots: 1,
@@ -1256,6 +1924,21 @@ function killUnit(t) {
       G.floats.push(new FloatText(t.x, t.y - 130, "(+" + villagerBonus + " aldeanos)", "#b0d6a0"));
     }
   }
+  // Reanimar (no-muertos): al morir levanta minions de su cadáver.
+  if (t.ability && t.ability.type === "reanimate") {
+    const def = UNIT_CATALOG[t.ability.into];
+    if (def) {
+      const cnt = t.ability.count || 1;
+      for (let k = 0; k < cnt; k++) {
+        const nu = new Unit(t.side, t.age, def.combatStyle, def.spriteId, t.ability.into);
+        nu.x = t.x + (k - (cnt - 1) / 2) * 22;
+        nu.y = GROUND_Y - (nu.flying ? FLIGHT_H : 0);
+        nu.dir = t.dir;
+        G.units.push(nu);
+      }
+      G.floats.push(new FloatText(t.x, t.y - 70, "⚰️ ¡Reanimación!", "#9bff9b"));
+    }
+  }
 }
 
 // ---- Spawning --------------------------------------------------------
@@ -1268,25 +1951,12 @@ function trySpawn(side, type, spriteId, uid) {
     uid = u.id; spriteId = spriteId || u.spriteId;
   }
   const uDef = UNIT_CATALOG[uid];
+  if (!spriteId) spriteId = (uDef && uDef.spriteId) || type; // evita caer al sprite humano por defecto
   const s = unitBase(uid, st.age, type);
   if (st.gold < s.cost || (st.cd[uid] || 0) > 0) return false;
   st.gold -= s.cost;
   st.cd[uid] = (uDef && uDef.cooldown != null) ? uDef.cooldown : SPAWN_CD;
   G.units.push(new Unit(side, st.age, type, spriteId, uid));
-  return true;
-}
-
-// Mejora POR UNIDAD: sube un stat (dmg/hp/spd o dmg/range/spd) de esa unidad.
-function tryUpgrade(side, uid, stat) {
-  const st = G[side];
-  if (!unitUpgStats(uid).includes(stat)) return false;  // stat no válido para esta unidad
-  const rec = getUpg(side, uid);
-  const lvl = rec[stat] || 0;
-  if (lvl >= MAX_UPG) return false;
-  const cost = upgradeCost(uid, stat, lvl);
-  if (st.gold < cost) return false;
-  st.gold -= cost;
-  rec[stat] = lvl + 1;
   return true;
 }
 
@@ -1320,13 +1990,14 @@ function tryBuySlot(side) {
   return true;
 }
 
-function tryBuyTower(side, slot, type) {
+function tryBuyTower(side, slot, tid) {
   const st = G[side];
   if (slot >= st.slots || st.towers[slot]) return false;
-  const cost = towerBuyCost(st.age, type);
+  if (!TOWER_CATALOG[tid]) return false;
+  const cost = towerBuyCost(tid);
   if (st.gold < cost) return false;
   st.gold -= cost;
-  st.towers[slot] = { type, cd: 0, angle: 0, fireAnim: 0, animFrame: 0, animTimer: 0 };
+  st.towers[slot] = { tid, cd: 0, angle: 0, fireAnim: 0, animFrame: 0, animTimer: 0 };
   return true;
 }
 
@@ -1334,12 +2005,12 @@ function tryUpgradeTower(side, slot, kind) {
   const st = G[side];
   const t = st.towers[slot];
   if (!t) return false;
-  const lvl = st.towerUpg[kind][t.type - 1];
+  const lvl = getTowerUpg(side, t.tid, kind);
   if (lvl >= MAX_TOWER_UPG) return false;
-  const cost = towerUpgCost(st.age, t.type, kind, lvl);
+  const cost = towerUpgCost(t.tid, kind, lvl);
   if (st.gold < cost) return false;
   st.gold -= cost;
-  st.towerUpg[kind][t.type - 1] = lvl + 1;
+  st.towerUpg[kind][t.tid] = lvl + 1;
   return true;
 }
 
@@ -1347,9 +2018,9 @@ function trySellTower(side, slot) {
   const st = G[side];
   const t = st.towers[slot];
   if (!t) return false;
-  const d = st.towerUpg.dmg[t.type - 1];
-  const s = st.towerUpg.spd[t.type - 1];
-  st.gold += towerSellValue(t.type, st.age, d, s);
+  const d = getTowerUpg(side, t.tid, "dmg");
+  const s = getTowerUpg(side, t.tid, "spd");
+  st.gold += towerSellValue(t.tid, d, s);
   st.towers[slot] = null;
   return true;
 }
@@ -1414,6 +2085,7 @@ function update(dt) {
   const players = [], enemies = [];
   let anyDead = false;
   for (const u of G.units) {
+    if (u.dead) { anyDead = true; continue; } // mutadas/eliminadas fuera del ciclo de muerte
     if (u.dying) {
       u.dieTimer += dt;
       advanceAnim(u, dt, "die", false);
@@ -1475,10 +2147,9 @@ function stepSide(list, enemyList, side, enemyBaseX, enemyBaseSide, dt) {
       if (u.frame >= sf.length - 1) u.spawning = false;
       continue;
     }
-    // Unidades de soporte (ej: Wormmint): tras el primer uso se quedan fijas.
-    // Animación: "attack" mientras canaliza (su víctima sigue controlada y viva),
-    // "idle" mientras recarga (víctima muerta o control liberado).
-    if (u.ability && u.abilityUsed) {
+    // Soporte de control mental (Wormmint): tras el primer uso se queda fijo.
+    // Animación: "attack" mientras canaliza (víctima viva), "idle" al recargar.
+    if (u.ability && u.ability.type === "mindControl" && u.abilityUsed) {
       const t = u.charmTarget;
       const channeling = t && !t.dead && !t.dying && t.cc && t.cc.charmed && t.side === u.side;
       advanceAnim(u, dt, channeling ? "attack" : "idle", true);
@@ -1488,7 +2159,13 @@ function stepSide(list, enemyList, side, enemyBaseX, enemyBaseSide, dt) {
     let attacking = false;
 
     const tdist = frontEnemy ? Math.abs(frontEnemy.x - u.x) : Infinity;
-    const enemyInRange = frontEnemy && tdist <= u.range;
+    // Alcance melee = el MAYOR entre su rango y la distancia a la que el cuerpo
+    // queda pegado al objetivo (suma de medios anchos). Así el melee camina hasta
+    // TOCAR (sin hueco) y, contra unidades anchas (tanques), igual puede golpear
+    // aunque la separación de colisión supere su rango. Los ranged usan su rango tal cual.
+    const touchDist = frontEnemy ? (u.half + frontEnemy.half + 4) : 0;
+    const reach = u.rangedAttack ? u.range : Math.max(u.range, touchDist);
+    const enemyInRange = frontEnemy && tdist <= reach;
 
     if (enemyInRange && u.dmg > 0) {
       attacking = true;
@@ -1541,6 +2218,12 @@ function dealAttack(u, target) {
   } else {
     hitTarget(target, u.dmg, u.side, u.type);
   }
+  // Robo de vida (demonios): el atacante se cura una fracción del daño infligido.
+  if (u.ability && u.ability.type === "lifesteal" && u.hp < u.maxHp) {
+    const heal = u.dmg * (u.ability.frac || 0.3);
+    u.hp = Math.min(u.maxHp, u.hp + heal);
+    G.floats.push(new FloatText(u.x, u.y - 95, "+" + Math.round(heal), "#7af07a"));
+  }
 }
 
 // ---- Habilidades automáticas de unidad -------------------------------
@@ -1549,17 +2232,85 @@ function updateAbilities(dt) {
   if (!G.units) return;
   for (const u of G.units) {
     if (!u.ability || u.dead || u.dying || u.spawning) continue;
+    // Frenesí activo: cuenta atrás y restaura stats al expirar.
+    if (u.buffT > 0) {
+      u.buffT -= dt;
+      if (u.buffT <= 0) { u.dmg = u.baseDmg; u.spd = u.baseSpd; }
+    }
+    // lifesteal y reanimate son pasivas (no tienen cd que tickear aquí)
+    if (u.ability.type === "lifesteal" || u.ability.type === "reanimate") continue;
     u.abilityCd -= dt;
     if (u.abilityCd > 0) continue;
-    if (u.ability.type === "mindControl") {
+    const ab = u.ability;
+    if (ab.type === "transform") {
+      transformUnit(u, ab.into[(Math.random() * ab.into.length) | 0]);
+      continue;
+    }
+    if (ab.type === "mindControl") {
       const foes = G.units.filter(t =>
         t.side !== u.side && !t.dead && !t.dying && !t.spawning && !(t.cc && t.cc.charmed));
-      if (!foes.length) { u.abilityCd = 0.5; continue; } // sin objetivo: reintenta pronto
+      if (!foes.length) { u.abilityCd = 0.5; continue; }
       mindControl(foes[(Math.random() * foes.length) | 0], u);
-      u.abilityCd = u.ability.cd;
+      u.abilityCd = ab.cd;
       u.abilityUsed = true;
+    } else if (ab.type === "summon") {
+      // Invoca `count` minions del lado del caster, junto a él.
+      const cnt = ab.count || 1;
+      for (let k = 0; k < cnt; k++) {
+        const def = UNIT_CATALOG[ab.into]; if (!def) break;
+        const nu = new Unit(u.side, u.age, def.combatStyle, def.spriteId, ab.into);
+        nu.x = u.x - u.dir * (20 + k * 18); // detrás del invocador
+        nu.y = GROUND_Y - (nu.flying ? FLIGHT_H : 0);
+        nu.dir = u.dir;
+        G.units.push(nu);
+      }
+      u.abilityCd = ab.cd;
+      G.floats.push(new FloatText(u.x, u.y - 70, "☠️ ¡Invocación!", "#9bff9b"));
+    } else if (ab.type === "heal") {
+      // Cura al aliado más herido en rango (excluye al propio sanador si está full).
+      let best = null, bestMiss = 0;
+      for (const t of G.units) {
+        if (t.side !== u.side || t.dead || t.dying || t.spawning) continue;
+        if (Math.abs(t.x - u.x) > (ab.range || 240)) continue;
+        const miss = t.maxHp - t.hp;
+        if (miss > bestMiss) { bestMiss = miss; best = t; }
+      }
+      if (best) {
+        best.hp = Math.min(best.maxHp, best.hp + ab.amount);
+        G.floats.push(new FloatText(best.x, best.y - 90, "+" + ab.amount, "#7af0c0"));
+        u.abilityCd = ab.cd;
+      } else { u.abilityCd = 0.6; } // nadie herido: reintenta pronto
+    } else if (ab.type === "bolt") {
+      // Hostigamiento: daño directo a un enemigo en rango.
+      const foes = G.units.filter(t =>
+        t.side !== u.side && !t.dead && !t.dying && !t.spawning && Math.abs(t.x - u.x) <= (ab.range || 300));
+      if (!foes.length) { u.abilityCd = 0.4; continue; }
+      const tgt = foes[(Math.random() * foes.length) | 0];
+      hitTarget(tgt, ab.dmg, u.side, u.type);
+      G.floats.push(new FloatText(u.x, u.y - 80, "✦", u.race === "demons" ? "#ff7a2b" : "#9fd8ff"));
+      u.abilityCd = ab.cd;
+    } else if (ab.type === "frenzy") {
+      // Buff temporal de daño y velocidad sobre sí mismo.
+      u.dmg = u.baseDmg * (ab.dmgMul || 1.5);
+      u.spd = u.baseSpd * (ab.spdMul || 1.3);
+      u.buffT = ab.dur || 4;
+      u.abilityCd = ab.cd;
+      G.floats.push(new FloatText(u.x, u.y - 80, "🔥 ¡Frenesí!", "#ff5230"));
     }
   }
+}
+
+// Mutación de la larva: desaparece y nace la unidad destino en su sitio.
+function transformUnit(u, intoId) {
+  const def = UNIT_CATALOG[intoId];
+  if (!def) { u.abilityCd = 1; return; }
+  const nu = new Unit(u.side, u.age, def.combatStyle, def.spriteId, intoId);
+  nu.x = u.x;
+  nu.y = GROUND_Y - (nu.flying ? FLIGHT_H : 0);
+  nu.dir = u.dir;
+  G.units.push(nu);
+  u.dead = true; // la larva desaparece; el split loop la barre
+  G.floats.push(new FloatText(u.x, u.y - 60, "🧬 ¡Mutación!", "#9f7aea"));
 }
 
 // Controla la mente de una unidad: cambia su bando por 5 segundos.
@@ -1608,10 +2359,12 @@ function updateTowers(side, frontEnemy, dt) {
     if (t.fireAnim > 0) {
       t.fireAnim -= dt;
     }
+    const e = TOWER_CATALOG[t.tid] || {};
+    // proyectil: sprite reusa el de su era/tier; procedurales usan genérico (-1)
+    const projIdx = e.proc ? -1 : (e.spriteAge * 3 + (e.tier - 1));
     if (t.fireAnim > 0) {
       t.animTimer += dt;
-      const projIdx = st.age * 3 + (t.type - 1);
-      const nf = TOWER_ATTACK_FRAMES[projIdx] || 1;
+      const nf = (projIdx >= 0 ? TOWER_ATTACK_FRAMES[projIdx] : 0) || 1;
       const frameDur = 0.15 / nf;
       if (t.animTimer >= frameDur) {
         t.animTimer = 0;
@@ -1623,16 +2376,15 @@ function updateTowers(side, frontEnemy, dt) {
     }
 
     const p = towerPos(side, i);
-    const projIdx = st.age * 3 + (t.type - 1);
 
     if (!frontEnemy || frontEnemy.dying) {
       t.angle = 0;
       continue;
     }
 
-    const upgDmg = st.towerUpg.dmg[t.type - 1];
-    const upgSpd = st.towerUpg.spd[t.type - 1];
-    const ts = towerStats(st.age, t.type, upgDmg, upgSpd);
+    const upgDmg = getTowerUpg(side, t.tid, "dmg");
+    const upgSpd = getTowerUpg(side, t.tid, "spd");
+    const ts = towerStats(t.tid, upgDmg, upgSpd);
     if (Math.abs(frontEnemy.x - p.x) <= ts.range) {
       const dy = (frontEnemy.y - 40) - p.y;
       const dx = Math.abs(frontEnemy.x - p.x);
@@ -1655,9 +2407,9 @@ function advanceAnim(u, dt, anim, loop) {
   const fr = frames(u.age, u.spriteId, u.dying ? "die" : anim);
   if (!fr.length) return;
   let fps = anim === "attack" ? 14 : 12;
-  if (anim === "attack" && !u.dying) {
-    const spdLvl = (u.uid != null ? getUpg(u.side, u.uid).spd : 0) || 0;
-    fps = 14 * (1 + UPG_SPD * spdLvl);
+  if (anim === "attack" && !u.dying && u.baseCD && u.cd) {
+    // la animación de ataque sigue la cadencia horneada (tech de vel. de ataque)
+    fps = 14 * Math.max(1, Math.min(2.5, u.baseCD / u.cd));
   }
   u.frameTimer += dt;
   if (u.frameTimer >= 1 / fps) {
@@ -1683,6 +2435,36 @@ const DIFF = {
   extreme: { aiIncome: 1.10, maxUnits: 18, spawnMin: 0.34, evolveChance: 1.0,  xpMult: 2.2, upgEvery: 2.2, comp: [0.32, 0.28, 0.22], react: 1.0,  econ: 1.2, towers: 4, save: 1.0,  idle: 0.0,  fill: 1.0,  upgAfford: 1.1, buySpecial: true },
 };
 let difficulty = "medium";
+let aiRace = (function(){ try { return localStorage.getItem("aow_ai_race") || "humans"; } catch { return "humans"; } })();
+
+// ¿Tiene la raza una unidad de ese combatStyle en esa era? (para la IA, por raza)
+function aiStyleAvailable(race, style, age) { return !!UnitDB.getUnitForStyle(race, age, style); }
+// Elige una unidad de combate de la raza/era/estilo. Descarta soporte, 0-dmg y
+// "fillers" lentos (larva/transform). NO penaliza unidades baratas: las razas de
+// enjambre (monsters) deben poder spamear sus unidades baratas.
+function aiPickUnit(race, age, style, maxGold) {
+  const cands = UNIT_IDS.filter(id => {
+    const u = UNIT_CATALOG[id];
+    return u.race === race && u.combatStyle === style && u.availableEras.includes(age);
+  });
+  if (!cands.length) return null;
+  let pool = cands.filter(id => {
+    const u = UNIT_CATALOG[id];
+    if (u.class === "support") return false;
+    if (u.specialAbility && u.specialAbility.type === "transform") return false; // larva: tarda 10s en servir
+    return u.stats ? u.stats.dmg > 0 : true;
+  });
+  if (!pool.length) pool = cands;
+  // Solo elegir entre las que se pueden pagar; si ninguna, la más barata (evita ciclos
+  // desperdiciados al elegir una unidad cara sin oro suficiente → clave para el enjambre).
+  if (maxGold != null) {
+    const cost = id => unitBase(id, age, UNIT_CATALOG[id].combatStyle).cost;
+    const afford = pool.filter(id => cost(id) <= maxGold);
+    if (afford.length) pool = afford;
+    else pool = [pool.reduce((a, b) => cost(a) <= cost(b) ? a : b)];
+  }
+  return pool[(Math.random() * pool.length) | 0];
+}
 
 function unitCost(side, type) {
   const st = G[side];
@@ -1706,7 +2488,8 @@ function runAI(dt) {
 
   // ---- Conteo de ambos ejércitos por tipo ----
   const curCount = {}, pCount = {};
-  const allTypes = UNIT_TYPES.filter(t => UnitDB.isStyleAvailable(t, ai.age));
+  const aiRaceNow = sideRace("enemy");
+  const allTypes = UNIT_TYPES.filter(t => aiStyleAvailable(aiRaceNow, t, ai.age));
   for (const t of allTypes) { curCount[t] = 0; pCount[t] = 0; }
   for (const u of G.units) {
     if (u.dying) continue;
@@ -1729,40 +2512,51 @@ function runAI(dt) {
     } else if (D.towers > 0 && (army >= 2 || ai.age >= 1)) {
       let empty = -1, built = 0;
       for (let i = 0; i < ai.slots; i++) { if (ai.towers[i]) built++; else if (empty < 0) empty = i; }
-      if (built < D.towers && empty >= 0 && ai.gold > towerBuyCost(ai.age, 1) * 1.4) {
-        let ty = 1;
-        if (ai.gold > towerBuyCost(ai.age, 3) * 1.5) ty = 3;
-        else if (ai.gold > towerBuyCost(ai.age, 2) * 1.5) ty = 2;
-        tryBuyTower("enemy", empty, ty);
+      // La IA (humanos) usa las torres existentes de su era (tier 1/2/3 → tid)
+      const t1 = towerTidFor(ai.age, 1), t2 = towerTidFor(ai.age, 2), t3 = towerTidFor(ai.age, 3);
+      if (built < D.towers && empty >= 0 && ai.gold > towerBuyCost(t1) * 1.4) {
+        let tid = t1;
+        if (ai.gold > towerBuyCost(t3) * 1.5) tid = t3;
+        else if (ai.gold > towerBuyCost(t2) * 1.5) tid = t2;
+        tryBuyTower("enemy", empty, tid);
       } else if (built < D.towers && empty < 0 && ai.slots < MAX_SLOTS && ai.gold > SLOT_COST[ai.slots] * 1.4) {
         tryBuySlot("enemy");
       } else {
         for (let i = 0; i < ai.slots; i++) {
           const t = ai.towers[i]; if (!t) continue;
-          const ud = ai.towerUpg.dmg[t.type - 1], us = ai.towerUpg.spd[t.type - 1];
-          if (ud < MAX_TOWER_UPG && ai.gold > towerUpgCost(ai.age, t.type, "dmg", ud) * 1.6) { tryUpgradeTower("enemy", i, "dmg"); break; }
-          if (us < MAX_TOWER_UPG && ai.gold > towerUpgCost(ai.age, t.type, "spd", us) * 1.6) { tryUpgradeTower("enemy", i, "spd"); break; }
+          const ud = getTowerUpg("enemy", t.tid, "dmg"), us = getTowerUpg("enemy", t.tid, "spd");
+          if (ud < MAX_TOWER_UPG && ai.gold > towerUpgCost(t.tid, "dmg", ud) * 1.6) { tryUpgradeTower("enemy", i, "dmg"); break; }
+          if (us < MAX_TOWER_UPG && ai.gold > towerUpgCost(t.tid, "spd", us) * 1.6) { tryUpgradeTower("enemy", i, "spd"); break; }
         }
       }
     }
   }
 
-  // ---- MEJORAS de unidades (POR UNIDAD): sube la stat de menor nivel hasta el MÁX ----
+  // ---- INVESTIGACIÓN (árbol tecnológico de la raza): compra el tech disponible
+  // más barato que aún no esté al máximo, priorizando los de su era. ----
   if (ai.aiUpgTimer <= 0) {
     ai.aiUpgTimer = D.upgEvery * (0.7 + Math.random() * 0.6);
-    const aiUnitOrder = UNIT_TYPES.filter(t => UnitDB.isStyleAvailable(t, ai.age)).sort(
-      (a, b) => D.comp[TYPE_I[b]] - D.comp[TYPE_I[a]]);
-    for (const t of aiUnitOrder) {
-      if (D.comp[TYPE_I[t]] < 0.12) continue; // no invierte en tipos que casi no usa
-      const unit = UnitDB.getUnitForStyle(sideRace("enemy"), ai.age, t);
-      if (!unit) continue;
-      const rec = getUpg("enemy", unit.id);
-      let lowStat = null, lowLvl = Infinity;
-      for (const s of unitUpgStats(unit.id)) { const lv = rec[s] || 0; if (lv < lowLvl) { lowLvl = lv; lowStat = s; } }
-      if (lowLvl < MAX_UPG) {
-        const cost = upgradeCost(unit.id, lowStat, lowLvl);
-        if (ai.gold > cost * D.upgAfford) { tryUpgrade("enemy", unit.id, lowStat); break; }
+    const techs = availableTechs(sideRace("enemy"), ai.age)
+      .filter(t => (ai.tech[t.id] || 0) < t.maxLvl)
+      .sort((a, b) => techCost(a, ai.tech[a.id] || 0) - techCost(b, ai.tech[b.id] || 0));
+    for (const t of techs) {
+      const cost = techCost(t, ai.tech[t.id] || 0);
+      if (ai.gold > cost * D.upgAfford) { tryTech("enemy", t.id); break; }
+    }
+    // Mejoras de unidad: la IA invierte en las unidades de su era (medio+).
+    if (D.econ >= 0.6 && typeof UnitDB !== "undefined") {
+      if (!ai.uupg) ai.uupg = {};
+      const ids = UnitDB.getAvailableIdsByRace(aiRaceNow, ai.age) || [];
+      let best = null, bestCost = Infinity;
+      for (const uid of ids) {
+        for (const up of availableUnitUpgs(uid, ai.age)) {
+          const lvl = (ai.uupg[uid] && ai.uupg[uid][up.key]) || 0;
+          if (lvl >= up.maxLvl) continue;
+          const c = unitUpgCost(up, lvl);
+          if (c < bestCost) { bestCost = c; best = { uid, key: up.key, c }; }
+        }
       }
+      if (best && ai.gold > best.c * (D.upgAfford + 0.4)) tryUnitUpg("enemy", best.uid, best.key);
     }
   }
 
@@ -1784,7 +2578,7 @@ function runAI(dt) {
     comp[0] += D.react * (pfRange * 0.2 + pfMelee * 0.1);  // melee presiona
   }
   // elegir el tipo con mayor déficit respecto al objetivo
-  const types = UNIT_TYPES.filter(t => UnitDB.isStyleAvailable(t, ai.age));
+  const types = UNIT_TYPES.filter(t => aiStyleAvailable(aiRaceNow, t, ai.age));
   const cur = types.map(t => curCount[t]);
   let sum = 0; for (let i = 0; i < types.length; i++) sum += comp[TYPE_I[types[i]]];
   let bestT = types[0] || "melee", bestDef = -Infinity;
@@ -1819,7 +2613,8 @@ function runAI(dt) {
   // si gastar dejaría sin oro para el aldeano pendiente, esperar (ya con ejército base)
   if (army >= 2 && reserve > 0 && ai.gold - cost < reserve) { ai.aiTimer = 0.6; return; }
 
-  const ok = trySpawn("enemy", bestT);
+  const pickUid = aiPickUnit(aiRaceNow, ai.age, bestT, ai.gold);
+  const ok = pickUid ? trySpawn("enemy", bestT, null, pickUid) : trySpawn("enemy", bestT);
   ai.aiTimer = ok ? (D.spawnMin + Math.random() * 0.5) : 0.4;
 }
 
@@ -1836,6 +2631,11 @@ function drawBackground() {
   const dx = (WORLD_W - sw) / 2;
   const dy = WORLD_H - sh;
 
+  // Cielo extendido: estira la fila superior del wallpaper hacia arriba para
+  // cubrir el exceso vertical (pantallas 16:9) sin dejar vacío negro.
+  if (dy > -WORLD_H * 2) {
+    ctx.drawImage(initImg, 0, 0, initImg.width, 1, dx, dy - WORLD_H * 2, sw, WORLD_H * 2 + 1);
+  }
   // Capa base: wallpaper init
   ctx.drawImage(initImg, dx, dy, sw, sh);
 
@@ -1908,13 +2708,17 @@ function drawInfection(img, dir, prog, dx, dy, sw, sh) {
   ctx.drawImage(_infCv, 0, 0);
 }
 
+// Razas con base procedural (sin sprite propio): se dibujan a canvas por era.
+const PROC_BASE_RACES = new Set(["aliens", "deaths", "demons", "magics"]);
+
 function drawBase(side) {
   const st = G[side];
   const race = sideRace(side);
+  const x = side === "player" ? PLAYER_BASE_X : ENEMY_BASE_X;
+  if (PROC_BASE_RACES.has(race)) { drawProcBase(x, race, st.age, side === "enemy"); return; }
   const baseKeyPath = baseKey(st.age, race);
   const idleKey = baseKeyPath.replace(".png", `_idle${st.baseAnimFrame}.png`);
   const im = IMG[idleKey] || IMG[baseKeyPath] || IMG[`assets/bases/${AGES[st.age]}/base.png`];
-  const x = side === "player" ? PLAYER_BASE_X : ENEMY_BASE_X;
   if (im) {
     const s = BASE_SCALE[race] || 1;
     const w = im.width * s, h = im.height * s;
@@ -1926,6 +2730,127 @@ function drawBase(side) {
   }
 }
 
+// Base procedural temática por raza, que se elabora con la era.
+function drawProcBase(x, race, age, flip) {
+  const th = PROC_THEME[race] || PROC_THEME.aliens;
+  const t = performance.now() / 1000;
+  const bw = 150 + age * 14;          // ancho crece por era
+  const bh = 150 + age * 24;          // alto crece por era
+  const pulse = 0.5 + 0.5 * Math.sin(t * 2);
+  ctx.save();
+  ctx.translate(x, GROUND_Y + 20);
+  if (flip) ctx.scale(-1, 1);
+
+  // Halo de energía detrás de la base
+  const hg = ctx.createRadialGradient(0, -bh * 0.5, 4, 0, -bh * 0.5, bw);
+  hg.addColorStop(0, th.glow); hg.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.save(); ctx.globalAlpha = 0.12 + 0.06 * pulse; ctx.fillStyle = hg;
+  ctx.beginPath(); ctx.ellipse(0, -bh * 0.5, bw, bh * 0.8, 0, 0, 6.283); ctx.fill(); ctx.restore();
+
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = th.edge; ctx.lineWidth = 4;
+
+  if (race === "aliens") {
+    // Nexus: cuerpo abovedado + cristal flotante (más cristales por era)
+    ctx.fillStyle = th.dark;
+    ctx.beginPath();
+    ctx.moveTo(-bw * 0.5, 0); ctx.lineTo(-bw * 0.38, -bh * 0.6);
+    ctx.lineTo(0, -bh * 0.8); ctx.lineTo(bw * 0.38, -bh * 0.6);
+    ctx.lineTo(bw * 0.5, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = th.body;
+    ctx.beginPath(); ctx.moveTo(-bw * 0.22, 0); ctx.lineTo(-bw * 0.16, -bh * 0.4);
+    ctx.lineTo(bw * 0.16, -bh * 0.4); ctx.lineTo(bw * 0.22, 0); ctx.closePath(); ctx.fill();
+    // Cristal flotante
+    const cy = -bh - 18 - 6 * pulse;
+    ctx.fillStyle = th.glow; ctx.globalAlpha = 0.7 + 0.3 * pulse;
+    ctx.beginPath(); ctx.moveTo(0, cy - 26); ctx.lineTo(16, cy); ctx.lineTo(0, cy + 22); ctx.lineTo(-16, cy); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1; ctx.strokeStyle = th.edge; ctx.stroke();
+    for (let i = 0; i < age; i++) { // mini cristales por era
+      const px = (i % 2 ? 1 : -1) * (bw * 0.4 - i * 4), py = -bh * 0.5 - (i >> 1) * 16;
+      ctx.fillStyle = th.glow; ctx.globalAlpha = 0.6 + 0.4 * pulse;
+      ctx.beginPath(); ctx.moveTo(px, py - 10); ctx.lineTo(px + 6, py); ctx.lineTo(px, py + 9); ctx.lineTo(px - 6, py); ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  } else if (race === "deaths") {
+    // Fortaleza de huesos: cuerpo + espolones (más por era) + calavera sobre la puerta
+    ctx.fillStyle = th.dark;
+    roundRectPath(-bw * 0.5, -bh * 0.7, bw, bh * 0.7, 8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = th.body;
+    for (let i = 0; i <= age + 2; i++) { // espolones óseos
+      const px = -bw * 0.5 + (i + 0.5) * (bw / (age + 3));
+      ctx.beginPath(); ctx.moveTo(px - 7, -bh * 0.7); ctx.lineTo(px, -bh * 0.7 - 22 - (i % 2) * 10); ctx.lineTo(px + 7, -bh * 0.7); ctx.closePath(); ctx.fill();
+    }
+    // Calavera-puerta
+    ctx.fillStyle = th.body; ctx.beginPath(); ctx.arc(0, -bh * 0.32, bw * 0.16, 0, 6.283); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = th.dark;
+    ctx.beginPath(); ctx.arc(-bw * 0.06, -bh * 0.35, 6, 0, 6.283); ctx.arc(bw * 0.06, -bh * 0.35, 6, 0, 6.283); ctx.fill();
+  } else if (race === "demons") {
+    // Ciudadela infernal: cuerpo oscuro + cuernos + foso de lava brillante
+    ctx.fillStyle = th.dark;
+    ctx.beginPath();
+    ctx.moveTo(-bw * 0.5, 0); ctx.lineTo(-bw * 0.45, -bh * 0.7); ctx.lineTo(-bw * 0.2, -bh * 0.55);
+    ctx.lineTo(0, -bh * 0.85); ctx.lineTo(bw * 0.2, -bh * 0.55); ctx.lineTo(bw * 0.45, -bh * 0.7);
+    ctx.lineTo(bw * 0.5, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // Cuernos laterales (más por era)
+    ctx.fillStyle = th.edge;
+    for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(d * bw * 0.45, -bh * 0.7); ctx.quadraticCurveTo(d * bw * 0.62, -bh * 0.95, d * bw * 0.5, -bh * 1.05); ctx.quadraticCurveTo(d * bw * 0.4, -bh * 0.85, d * bw * 0.45, -bh * 0.7); ctx.fill(); }
+    // Foso de lava (puerta)
+    ctx.fillStyle = `rgba(255,${80 + 60 * pulse | 0},30,${0.7 + 0.3 * pulse})`;
+    roundRectPath(-bw * 0.18, -bh * 0.42, bw * 0.36, bh * 0.42, 6); ctx.fill();
+  } else { // magics
+    // Torre arcana: cuerpo + tejado cónico + orbe rúnico (más anillos por era)
+    ctx.fillStyle = th.dark;
+    roundRectPath(-bw * 0.34, -bh * 0.7, bw * 0.68, bh * 0.7, 8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = th.body; // tejado
+    ctx.beginPath(); ctx.moveTo(-bw * 0.42, -bh * 0.7); ctx.lineTo(0, -bh * 1.05); ctx.lineTo(bw * 0.42, -bh * 0.7); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // Orbe rúnico
+    const oy = -bh * 0.4;
+    ctx.fillStyle = th.glow; ctx.globalAlpha = 0.6 + 0.4 * pulse;
+    ctx.beginPath(); ctx.arc(0, oy, bw * 0.13, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = th.edge;
+    for (let i = 0; i <= age; i++) { ctx.beginPath(); ctx.arc(0, oy, bw * 0.13 + 6 + i * 5, 0, 6.283); ctx.globalAlpha = 0.5 - i * 0.06; ctx.stroke(); }
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+
+// Torre procedural temática por raza (para torres sin sprite).
+function drawProcTower(e, x, y, angle, flip, firing) {
+  const th = PROC_THEME[e.race] || PROC_THEME.aliens;
+  const tnow = performance.now() / 1000;
+  const pulse = 0.5 + 0.5 * Math.sin(tnow * 3);
+  const h = 64, w = 34;
+  ctx.save();
+  ctx.translate(x, y);
+  if (flip) ctx.scale(-1, 1);
+  // Sombra
+  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.beginPath(); ctx.ellipse(0, 14, w * 0.55, 5, 0, 0, 6.283); ctx.fill();
+  // Base/pedestal
+  ctx.fillStyle = th.dark; ctx.strokeStyle = th.edge; ctx.lineWidth = 2.5; ctx.lineJoin = "round";
+  roundRectPath(-w / 2, -h * 0.45, w, h * 0.6, 5); ctx.fill(); ctx.stroke();
+  // Fuste
+  ctx.fillStyle = th.body;
+  roundRectPath(-w * 0.28, -h, w * 0.56, h * 0.6, 4); ctx.fill(); ctx.stroke();
+  // Cabezal que apunta (rota con el ángulo del objetivo)
+  ctx.save();
+  ctx.translate(0, -h * 0.85);
+  ctx.rotate(flip ? -angle : angle);
+  ctx.fillStyle = th.edge;
+  roundRectPath(0, -5, w * 0.7, 10, 3); ctx.fill();
+  // Núcleo emisor brillante (destella al disparar)
+  const glowR = (firing ? 9 : 6) + pulse * 2;
+  const g = ctx.createRadialGradient(w * 0.55, 0, 1, w * 0.55, 0, glowR * 2);
+  g.addColorStop(0, th.eye); g.addColorStop(0.5, th.glow); g.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(w * 0.55, 0, glowR * 2, 0, 6.283); ctx.fill();
+  ctx.restore();
+  // Orbe rúnico/cristal sobre el fuste
+  ctx.fillStyle = th.glow; ctx.globalAlpha = 0.6 + 0.4 * pulse;
+  ctx.beginPath(); ctx.arc(0, -h * 0.55, 5, 0, 6.283); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
 
 function drawTowers(side) {
   const st = G[side];
@@ -1939,17 +2864,21 @@ function drawTowers(side) {
       continue;
     }
 
-    // Escoger sprite base o frame de ataque
+    const e = TOWER_CATALOG[t.tid] || {};
+    // Torres procedurales (razas nuevas): se dibujan a canvas.
+    if (e.proc) { drawProcTower(e, p.x, p.y - 8, t.angle || 0, flip, t.fireAnim > 0); continue; }
+
+    // Escoger sprite base o frame de ataque (torres con sprite por era/tier)
+    const sa = e.spriteAge, tier = e.tier;
     let im;
     if (t.fireAnim > 0) {
-      const projIdx = st.age * 3 + (t.type - 1);
       const frameNum = t.animFrame + 1;
-      im = IMG[`assets/towers/${AGES[st.age]}/t${t.type}/${AGES[st.age]}_turret_${t.type}_attack${String(frameNum).padStart(4, "0")}.png`];
+      im = IMG[`assets/towers/${AGES[sa]}/t${tier}/${AGES[sa]}_turret_${tier}_attack${String(frameNum).padStart(4, "0")}.png`];
     }
-    if (!im) im = IMG[`assets/towers/${AGES[st.age]}/t${t.type}.png`];
+    if (!im) im = IMG[`assets/towers/${AGES[sa]}/t${tier}.png`];
     if (!im) continue;
 
-    const baseH = 56 + st.age * 4;
+    const baseH = 56 + sa * 4;
     let h = baseH;
     let w = im.width * (h / im.height);
     if (w > 90) { const r = 90 / w; w = 90; h *= r; }
@@ -2084,7 +3013,7 @@ CV.addEventListener("mousemove", (e) => {
     unitTooltip.style.left = (e.clientX - gameRect.left + 16) + "px";
     unitTooltip.style.top = (e.clientY - gameRect.top - 28) + "px";
     // stats reales de ESA unidad (horneados al nacer), no los de la edad actual
-    const lvTxt = (closest.lvl || 1) >= MAX_UNIT_LEVEL ? "Nv MAX" : "Nv " + (closest.lvl || 1);
+    const lvTxt = (closest.lvl || 1) >= unitMaxLevel(closest.uid) ? "Nv MAX" : "Nv " + (closest.lvl || 1);
     unitTooltip.innerHTML = `<div class="tt-lvl">${lvTxt}</div>`;
     unitTooltip.classList.remove("hidden");
   } else {
@@ -2099,7 +3028,7 @@ function showUnitDeletePopup(u, rect) {
   const gameRect = gameEl.getBoundingClientRect();
   const bufX = (u.x - camX) * camScale;
   const bufY = ((u.y - 60) - camY) * camScale;
-  const lvTxt = (u.lvl || 1) >= MAX_UNIT_LEVEL ? "NvMAX" : "Nv" + (u.lvl || 1);
+  const lvTxt = (u.lvl || 1) >= unitMaxLevel(u.uid) ? "NvMAX" : "Nv" + (u.lvl || 1);
   towerSellPopup = document.createElement("div");
   towerSellPopup.id = "tower-sell-popup";
   towerSellPopup.style.left = Math.round(bufX * (rect.width / CV.width) + (rect.left - gameRect.left)) + "px";
@@ -2150,10 +3079,11 @@ CV.addEventListener("click", (e) => {
     const cx = p.x, cy = p.y - 8;
     if (Math.abs(wx - cx) < 50 && Math.abs(wy - cy) < 50) {
       if (towerSellPopup) { towerSellPopup.remove(); towerSellPopup = null; }
-      const d = st.towerUpg.dmg[t.type - 1];
-      const s = st.towerUpg.spd[t.type - 1];
-      const ts = towerStats(st.age, t.type, d, s);
-      const val = towerSellValue(t.type, st.age, d, s);
+      const d = getTowerUpg("player", t.tid, "dmg");
+      const s = getTowerUpg("player", t.tid, "spd");
+      const ts = towerStats(t.tid, d, s);
+      const val = towerSellValue(t.tid, d, s);
+      const tName = (TOWER_CATALOG[t.tid] || {}).name || "Torre";
       // Posición del popup en px CSS relativa al contenedor #game
       const gameEl = document.getElementById("game");
       const gameRect = gameEl.getBoundingClientRect();
@@ -2164,7 +3094,7 @@ CV.addEventListener("click", (e) => {
       towerSellPopup.style.left = Math.round(towerBufX * (rect.width / CV.width) + (rect.left - gameRect.left)) + "px";
       towerSellPopup.style.top = Math.round(towerBufY * (rect.height / CV.height) + (rect.top - gameRect.top) - 50) + "px";
       towerSellPopup.innerHTML = `
-        <div class="tsp-info">T${t.type} ⚔${ts.dmg} ⏱${ts.cd.toFixed(2)}s</div>
+        <div class="tsp-info">${tName} ⚔${ts.dmg} ⏱${ts.cd.toFixed(2)}s</div>
         <div class="tsp-sell">Vender por ${val}🪙</div>
         <div class="tsp-btns">
           <button id="ts-confirm" class="tsp-btn tsp-yes">✔ Vender</button>
@@ -2229,28 +3159,9 @@ function renderEcon() {
   const p = G.player, g = p.gold;
   const income = PASSIVE_GOLD + p.villagers * (VILLAGER_GOLD + p.villagerLvl * 2);
   const aff = (c) => (g >= c ? 1 : 0);
-  let sig = p.age + "|" + p.villagers + "|" + p.villagerLvl + "|" + p.slots + "|" +
-    p.towers.map((t) => (t ? t.type + "." + (p.towerUpg.dmg[t.type - 1]) + "." + (p.towerUpg.spd[t.type - 1]) : "_")).join(",");
-
   const vc = villagerCost(p.villagers);
-  sig += "|v" + aff(vc);
+  let sig = p.age + "|" + p.villagers + "|" + p.villagerLvl + "|v" + aff(vc);
   if (p.villagers > 0) sig += "|vu" + aff(villagerLvlCost(p.villagerLvl));
-  for (let i = 0; i < p.slots; i++) {
-    const t = p.towers[i];
-    if (t) {
-      const ud = p.towerUpg.dmg[t.type - 1];
-      const us = p.towerUpg.spd[t.type - 1];
-      sig += "|t" + i + ".t" + t.type + ".d" + ud + ".s" + us
-        + (ud < MAX_TOWER_UPG ? "|ud" + aff(towerUpgCost(p.age, t.type, "dmg", ud)) : "")
-        + (us < MAX_TOWER_UPG ? "|us" + aff(towerUpgCost(p.age, t.type, "spd", us)) : "");
-    } else {
-      const c1 = towerBuyCost(p.age, 1);
-      const c2 = towerBuyCost(p.age, 2);
-      const c3 = towerBuyCost(p.age, 3);
-      sig += "|b" + i + ".c1" + aff(c1) + ".c2" + aff(c2) + ".c3" + aff(c3);
-    }
-  }
-  if (p.slots < MAX_SLOTS) sig += "|s" + aff(SLOT_COST[p.slots]);
   if (sig === econSig) return;
   econSig = sig;
 
@@ -2279,6 +3190,99 @@ function renderEcon() {
 
 }
 
+// ---- Árbol tecnológico de la raza (panel derecho del HUD) ------------
+let researchSig = "";
+function renderResearch() {
+  const sec = document.getElementById("research-section");
+  if (!sec) return;
+  const p = G.player;
+  const race = p.race || "humans";
+  const techs = availableTechs(race, p.age);
+  const lockedNext = (RACE_TECH[race] || []).filter(t => t.era === p.age + 1).length;
+  // unidades del mazo actual (las cards visibles) que tengan mejoras propias
+  const deckUids = shopCards.map(c => c.uid);
+  // firma SIN oro: solo se reconstruye al cambiar estructura (raza/era/niveles/mazo).
+  // (incluir el oro reconstruía el DOM cada frame y mataba el click sobre los botones).
+  let sig = race + "|" + p.age + "|" +
+    techs.map(t => t.id + (p.tech[t.id] || 0)).join(",") + "|" +
+    deckUids.map(uid => uid + ":" + (UNIT_UPG[uid] || []).map(up => (p.uupg[uid] && p.uupg[uid][up.key]) || 0).join("")).join(",");
+  if (sig !== researchSig) {
+    researchSig = sig;
+
+    // ── Columna IZQUIERDA: mejoras de unidad ──
+    let unitHtml = "";
+    for (const uid of deckUids) {
+      const all = UNIT_UPG[uid] || []; if (!all.length) continue;
+      const avail = availableUnitUpgs(uid, p.age);
+      const lockedU = all.filter(up => up.era === p.age + 1).length;
+      if (!avail.length && !lockedU) continue;
+      const u = UNIT_CATALOG[uid];
+      const lv = unitLevel("player", uid);
+      unitHtml += `<div class="rs-ugroup"><div class="rs-uname">${u.icon || "▸"} ${u.name} <small>Nv ${lv}/${unitMaxLevel(uid)}</small></div>`;
+      for (const up of avail) {
+        const lvl = (p.uupg[uid] && p.uupg[uid][up.key]) || 0;
+        const maxed = lvl >= up.maxLvl;
+        const cost = unitUpgCost(up, lvl);
+        const pct = Math.round(up.per * 100);
+        unitHtml += `<button class="rs-tech rs-utech${maxed ? " maxed" : ""}" data-uupg="${uid}:${up.key}" data-cost="${cost}" data-maxed="${maxed ? 1 : 0}"
+          title="${up.label} de ${u.name} +${pct}%/nivel · Era ${ERA_ROMAN[up.era]}">
+          <span class="rs-ico">${UPG_STAT_ICON[up.stat]}</span>
+          <span class="rs-name">${up.label}<small>+${pct}%</small></span>
+          <span class="rs-lvl">${lvl}/${up.maxLvl}</span>
+          <span class="rs-cost">${maxed ? "MÁX" : cost + "🪙"}</span>
+        </button>`;
+      }
+      if (lockedU > 0) unitHtml += `<div class="rs-locked">🔒 ${lockedU} en Era ${ERA_ROMAN[p.age + 1]}</div>`;
+      unitHtml += `</div>`;
+    }
+    if (!unitHtml) unitHtml = `<div class="rs-empty">Sin mejoras de unidad disponibles aún</div>`;
+
+    // ── Columna DERECHA: mejoras de raza ──
+    let techHtml = "";
+    for (const t of techs) {
+      const lvl = p.tech[t.id] || 0;
+      const maxed = lvl >= t.maxLvl;
+      const cost = techCost(t, lvl);
+      const scope = TECH_SCOPE_LABEL[t.scopeLabel] || "Todas";
+      const pct = Math.round(t.per * 100);
+      techHtml += `<button class="rs-tech${maxed ? " maxed" : ""}" data-tech="${t.id}" data-cost="${cost}" data-maxed="${maxed ? 1 : 0}"
+        title="${TECH_STAT_LABEL[t.stat]} +${pct}%/nivel · ${scope} · Era ${ERA_ROMAN[t.era]}">
+        <span class="rs-ico">${TECH_STAT_ICON[t.stat]}</span>
+        <span class="rs-name">${t.name}<small>${scope} · +${pct}%</small></span>
+        <span class="rs-lvl">${lvl}/${t.maxLvl}</span>
+        <span class="rs-cost">${maxed ? "MÁX" : cost + "🪙"}</span>
+      </button>`;
+    }
+    if (lockedNext > 0) techHtml += `<div class="rs-locked">🔒 ${lockedNext} en la siguiente era</div>`;
+
+    sec.innerHTML =
+      `<div class="rs-cols">
+        <div class="rs-col">
+          <div class="rs-title">⚡ Unidad</div>
+          <div class="rs-list">${unitHtml}</div>
+        </div>
+        <div class="rs-col">
+          <div class="rs-title rs-title-race">🔬 ${RACE_NAMES[race]}</div>
+          <div class="rs-list">${techHtml}</div>
+        </div>
+      </div>`;
+  }
+
+  // Cada frame: solo actualizar el estado de affordability (sin reconstruir DOM).
+  sec.querySelectorAll(".rs-tech").forEach((b) => {
+    if (b.dataset.maxed === "1") { b.disabled = true; return; }
+    b.disabled = p.gold < +b.dataset.cost;
+  });
+}
+document.getElementById("research-section").addEventListener("click", (e) => {
+  const bu = e.target.closest("[data-uupg]");
+  if (bu) { if (bu.disabled) return; const [uid, key] = bu.dataset.uupg.split(":"); playerUnitUpg(+uid, key); researchSig = ""; return; }
+  const b = e.target.closest("[data-tech]");
+  if (!b || b.disabled) return;
+  playerTech(b.dataset.tech);
+  researchSig = ""; // forzar refresh
+});
+
 let shopCards = [];
 let towerCards = [];
 let slotBtn = null;
@@ -2301,7 +3305,7 @@ function buildShop() {
     if (uid) {
       const u = UNIT_CATALOG[uid];
       const card = document.createElement("div");
-      card.className = "card";
+      card.className = "card rarity-" + unitRarity(uid);
       card.innerHTML = `
         <div class="key">${i + 1}</div>
         <svg class="cd-ring" viewBox="0 0 100 100"><circle class="cd-ring-fill" cx="50" cy="50" r="44" transform="rotate(-90 50 50)"/></svg>
@@ -2312,19 +3316,7 @@ function buildShop() {
         <div class="stats"></div>`;
       card.addEventListener("click", () => playerSpawn(uid));
       slot.appendChild(card);
-
-      // Upgrades debajo de cada carta
-      const upgs = document.createElement("div");
-      upgs.className = "card-upgs";
-      unitUpgStats(uid).forEach((stat) => {
-        const btn = document.createElement("button");
-        btn.className = "upg-pbtn";
-        btn.dataset.uid = uid;
-        btn.dataset.stat = stat;
-        btn.addEventListener("click", () => playerUpgrade(uid, stat));
-        upgs.appendChild(btn);
-      });
-      slot.appendChild(upgs);
+      // (Las mejoras ya NO van bajo las cards: ahora son el árbol tecnológico de la derecha.)
 
       shopCards.push({
         el: card, uid, type: u.combatStyle,
@@ -2355,50 +3347,45 @@ function buildShop() {
   towerSection.innerHTML = "";
   towerCards = [];
 
-  TOWER_TIERS.forEach((ty) => {
+  // Torres que el jugador posee y puede construir en la era actual
+  const towerTids = ownedTowersForEra(G.player ? G.player.age : 0);
+  towerTids.forEach((tid) => {
+    const e = TOWER_CATALOG[tid];
     const grp = document.createElement("div");
     grp.className = "tower-group";
 
     const card = document.createElement("div");
-    card.className = "card tower-card";
+    card.className = "card tower-card rarity-" + e.rarity;
     card.innerHTML = `
-      <div class="key">T${ty}</div>
-      <div class="thumb"><img></div>
-      <div class="name">Torre T${ty}</div>
+      <div class="key">🗼</div>
+      <div class="thumb">${e.proc ? `<span style="font-size:34px">🗼</span>` : `<img>`}</div>
+      <div class="name">${e.name}</div>
       <div class="cost"></div>
       <div class="stats"></div>`;
     const img = card.querySelector("img");
-    const imgAge = G.player ? G.player.age : 0;
-    const key = `assets/towers/${AGES[imgAge]}/t${ty}.png`;
-    if (IMG[key]) img.src = IMG[key].src;
+    if (img && !e.proc) { const key = `assets/towers/${AGES[e.spriteAge]}/t${e.tier}.png`; if (IMG[key]) img.src = IMG[key].src; }
     card.addEventListener("click", () => {
       const p = G.player;
-      for (let i = 0; i < p.slots; i++) {
-        if (!p.towers[i]) { playerBuyTower(i, ty); break; }
-      }
+      for (let i = 0; i < p.slots; i++) { if (!p.towers[i]) { playerBuyTower(i, tid); break; } }
     });
     grp.appendChild(card);
 
-    // Upgrades de torre
     const upgs = document.createElement("div");
     upgs.className = "tower-upgs";
     ["dmg", "spd"].forEach((stat) => {
       const btn = document.createElement("button");
       btn.className = "upg-pbtn";
-      btn.dataset.towerType = ty;
+      btn.dataset.towerTid = tid;
       btn.dataset.stat = stat;
       btn.addEventListener("click", () => {
         const p = G.player;
-        for (let i = 0; i < p.slots; i++) {
-          const t = p.towers[i];
-          if (t && t.type === ty) { playerUpgTower(i, stat); break; }
-        }
+        for (let i = 0; i < p.slots; i++) { const t = p.towers[i]; if (t && t.tid === tid) { playerUpgTower(i, stat); break; } }
       });
       upgs.appendChild(btn);
     });
     grp.appendChild(upgs);
     towerSection.appendChild(grp);
-    towerCards.push({ el: card, img, ty });
+    towerCards.push({ el: card, tid, img, cost: card.querySelector(".cost"), stats: card.querySelector(".stats") });
   });
 
   // Botón de slot extra
@@ -2412,7 +3399,7 @@ function buildShop() {
 }
 
 function effStats(side, uid) {
-  const cs = computeStats(uid, G[side].age, getUpg(side, uid));
+  const cs = computeStats(uid, G[side].age, side);
   return {
     hp: Math.round(cs.hp),
     dmg: Math.round(cs.dmg),
@@ -2433,8 +3420,8 @@ function refreshShopAge() {
     c.name.textContent = u.name;
   }
   for (const tc of towerCards) {
-    const key = `assets/towers/${AGES[age]}/t${tc.ty}.png`;
-    if (IMG[key]) tc.img.src = IMG[key].src;
+    const e = TOWER_CATALOG[tc.tid];
+    if (tc.img && e && !e.proc) { const key = `assets/towers/${AGES[e.spriteAge]}/t${e.tier}.png`; if (IMG[key]) tc.img.src = IMG[key].src; }
   }
 }
 
@@ -2464,9 +3451,7 @@ function syncUI() {
   for (const c of shopCards) {
     const s = unitBase(c.uid, p.age, c.type);
     const es = effStats("player", c.uid);
-    const lv = unitLevel(getUpg("player", c.uid), c.uid);
-    c.lvl.textContent = lv >= MAX_UNIT_LEVEL ? "Nv MAX" : "Nv " + lv;
-    c.lvl.classList.toggle("maxed", lv >= MAX_UNIT_LEVEL);
+    if (c.lvl) { const lv = unitLevel("player", c.uid); c.lvl.textContent = lv > 1 ? "Nv" + lv : ""; }
     c.cost.textContent = s.cost + " 🪙";
     c.stats.textContent = c.type === "range"
       ? `❤${es.hp} ⚔${es.dmg} 🎯${es.range}`
@@ -2484,53 +3469,34 @@ function syncUI() {
   }
   // Cards de torres
   for (const tc of towerCards) {
-    const ty = tc.ty;
-    const c = towerBuyCost(p.age, ty);
-    const upgDmg = p.towerUpg.dmg[ty - 1];
-    const upgSpd = p.towerUpg.spd[ty - 1];
-    const ts = towerStats(p.age, ty, upgDmg, upgSpd);
-    tc.el.querySelector(".cost").textContent = c + " 🪙";
-    tc.el.querySelector(".stats").textContent = `⚔${ts.dmg} ⏱${ts.cd.toFixed(2)}s`;
+    const tid = tc.tid;
+    const c = towerBuyCost(tid);
+    const upgDmg = getTowerUpg("player", tid, "dmg");
+    const upgSpd = getTowerUpg("player", tid, "spd");
+    const ts = towerStats(tid, upgDmg, upgSpd);
+    tc.cost.textContent = c + " 🪙";
+    tc.stats.textContent = `⚔${ts.dmg} ⏱${ts.cd.toFixed(2)}s`;
     const hasEmpty = p.towers.some(t => t === null);
     tc.el.classList.toggle("disabled", !(p.gold >= c && hasEmpty));
   }
-  // Mejoras de unidades (dentro de cada card-slot)
-  document.querySelectorAll(".card-upgs .upg-pbtn").forEach((btn) => {
-    const uid = +btn.dataset.uid;
-    const stat = btn.dataset.stat;
-    const l = getUpg("player", uid)[stat] || 0;
-    if (l >= MAX_UPG) {
-      btn.innerHTML = "★MÁX";
-      btn.disabled = true;
-    } else {
-      const uc = upgradeCost(uid, stat, l);
-      btn.innerHTML = `${UPG_LABEL[stat]} L${l+1}<br>${uc}🪙`;
-      const type = (UNIT_CATALOG[uid] || {}).combatStyle;
-      const su = unitBase(uid, p.age, type);
-      const eff = stat === "dmg"   ? `+${Math.round(su.dmg * DMG_MULT * UPG_DMG)} de daño`
-                : stat === "hp"    ? `+${Math.round(su.hp * UPG_HP)} de vida`
-                : stat === "range" ? `+${Math.round(su.range * UPG_RANGE)} de rango`
-                : `+${Math.round(UPG_SPD * 100)}% vel. de ataque`;
-      btn.title = `${eff}  (Nv ${l+1}/${MAX_UPG} · ${uc}🪙)`;
-      btn.disabled = p.gold < uc;
-    }
-  });
+  // Árbol tecnológico de la raza (panel derecho)
+  renderResearch();
   // Mejoras de torres
   document.querySelectorAll(".tower-upgs .upg-pbtn").forEach((btn) => {
-    const ty = +btn.dataset.towerType;
+    const tid = +btn.dataset.towerTid;
     const stat = btn.dataset.stat;
-    const lvl = p.towerUpg[stat][ty - 1];
+    const lvl = getTowerUpg("player", tid, stat);
     if (lvl >= MAX_TOWER_UPG) {
       btn.innerHTML = "★MÁX";
       btn.disabled = true;
     } else {
-      const uc = towerUpgCost(p.age, ty, stat, lvl);
+      const uc = towerUpgCost(tid, stat, lvl);
       const lbl = { dmg: "+ATK", spd: "+VEL" };
       btn.innerHTML = `${lbl[stat]} L${lvl+1}<br>${uc}🪙`;
       let eff;
       if (stat === "dmg") {
-        const sp = p.towerUpg.spd[ty - 1];
-        const d = towerStats(p.age, ty, lvl + 1, sp).dmg - towerStats(p.age, ty, lvl, sp).dmg;
+        const sp = getTowerUpg("player", tid, "spd");
+        const d = towerStats(tid, lvl + 1, sp).dmg - towerStats(tid, lvl, sp).dmg;
         eff = `+${Math.round(d)} de daño`;
       } else {
         eff = `+12% vel. de ataque`;
@@ -2556,9 +3522,9 @@ function syncUI() {
     const ta = document.getElementById("tp-age"); if (ta) ta.textContent = AGE_NAMES[e.age];
     document.querySelectorAll("#test-panel [data-tlvl]").forEach((el) => {
       const t = el.dataset.tlvl;
-      const unit = UnitDB.getUnitForStyle(sideRace("enemy"), e.age, t);
-      const lv = unit ? unitLevel(getUpg("enemy", unit.id), unit.id) : 1;
-      el.textContent = lv >= MAX_UNIT_LEVEL ? "NvMAX" : "Nv" + lv;
+      const techs = (RACE_TECH[sideRace("enemy")] || []).filter(x => x.scopeLabel === t || x.scopeLabel === "all");
+      let lv = 0; for (const x of techs) lv += (e.tech[x.id] || 0);
+      el.textContent = "I+" + lv; // niveles de investigación que aplican a esa categoría
     });
   }
 }
@@ -2572,17 +3538,23 @@ function endGame(win) {
   }
   document.getElementById("overTitle").textContent = win ? "¡Victoria! 🏆" : "Derrota 💀";
   document.getElementById("overTitle").style.color = win ? "#7af0c0" : "#e0524a";
-  document.getElementById("overMsg").textContent = win
-    ? "Destruiste la base enemiga." : "Tu base fue destruida.";
+  let msg = win ? "Destruiste la base enemiga." : "Tu base fue destruida.";
+  // Recompensa de monedas solo al ganar a la IA
+  if (win && G.mode === "ai") {
+    const reward = WIN_REWARD[difficulty] || 100;
+    addCoins(reward);
+    msg += ` Ganaste 🪙${reward} (total: ${getCoins()}).`;
+  }
+  document.getElementById("overMsg").textContent = msg;
   overlay.classList.remove("hidden");
 }
 
 function resetGame() {
   G.player = freshSide(250, G.playerRace || "humans");
-  G.enemy = freshSide(200, "humans");
+  G.enemy = freshSide(200, aiRace || "humans"); // online lo fija a humans en startOnlineGame
   G.units = []; G.projectiles = []; G.floats = []; G.over = false;
   G.mode = "ai";
-  lastAge = -1; econSig = ""; dayCycleTime = 0;
+  lastAge = -1; econSig = ""; researchSig = ""; dayCycleTime = 0;
   resetInfection();
   camX = 0; clampCam();
   overlay.classList.add("hidden");
@@ -2600,6 +3572,7 @@ function showMenu() {
   // Sincronizar selector de raza
   const sel = document.getElementById("main-race-select");
   if (sel) sel.value = loadActiveRace();
+  updateCoinDisplays();
 }
 
 function startGame() {
@@ -2659,6 +3632,7 @@ function startOnlineGame() {
   G.playerRace = document.getElementById("main-race-select").value;
   currentDeck = loadDeck();
   resetGame();
+  G.enemy = freshSide(200, "humans"); // online: el rival es un jugador (raza no sincronizada)
   buildShop();
   G.mode = "online";
   document.getElementById("restartBtn").disabled = false;
@@ -2880,6 +3854,16 @@ function getUnitThumb(uid) {
   return u.icon || "❓";
 }
 
+// ---- Helpers de carta (unidad o torre) ------------------------------
+function cardRarity(id) { return isTowerId(id) ? (TOWER_CATALOG[id] || {}).rarity || "common" : unitRarity(id); }
+function cardName(id) { return isTowerId(id) ? (TOWER_CATALOG[id] || {}).name || "Torre" : (UNIT_CATALOG[id] || {}).name || "?"; }
+function cardThumb(id) {
+  if (!isTowerId(id)) return getUnitThumb(id);
+  const e = TOWER_CATALOG[id];
+  if (e && !e.proc) { const k = `assets/towers/${AGES[e.spriteAge]}/t${e.tier}.png`; if (IMG[k]) return `<img src="${IMG[k].src}" alt="${e.name}" class="unit-thumb">`; }
+  return "🗼";
+}
+
 // ---- Deck Builder ----------------------------------------------------
 const DECK_MAX = 6;
 const DECK_MIN = 0;
@@ -2892,12 +3876,12 @@ function defaultDeck() {
       d[race][a] = [];
     }
   }
-  // Solo humanos tiene unidades por ahora (y zerling para monsters)
-  for (let a = 0; a < AGES.length; a++) {
-    // cap a DECK_MAX: si hay más unidades disponibles que slots, el jugador
-    // elige el resto en el editor (mazo por defecto = las primeras DECK_MAX).
-    d["humans"][a] = UnitDB.getAvailableIdsByRace("humans", a).slice(0, DECK_MAX);
-    d["monsters"][a] = UnitDB.getAvailableIdsByRace("monsters", a).slice(0, DECK_MAX);
+  // Autorrellena cada raza/era con las primeras DECK_MAX unidades POSEÍDAS.
+  const col = getCollection();
+  for (const race of RACES) {
+    for (let a = 0; a < AGES.length; a++) {
+      d[race][a] = UnitDB.getAvailableIdsByRace(race, a).filter(uid => (col[uid] || 0) >= 1).slice(0, DECK_MAX);
+    }
   }
   return d;
 }
@@ -2919,7 +3903,18 @@ function loadDeck() {
         }
         if (!ok) break;
       }
-      if (ok) return d;
+      if (ok) {
+        const col = getCollection();
+        const def = defaultDeck();
+        for (const race of RACES)
+          for (let a = 0; a < AGES.length; a++) {
+            // Quita del mazo cartas que ya no se poseen (vendidas/no compradas)
+            d[race][a] = (d[race][a] || []).filter(uid => (col[uid] || 0) >= 1);
+            // Rellena eras vacías con las poseídas por defecto
+            if (d[race][a].length === 0 && def[race][a].length > 0) d[race][a] = def[race][a];
+          }
+        return d;
+      }
     }
   } catch {}
   return defaultDeck();
@@ -3042,7 +4037,9 @@ function renderDeckInfo(uid) {
   spriteEl.appendChild(imgEl);
   const s = u.stats || {};
   const g = u.growth || {};
+  const rar = unitRarity(uid);
   const lines = [
+    { label: "💎 Rareza", value: `<span style="color:${RARITY[rar].color};font-weight:700">${RARITY[rar].name}</span>` },
     { label: "🏛 Eras", value: u.availableEras.map(e => AGE_NAMES[e].replace("Era ", "")).join(", ") },
     { label: "📋 Clase", value: u.class ? (u.class.charAt(0).toUpperCase() + u.class.slice(1)) : "—" },
     { label: "❤ Vida", value: s.hp || "—" },
@@ -3054,7 +4051,6 @@ function renderDeckInfo(uid) {
     { label: "⭐ XP/muerte", value: s.xp || "—" },
     { label: "⏱ Spawn CD", value: u.cooldown ? u.cooldown + "s" : "—" },
   ];
-  if (g.hp) lines.push({ label: "📈 Crec/nivel", value: `❤${(g.hp*100-100).toFixed(0)}% ⚔${(g.dmg*100-100).toFixed(0)}%` });
   statsEl.innerHTML = lines.map(l =>
     `<div class="di-stat"><span class="di-label">${l.label}</span><span class="di-value">${l.value}</span></div>`
   ).join("");
@@ -3096,7 +4092,10 @@ function renderDeckPool() {
   const filter = document.getElementById("deck-filter").value.toLowerCase();
   list.innerHTML = "";
   const deckForAge = (currentDeck[currentRace] && currentDeck[currentRace][currentDeckAge]) || [];
+  const col = getCollection();
+  // Solo se muestran las unidades POSEÍDAS (las demás se consiguen en la tienda)
   const available = UnitDB.getAvailableIdsByRace(currentRace, currentDeckAge).filter((uid) => {
+    if ((col[uid] || 0) < 1) return false;
     const u = UNIT_CATALOG[uid];
     if (!filter) return true;
     return u.name.toLowerCase().includes(filter)
@@ -3104,19 +4103,26 @@ function renderDeckPool() {
       || u.tags.some(t => t.includes(filter))
       || u.desc.toLowerCase().includes(filter);
   });
+  if (!available.length) {
+    list.innerHTML = `<div class="deck-pool-empty">No tienes unidades de ${RACE_NAMES[currentRace]} en ${AGE_NAMES[currentDeckAge]}.<br>Consíguelas en la 🛒 Tienda.</div>`;
+    return;
+  }
   for (const uid of available) {
     const u = UNIT_CATALOG[uid];
     const inDeck = deckForAge.includes(uid);
+    const rar = unitRarity(uid);
+    const cnt = col[uid] || 0;
     const thumb = getUnitThumb(uid);
     const card = document.createElement("div");
-    card.className = "dcard" + (inDeck ? " in-deck" : "") + (uid === selectedUnitId ? " selected" : "");
+    card.className = "dcard rarity-" + rar + (inDeck ? " in-deck" : "") + (uid === selectedUnitId ? " selected" : "");
     card.dataset.uid = uid;
     card.innerHTML = `
+      ${cnt > 1 ? `<span class="dcount">x${cnt}</span>` : ""}
       <div class="dci">${thumb}</div>
       <span class="dcn">${u.name}</span>
       <span class="dcc">🪙${u.stats.cost}</span>
       <div class="dtags">
-        ${u.tags.map(t => `<span class="dctag dctag-tag-${t}">${t}</span>`).join("")}
+        <span class="dctag dctag-rar" style="background:${RARITY[rar].color}33;color:${RARITY[rar].color}">${RARITY[rar].name}</span>
       </div>`;
     card.addEventListener("click", () => {
       selectedUnitId = uid;
@@ -3141,6 +4147,7 @@ function renderDeckSlots() {
     if (i < deckForAge.length) {
       const uid = deckForAge[i];
       const u = UNIT_CATALOG[uid];
+      slot.className = "deck-slot rarity-" + unitRarity(uid);
       const thumb = getUnitThumb(uid);
       slot.innerHTML = `
         <div class="ds-num">${i + 1}</div>
@@ -3207,6 +4214,113 @@ document.getElementById("deck-save-btn").addEventListener("click", () => {
   saveDeck(currentDeck);
 });
 
+// ---- Tienda de sobres ------------------------------------------------
+const PACK_NORMAL = [["common", 58], ["uncommon", 27], ["rare", 11], ["epic", 3], ["legendary", 1]];
+const PACK_LUCKY  = [["uncommon", 45], ["rare", 35], ["epic", 15], ["legendary", 5]];
+
+function rollRarity(table) {
+  const total = table.reduce((s, [, w]) => s + w, 0);
+  let r = Math.random() * total;
+  for (const [rar, w] of table) { if ((r -= w) < 0) return rar; }
+  return table[table.length - 1][0];
+}
+// Pool de cartas de una raza = sus unidades + sus torres (las torres salen mezcladas).
+function raceCardPool(race) {
+  const ids = UnitDB.getByRace(race).map(u => u.id);
+  for (const tid of TOWER_IDS) if (TOWER_CATALOG[tid].race === race) ids.push(tid);
+  return ids;
+}
+// Elige una carta de la raza con la rareza pedida; si no existe, baja de rareza.
+function pickUnitForPack(race, rarity) {
+  const pool = raceCardPool(race);
+  for (let rank = rarityRank(rarity); rank >= 0; rank--) {
+    const rar = RARITY_ORDER[rank];
+    const ids = pool.filter(id => cardRarity(id) === rar);
+    if (ids.length) return ids[(Math.random() * ids.length) | 0];
+  }
+  return pool[(Math.random() * pool.length) | 0];
+}
+function openPack(race) {
+  const col = getCollection();
+  const results = [];
+  for (let i = 0; i < PACK_SIZE; i++) {
+    const lucky = i === PACK_SIZE - 1; // la última carta tiene mejores probabilidades
+    const uid = pickUnitForPack(race, rollRarity(lucky ? PACK_LUCKY : PACK_NORMAL));
+    const had = col[uid] || 0;
+    let status;
+    if (had < MAX_COPIES) { col[uid] = had + 1; status = had === 0 ? "new" : "dup"; }
+    else status = "wasted"; // ya tiene el máximo de copias: no se añade
+    results.push({ uid, lucky, status });
+  }
+  saveCollection(col);
+  return results;
+}
+
+function openShop() {
+  document.getElementById("main-menu").classList.add("hidden");
+  document.getElementById("shop").classList.remove("hidden");
+  document.getElementById("shop-reveal").classList.add("hidden");
+  updateCoinDisplays();
+  renderShop();
+}
+function closeShop() {
+  document.getElementById("shop").classList.add("hidden");
+  document.getElementById("main-menu").classList.remove("hidden");
+}
+function renderShop() {
+  const cont = document.getElementById("shop-packs");
+  cont.innerHTML = "";
+  const coins = getCoins();
+  for (const race of RACES) {
+    const th = PROC_THEME[race] || { body: "#888", edge: "#ccc" };
+    const pack = document.createElement("div");
+    pack.className = "pack-card";
+    pack.style.borderColor = th.edge;
+    pack.innerHTML = `
+      <div class="pack-art" style="background:linear-gradient(160deg, ${th.body}, ${th.edge})">🎴</div>
+      <div class="pack-name">${RACE_NAMES[race]}</div>
+      <div class="pack-sub">${PACK_SIZE} cartas</div>
+      <button class="menu-btn pack-buy" data-race="${race}" ${coins < PACK_PRICE ? "disabled" : ""}>🪙 ${PACK_PRICE}</button>`;
+    cont.appendChild(pack);
+  }
+}
+document.getElementById("shop-packs").addEventListener("click", (e) => {
+  const btn = e.target.closest(".pack-buy");
+  if (!btn || btn.disabled) return;
+  const race = btn.dataset.race;
+  if (getCoins() < PACK_PRICE) return;
+  setCoins(getCoins() - PACK_PRICE);
+  showReveal(openPack(race));
+  renderShop();
+});
+function showReveal(results) {
+  const wrap = document.getElementById("shop-reveal");
+  const cards = document.getElementById("shop-reveal-cards");
+  cards.innerHTML = "";
+  for (const r of results) {
+    const rar = cardRarity(r.uid);
+    const isTw = isTowerId(r.uid);
+    const tag = r.status === "new" ? `<span class="rv-tag rv-new">¡Nueva!</span>`
+              : r.status === "dup" ? `<span class="rv-tag rv-dup">+1</span>`
+              : `<span class="rv-tag rv-waste">Repetida</span>`;
+    const card = document.createElement("div");
+    card.className = "reveal-card rarity-" + rar + (r.lucky ? " lucky" : "") + (r.status === "wasted" ? " wasted" : "");
+    card.innerHTML = `
+      <div class="rv-thumb">${cardThumb(r.uid)}</div>
+      <div class="rv-name">${cardName(r.uid)}${isTw ? " 🗼" : ""}</div>
+      <div class="rv-rar" style="color:${RARITY[rar].color}">${RARITY[rar].name}${isTw ? " · Torre" : ""}</div>
+      ${tag}`;
+    cards.appendChild(card);
+  }
+  wrap.classList.remove("hidden");
+}
+document.getElementById("shop-reveal-close").addEventListener("click", () => {
+  document.getElementById("shop-reveal").classList.add("hidden");
+});
+document.getElementById("shop-back-btn").addEventListener("click", closeShop);
+document.getElementById("btn-shop").addEventListener("click", openShop);
+updateCoinDisplays();
+
 window.addEventListener("keydown", (e) => {
   const playerAge = G.player ? G.player.age : 0;
   const pRace = G.playerRace || "humans";
@@ -3250,6 +4364,27 @@ function populateRaceSelect() {
 }
 populateRaceSelect();
 
+// Selector de raza de la IA (cualquier raza, no depende de la colección del jugador).
+function populateAiRaceSelect() {
+  const sel = document.getElementById("ai-race-select");
+  if (!sel) return;
+  sel.innerHTML = "";
+  for (const race of RACES) {
+    const opt = document.createElement("option");
+    opt.value = race; opt.textContent = RACE_NAMES[race];
+    sel.appendChild(opt);
+  }
+  sel.value = aiRace;
+  sel.addEventListener("change", () => {
+    aiRace = sel.value;
+    try { localStorage.setItem("aow_ai_race", aiRace); } catch {}
+    const inGame = !document.getElementById("game").classList.contains("hidden");
+    if (G.mode === "ai" && inGame) resetGame(); // aplica de inmediato si ya está jugando
+  });
+}
+populateAiRaceSelect();
+getCollection(); // auto-repara el piso de la colección (restaura cartas previas) — seguro: UnitDB ya existe
+
 document.getElementById("btn-vs-ia").addEventListener("click", () => {
   if (!ensurePlayable()) return;
   G.mode = "ai";
@@ -3278,9 +4413,10 @@ testPanel.addEventListener("click", (ev) => {
   else if (b.dataset.tact === "villager") { e.gold += villagerCost(e.villagers); tryVillager("enemy"); }
   else if (b.dataset.tspawn) { e.cd = {}; trySpawn("enemy", b.dataset.tspawn); }
   else if (b.dataset.tupg) {
-    const [t, s] = b.dataset.tupg.split(":");
-    const unit = UnitDB.getUnitForStyle(sideRace("enemy"), e.age, t);
-    if (unit) tryUpgrade("enemy", unit.id, s);
+    // Investiga el primer tech disponible del enemigo para esa categoría (zona de test).
+    const [t] = b.dataset.tupg.split(":");
+    const tech = availableTechs(sideRace("enemy"), e.age).find(x => x.scopeLabel === t || x.scopeLabel === "all");
+    if (tech) { e.gold += techCost(tech, e.tech[tech.id] || 0); tryTech("enemy", tech.id); }
   }
 });
 
