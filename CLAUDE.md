@@ -23,6 +23,13 @@ cost, upgs[], availableEras[], specialAbility`.
 - `UNIT_IDS` lista los ids; `UnitDB` es el "DB" de consulta (getByRace, getByRaceAndEra,
   getAvailableIdsByRace, getUnitForStyle, etc.).
 - Una unidad solo puede asignarse al **mazo de su raza** y a las **eras de `availableEras`**.
+- **Combate (motor, `stepSide`):** todos apuntan al enemigo del FRENTE (`enemyList[0]`); los
+  aliados se traspasan (no se bloquean) → el enjambre se apila contra el frente y ataca a la vez.
+  El **alcance melee es relativo al BORDE** del objetivo: `reach = u.range + frontEnemy.half`
+  (los `range` no suman half). Sin esto, un melee de rango corto NO podía tocar unidades anchas
+  (sprite "tank", `half=46` → hueco de colisión ~74) y el tanque quedaba imbatible para enjambres.
+  Al balancear un tanque vs enjambre: un tanque single-target SIEMPRE pierde a oro igual contra un
+  enjambre (no tiene AoE); su valor es de frontline/esponja de vida, no de combate puro 1-tipo.
 
 ### Escalado INDIVIDUAL de unidades
 Cada unidad puede tener su propio bloque `stats` (valores base en era 0) + `growth`
@@ -30,21 +37,50 @@ Cada unidad puede tener su propio bloque `stats` (valores base en era 0) + `grow
 - Con `stats` propio → individual: `valor = round(base × growth^edad)` para cost/hp/dmg/g/xp;
   `spd`, `range` y `cd` (cadencia de ataque) son constantes del bloque.
 - Sin `stats` → cae a `STATS[age][combatStyle]` (comportamiento de los humanos).
-`computeStats(uid, age, uupg)` y `trySpawn(side, type, spriteId, uid)` reciben el `uid`.
-**Al pedir nuevas unidades: definir siempre `stats` (era0) + `growth` balanceados.**
+`computeStats(uid, age, side)` (recibe el BANDO para aplicar su tech) y
+`trySpawn(side, type, spriteId, uid)` reciben el `uid`.
+**Al pedir nuevas unidades: definir siempre `stats` (era0) balanceados.** (`growth` ya no se usa.)
 
-### Mejoras POR UNIDAD (sistema actual)
-- `G[side].upg = { [uid]: {dmg, hp/range, spd} }` — cada unidad sube sus mejoras de forma
-  independiente (global, no por edad). `getUpg(side, uid)` las crea lazy.
-- Stats de mejora por unidad: range → `[dmg, range, spd]`; el resto → `[dmg, hp, spd]`
-  (`unitUpgStats(uid)`). Máx `MAX_UPG`=5 por stat.
-- **Nivel** `unitLevel(uupg, uid)` = 1 + el mínimo de las 3 mejoras. Subir las 3 a L1 → Nv2,
-  etc. Máx `MAX_UNIT_LEVEL`=6. El bonus de nivel (`LEVEL_BONUS` +5%/nivel) afecta **solo
-  vida y daño** (no spd ni rango).
-- `upgradeCost(uid, stat, lvl)` = costo base era0 de la unidad × `UPG_COST_MULT[stat]` × (lvl+1).
-- `tryUpgrade(side, uid, stat)` / `playerUpgrade(uid, stat)`. Panel: una fila por unidad del mazo.
-- ELIMINADO del sistema viejo: upgrades por tipo `[age][type]`, especiales (SPECIAL/Nv6-Nv7),
-  armadura del tank, resistencias. El cd de spawn sigue siendo por tipo (`cd[type]`).
+### Mejoras: DOS sistemas que COEXISTEN — raza (`RACE_TECH`) + unidad (`UNIT_UPG`)
+Ambos bonos se **hornean** al nacer (no afectan a las ya vivas) y se SUMAN en `computeStats`
+vía `bon(stat) = techBonus(...) + unitUpgBonus(...)`. El jugador decide entre invertir en
+el árbol de raza (afecta categorías enteras) o en mejoras propias de una unidad.
+
+### Responsive / móvil
+- **Escritorio:** layout normal. **Móvil vertical (`@media max-width:767px`):** HUD en columna, cards con scroll-x.
+- **Móvil HORIZONTAL (landscape):** `@media (orientation: landscape) and (max-height: 500px)` — un teléfono
+  acostado es ancho (>767px) pero bajo (~390px), así que la query de ancho NO aplica; esta sí. HUD en
+  fila compacta (cards primero vía `order`, luego torres/economía/mejoras), con scroll-x si no cabe.
+  Todo (cards, torres, aldeano, mejoras unidad+raza, evolucionar, dificultad, config) es tocable —
+  verificado con `test-mobile.mjs` (hit-test `elementFromPoint` + tap real a 844×390).
+
+**A) Árbol de raza (`RACE_TECH`)** — techs por era, bono % a categorías de unidades.
+- `RACE_TECH[race] = [ {id,name,era,stat,per,maxLvl,baseCost, style?|move?} ]`. `_T(...)` declara cada uno.
+  `stat` ∈ dmg/hp/atkspd(↓cd)/range/movespd. `scopeLabel` = melee|range|aerial|ground|all.
+- Estado por bando: `G[side].tech = { [techId]: lvl }`. `availableTechs(race, age)` = era ≤ edad actual.
+- `techBonus(side, uid, stat)` suma `per*lvl` de los techs que casan (`techMatches`) → usado en `computeStats`.
+- `tryTech(side, techId)` / `playerTech(techId)`; `techCost(t, lvl) = baseCost*(1+lvl*0.8)`.
+- UI: panel **`#research-section` a la DERECHA del HUD** (`renderResearch`), no bajo las cards.
+  Muestra los techs desbloqueados + cuántos quedan en la siguiente era. La IA investiga en `runAI`.
+- Serialización online: `G[side].tech` va en el snapshot (`u:` del sideSnap). cmd guest `tech`.
+
+**B) Mejoras propias por unidad (`UNIT_UPG`)** — cada unidad mejora SUS stats, solo a ella.
+- `UNIT_UPG[uid] = [ {key,stat,label,era,maxLvl,baseCost,per} ]`. Se **autogenera** en `buildUnitUpg()`
+  desde `upgStats` de la unidad (mapeo `spd→atkspd`), escalonando las eras a partir de `homeEra+1`
+  hasta era 4 (ej. zerling: dmg en era II, atkspd en era V). `per` un poco mayor que el de raza
+  (`UNIT_UPG_PER`). maxLvl por rareza (legendaria: +1 en su stat primaria). baseCost ≈ coste*0.55.
+- Estado: `G[side].uupg = { [uid]: { [upgKey]: lvl } }`. `unitUpgBonus(side,uid,stat)`,
+  `availableUnitUpgs(uid,age)`, `unitUpgCost(up,lvl)=baseCost*(1+lvl*0.85)`, `tryUnitUpg`/`playerUnitUpg`.
+- **Nivel de unidad = `unitLevel(side,uid)` = 1 + suma de niveles de SUS mejoras** (no las de raza).
+  `unitMaxLevel(uid)` = tope. Se muestra en la card (`.lvl`) y en tooltips.
+- UI: en el MISMO `#research-section`, sección "⚡ Mejoras de unidad" agrupada por card del mazo
+  actual (`shopCards`), bajo el árbol de raza. La IA invierte en `runAI` (econ≥0.6).
+- Online: `G[side].uupg` va en el snapshot (`uu:` del sideSnap). cmd guest `uupg` (`{uid,upKey}`).
+- Cámara/zoom: nivel base (`zoomLevel=1`, `ZOOM_MIN=1`) ajusta el **ancho completo** del mundo
+  (`camScale=BW/WORLD_W`) → ambas bases visibles desde el inicio en cualquier resolución. El exceso
+  vertical (16:9) se ancla con el suelo abajo y el cielo se rellena estirando la fila superior del
+  wallpaper (`drawBackground`) — nunca negro. Rueda = zoom anclado al cursor (ambos ejes); arrastre
+  con mouse/touch desplaza **X e Y** (`camPointerMove`). `clampCam` ancla suelo si `viewH>=WORLD_H`.
 
 Stats base era0 → era4 (con DMG_MULT 1.5 ya aplicado en dmg efectivo, Nv1 sin mejoras):
 | Unidad | combatStyle | cost e0→e4 | hp e0→e4 | dmg e0→e4 | spd | cd |
@@ -55,14 +91,27 @@ Stats base era0 → era4 (con DMG_MULT 1.5 ya aplicado en dmg efectivo, Nv1 sin 
 | Ultralisk (17) | melee | 150→1439 | 500→5249 | 51→512 | 30 | 0.75 | coloso lento, mucha vida |
 
 ### Razas — `RACES` / `RACE_NAMES`
-`["humans","aliens","monsters","deaths","demons","magics"]`. Por ahora solo **humans**
-(roster completo, 5 eras × 3 unidades melee/range) y **monsters** (zerling, ultralisk, larva,
-insecto) tienen
+`["humans","aliens","monsters","deaths","demons","magics"]`. **Las 6 razas tienen unidades.**
+- **humans** (ids 1-15): roster con sprites, 5 eras × melee/range/tank.
+- **monsters** (16-24): con sprites (zerling, ultralisk, larva, insecto, valkir, wormmint, xerath, kurkor, hydralisk).
+- **aliens** (25-34, estilo Protoss), **deaths** (35-44, no-muertos), **demons** (45-54, agresivos),
+  **magics** (55-64, defensivos): 10 unidades c/u, **SIN sprite sheet** → se dibujan con render
+  procedural animado (`Unit.drawProc()` + `PROC_THEME[race]`). Cada def tiene `psize` (escala del placeholder).
 > Nota: `spriteId` "tank" sigue existiendo como **sprite** (unidades anchas: Forzudo, Paladín,
 > Blindado, Tanque, Mecha) y se usa para orientación (`FACE_RIGHT`) y espaciado (`half`). NO es
 > un combatStyle. `UNIT_TYPES`/`TYPE_I`/`cd.tank` siguen con la clave "tank" solo como bucket de
 > la serialización online (no tocar hasta retomar online).
-unidades. El resto están vacías = bloqueadas.
+
+### Habilidades (`specialAbility` + motor en `updateAbilities`/`killUnit`/`dealAttack`)
+Tipos implementados (cada uno con su rama):
+- `transform` `{after, into:[ids]}` — larva muta tras N s (la unidad desaparece, nace la nueva).
+- `mindControl` `{cd}` — Wormmint controla un enemigo (soporte: se queda fijo tras el 1er uso).
+- `summon` `{cd, into, count}` — invoca minions detrás del caster (deaths: esqueletos).
+- `reanimate` `{into, count}` — pasiva on-death (en `killUnit`): al morir levanta minions.
+- `heal` `{cd, amount, range}` — cura al aliado más herido en rango.
+- `bolt` `{cd, dmg, range}` — hostigamiento: daño directo a un enemigo en rango (magics/aliens).
+- `frenzy` `{cd, dur, dmgMul, spdMul}` — buff temporal de dmg/spd sobre sí mismo (demons). Usa `baseDmg/baseSpd/buffT`.
+- `lifesteal` `{frac}` — pasiva en `dealAttack`: el atacante se cura una fracción del daño (demons).
 
 ### Propiedad de razas (colección del jugador)
 - `ownedRaces()` → razas con ≥1 unidad en catálogo **o** desbloqueadas en
@@ -88,6 +137,25 @@ unidades. El resto están vacías = bloqueadas.
   jugadores empiezan en la **primera era** (`resetGame` → age 0). `buildShop` lee
   `currentDeck[playerRace][age]`.
 
+## Torres (sistema de cards por `tid` — TOWER_CATALOG)
+Las torres son cards coleccionables (como las unidades), identificadas por `tid`:
+- **Existentes (humanas) tid 201-215**: `tid = 200 + age*3 + tier`. Reutilizan sprites/proyectiles
+  por era/tier (`spriteAge`, `tier`). Rareza por tier: Ligera=poco común, Pesada=rara, Asedio=épica.
+  Desbloqueadas de arranque (piso de la colección) — cualquier raza puede construirlas.
+- **Nuevas tid 301+**: procedurales (`proc:true`, `drawProcTower`), temáticas por raza
+  (`PROC_THEME`), con su era/rareza/stats propios. Incl. legendarias (Aguja Apocalíptica, Faro Celestial).
+- Cada torre colocada es `{tid, cd, angle, fireAnim, animFrame, animTimer}`. `towerUpg = {dmg:{[tid]:lvl}, spd:{...}}`.
+- Funciones: `towerStats(tid,ud,us)`, `towerBuyCost(tid)`, `towerUpgCost(tid,kind,lvl)`, `towerSellValue(tid,ud,us)`,
+  `getTowerUpg(side,tid,kind)`, `ownedTowersForEra(age)` (las que el jugador posee y puede construir en esa era).
+- La tienda de torres en partida (`buildShop` → tower-section) muestra las torres **poseídas** disponibles
+  en la era actual; se reconstruye al cambiar de era. La IA (humanos) usa `towerTidFor(age,tier)`.
+- En sobres: las torres salen **mezcladas en el sobre de cada raza** (`raceCardPool` = unidades + torres de la raza).
+  En la colección/reveal se distinguen por `isTowerId(id)` (tid ≥ 200) y helpers `cardName/cardThumb/cardRarity`.
+
+## Bases por raza
+- humans/monsters usan sprites (`RACE_BASE`). aliens/deaths/demons/magics → **base procedural**
+  (`PROC_BASE_RACES` + `drawProcBase`), temática por raza y que se elabora con la era (más detalle/altura).
+
 ## Motor de combate (SIN cambios por ahora)
 - Coordenadas WORLD (1280×540, GROUND_Y=405, PLAYER_BASE_X=90, ENEMY_BASE_X=1190) + cámara.
 - Loop de timestep fijo `FIXED_DT=1/60` con acumulador.
@@ -99,6 +167,13 @@ unidades. El resto están vacías = bloqueadas.
 ## Modos
 - **VS IA** (`startGame`, mode "ai"): IA por dificultad (easy/medium/hard/extreme) en
   tabla `DIFF`. Botón x2 velocidad, pausa, debug.
+  - **Raza de la IA elegible** en el menú (`#ai-race-select` → `aiRace`, persiste en `aow_ai_race`).
+    `resetGame` crea `G.enemy = freshSide(200, aiRace)`. La IA funciona con cualquier raza:
+    `aiStyleAvailable(race,style,age)` (por raza, no global) y `aiPickUnit(race,age,style)`
+    (elige unidad de combate, evita support/dmg 0 y los transform/filler como la larva).
+    Investiga su árbol tech y construye torres humanas (`towerTidFor`) según `DIFF`. Online fuerza enemy=humanos.
+  - **Identidad de razas:** monsters = ENJAMBRE (unidades baratas y débiles por unidad, p.ej. Zerling
+    coste 38, gana por cantidad/escala, no por dmg). Al balancear monsters: bajar coste, no subir dmg.
 - **VS Online** (`startOnlineGame`, mode "online"): salas por código vía `server.js`.
 - **Zona de Test** (`startTestGame`, mode "test"): controlas ambos bandos, panel enemigo
   arriba, +5000 oro a ambos, borrar unidades al click. No usa el gate de mazo.
