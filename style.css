@@ -1108,7 +1108,8 @@ audio#bgm { display: none; }
 }
 .pack-name { font-size: 16px; font-weight: 800; color: #e8eef6; }
 .pack-sub  { font-size: 11px; color: #8a93a6; margin-top: -4px; }
-.pack-buy  { padding: 8px 18px !important; font-size: 14px !important; }
+/* width:auto anula el width:320px de .menu-btn (que desbordaba la card del sobre) */
+.pack-buy  { width: 100% !important; max-width: 100%; box-sizing: border-box; padding: 9px 12px !important; font-size: 14px !important; }
 .pack-buy:disabled { opacity: .4; cursor: not-allowed; }
 
 /* Apertura de sobre (overlay) */

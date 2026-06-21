@@ -95,8 +95,15 @@ Stats base era0 → era4 (con DMG_MULT 1.5 ya aplicado en dmg efectivo, Nv1 sin 
 - **humans** (ids 1-15): roster con sprites, 5 eras × melee/range/tank.
 - **monsters** (16-24): con sprites (zerling, ultralisk, larva, insecto, valkir, wormmint, xerath, kurkor, hydralisk).
 - **aliens** (25-34, estilo Protoss), **deaths** (35-44, no-muertos), **demons** (45-54, agresivos),
-  **magics** (55-64, defensivos): 10 unidades c/u, **SIN sprite sheet** → se dibujan con render
-  procedural animado (`Unit.drawProc()` + `PROC_THEME[race]`). Cada def tiene `psize` (escala del placeholder).
+  **magics** (55-64, defensivos): la mayoría **SIN sprite sheet** → render procedural animado
+  (`Unit.drawProc()` + `PROC_THEME[race]`). Cada def tiene `psize` (escala del placeholder).
+- **Sprites reales craftpix** (ya integrados, reemplazan el procedural): `d_skeleton` (Esqueleto 35),
+  `d_zombie` (Zombi 36), `g_apprentice` (Aprendiz 55), `m_hellhound` (Sabueso 46). Miran a la derecha
+  (default `nativeRight`), `UNIT_SCALE` ~0.7, sin anim `spawn` (fade-in como humanos).
+  **Pipeline para añadir más** (packs en `~/Downloads/craftpix-*`): editar el config de `_slice.cjs`
+  (spriteId + carpeta del pack + eras), `node _slice.cjs` corta los sheets (Idle/Walk/Attack_1/Dead →
+  idle/walk/attack/die) a `assets/units/{era}/{spriteId}/{anim}/{i}.png`, luego añadir los counts a
+  `manifest.json` bajo CADA era usada (sin `spawn`), poner `UNIT_SCALE[spriteId]`, y subir `ASSET_V`.
 > Nota: `spriteId` "tank" sigue existiendo como **sprite** (unidades anchas: Forzudo, Paladín,
 > Blindado, Tanque, Mecha) y se usa para orientación (`FACE_RIGHT`) y espaciado (`half`). NO es
 > un combatStyle. `UNIT_TYPES`/`TYPE_I`/`cd.tank` siguen con la clave "tank" solo como bucket de
@@ -112,6 +119,13 @@ Tipos implementados (cada uno con su rama):
 - `bolt` `{cd, dmg, range}` — hostigamiento: daño directo a un enemigo en rango (magics/aliens).
 - `frenzy` `{cd, dur, dmgMul, spdMul}` — buff temporal de dmg/spd sobre sí mismo (demons). Usa `baseDmg/baseSpd/buffT`.
 - `lifesteal` `{frac}` — pasiva en `dealAttack`: el atacante se cura una fracción del daño (demons).
+
+### Total de cartas y cartas "solo-sobre" (`packOnly`)
+- **100 cartas distintas**: 71 unidades (`UNIT_IDS` 1-72, sin 19) + 29 torres (`TOWER_IDS`: humanas 201-215, nuevas 301-314).
+- Cartas marcadas `packOnly: true` (unidades 65-72, torres 309-314): **NO se otorgan en el arranque**
+  (`floorCollection` las salta) — solo se obtienen comprando sobres. Son rare+/temáticas por raza.
+  Para añadir más cartas pack-only: ponles `packOnly:true`, rareza rare+, y `raceCardPool` ya las mete
+  al sobre de su raza automáticamente. El editor de mazo solo muestra poseídas, así que no aparecen hasta comprarlas.
 
 ### Propiedad de razas (colección del jugador)
 - `ownedRaces()` → razas con ≥1 unidad en catálogo **o** desbloqueadas en

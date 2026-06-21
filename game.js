@@ -27,7 +27,8 @@ const UNIT_NAMES = {
 };
 const UNIT_IDS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24,
   25,26,27,28,29,30,31,32,33,34, 35,36,37,38,39,40,41,42,43,44,
-  45,46,47,48,49,50,51,52,53,54, 55,56,57,58,59,60,61,62,63,64];
+  45,46,47,48,49,50,51,52,53,54, 55,56,57,58,59,60,61,62,63,64,
+  65,66,67,68,69,70,71,72];
 
 const UNIT_CATALOG = {
   // ── Era 0 (Cave) ──────────────────────────────────────
@@ -380,6 +381,40 @@ const UNIT_CATALOG = {
       desc:"Hostigador supremo: rayos arcanos de altísimo alcance.", psize:1.1,
       tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[4], specialAbility:{ type:"bolt", cd:2, dmg:130, range:360 }, targetType:null,
       cooldown:0.8, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:1180, hp:780, dmg:140, spd:42, range:300, g:400, xp:320, cd:0.8 }, growth:{ hp:1.11, dmg:1.11 } },
+
+  // ════════════ CARTAS DE SOBRE (packOnly: solo se obtienen en la tienda) ════════════
+     65: { id:65, name:"Mortero", icon:"💥", spriteId:"h_mortar", race:"humans", combatStyle:"range", movementType:"ground", homeEra:3, packOnly:true,
+      desc:"Artillería pesada humana: proyectiles de largo alcance y gran daño.", psize:1.15,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[3,4], specialAbility:null, targetType:null,
+      cooldown:1.1, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:820, hp:600, dmg:115, spd:38, range:330, g:340, xp:270, cd:1.2 }, growth:{ hp:1.10, dmg:1.10 } },
+     66: { id:66, name:"Reina Engendro", icon:"🥚", spriteId:"mo_broodqueen", race:"monsters", combatStyle:"range", movementType:"ground", homeEra:3, packOnly:true,
+      desc:"Soporte de enjambre: no ataca, pero engendra Zerlings sin cesar.", psize:1.35,
+      tags:["ranged","ground","summoner","support"], class:"support", upgStats:["hp","range","spd"], inmun:[], availableEras:[3,4], specialAbility:{ type:"summon", cd:8, into:16, count:2 }, targetType:null,
+      cooldown:1.5, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:1250, hp:620, dmg:0, spd:26, range:150, g:380, xp:300, cd:1.5 }, growth:{ hp:1.10, dmg:1 } },
+     67: { id:67, name:"Acechador Alado", icon:"🪰", spriteId:"mo_wingstalker", race:"monsters", combatStyle:"range", movementType:"aerial", homeEra:2, packOnly:true,
+      desc:"Bestia voladora de hostigamiento: escupe ácido desde el cielo.", psize:1.0,
+      tags:["ranged","aerial"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[2,3], specialAbility:null, targetType:null,
+      cooldown:0.85, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:320, hp:300, dmg:42, spd:54, range:240, g:130, xp:100, cd:0.85 }, growth:{ hp:1.12, dmg:1.12 } },
+     68: { id:68, name:"Disruptor", icon:"🟪", spriteId:"a_disruptor", race:"aliens", combatStyle:"range", movementType:"ground", homeEra:3, packOnly:true,
+      desc:"Orbe de energía inestable: descarga psiónica que fulmina al frente.", psize:1.2,
+      tags:["ranged","ground"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[3,4], specialAbility:{ type:"bolt", cd:3, dmg:110, range:320 }, targetType:null,
+      cooldown:1.0, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:880, hp:560, dmg:90, spd:40, range:280, g:360, xp:290, cd:1.0 }, growth:{ hp:1.11, dmg:1.11 } },
+     69: { id:69, name:"Nave Nodriza", icon:"🛸", spriteId:"a_mothership", race:"aliens", combatStyle:"range", movementType:"aerial", homeEra:4, packOnly:true,
+      desc:"Coloso aéreo psiónico: barre el cielo y el suelo con haces masivos.", psize:1.6,
+      tags:["ranged","aerial"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[4], specialAbility:null, targetType:null,
+      cooldown:1.0, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:1500, hp:1250, dmg:150, spd:40, range:300, g:480, xp:380, cd:1.0 }, growth:{ hp:1.10, dmg:1.10 } },
+     70: { id:70, name:"Profanador", icon:"🕯️", spriteId:"d_defiler", race:"deaths", combatStyle:"range", movementType:"ground", homeEra:2, packOnly:true,
+      desc:"Hechicero impío que alza esqueletos en pleno combate.", psize:1.1,
+      tags:["ranged","ground","summoner"], class:"support", upgStats:["dmg","range","spd"], inmun:[], availableEras:[2,3], specialAbility:{ type:"summon", cd:9, into:35, count:1 }, targetType:null,
+      cooldown:1.2, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:360, hp:280, dmg:30, spd:34, range:240, g:130, xp:110, cd:1.2 }, growth:{ hp:1.10, dmg:1.10 } },
+     71: { id:71, name:"Archidemonio", icon:"😡", spriteId:"m_archdemon", race:"demons", combatStyle:"melee", movementType:"ground", homeEra:4, packOnly:true,
+      desc:"Señor del abismo: entra en frenesí destrozando todo a su paso.", psize:1.45,
+      tags:["melee","ground"], class:"tank", upgStats:["dmg","hp","spd"], inmun:[], availableEras:[4], specialAbility:{ type:"frenzy", cd:8, dur:5, dmgMul:1.7, spdMul:1.3 }, targetType:null,
+      cooldown:0.7, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:1350, hp:1700, dmg:150, spd:44, range:80, g:440, xp:350, cd:0.7 }, growth:{ hp:1.10, dmg:1.10 } },
+     72: { id:72, name:"Oráculo", icon:"🔮", spriteId:"g_oracle", race:"magics", combatStyle:"range", movementType:"ground", homeEra:3, packOnly:true,
+      desc:"Vidente sagrado: cura a los aliados heridos mientras ataca a distancia.", psize:1.15,
+      tags:["ranged","ground","support"], class:"ranger", upgStats:["dmg","range","spd"], inmun:[], availableEras:[3,4], specialAbility:{ type:"heal", cd:3, amount:220, range:250 }, targetType:null,
+      cooldown:1.0, sounds:{spawn:null,attack:null,die:null}, stats:{ cost:820, hp:560, dmg:60, spd:40, range:260, g:340, xp:290, cd:1.0 }, growth:{ hp:1.11, dmg:1.11 } },
 };
 
 // Razas disponibles (cada unidad pertenece a una raza)
@@ -439,6 +474,8 @@ const UNIT_RARITY = {
   45:"common",46:"uncommon",47:"common",48:"rare",49:"rare",50:"uncommon",51:"epic",52:"rare",53:"legendary",54:"legendary",
   // Magics
   55:"common",56:"common",57:"uncommon",58:"rare",59:"rare",60:"epic",61:"epic",62:"rare",63:"legendary",64:"legendary",
+  // Cartas de sobre (packOnly) — rare+ para que no entren al piso por rareza
+  65:"epic",66:"legendary",67:"rare",68:"epic",69:"legendary",70:"rare",71:"legendary",72:"epic",
 };
 function unitRarity(uid) { return UNIT_RARITY[uid] || "common"; }
 function rarityRank(r) { return RARITY_ORDER.indexOf(r); }
@@ -457,13 +494,14 @@ function floorCollection() {
   const c = {};
   for (const uid of UNIT_IDS) {
     const u = UNIT_CATALOG[uid];
+    if (u.packOnly) continue; // cartas nuevas: SOLO se obtienen en sobres
     const r = unitRarity(uid);
     if (u.race === "humans" || u.race === "monsters" || r === "common" || r === "uncommon") c[uid] = 1;
   }
-  // Torres existentes (humanas) desbloqueadas de arranque; las nuevas se ganan en sobres.
-  for (const tid of TOWER_IDS) if (TOWER_CATALOG[tid].race === "humans") c[tid] = 1;
+  // Torres existentes (humanas) desbloqueadas de arranque; las nuevas (packOnly) se ganan en sobres.
+  for (const tid of TOWER_IDS) if (TOWER_CATALOG[tid].race === "humans" && !TOWER_CATALOG[tid].packOnly) c[tid] = 1;
   for (const race of RACES) for (let a = 0; a < AGES.length; a++) {
-    const ids = UnitDB.getAvailableIdsByRace(race, a);
+    const ids = UnitDB.getAvailableIdsByRace(race, a).filter(id => !UNIT_CATALOG[id].packOnly);
     if (ids.length && !ids.some(id => c[id])) {
       let best = ids[0];
       for (const id of ids) if ((UNIT_CATALOG[id].stats.cost || 1e9) < (UNIT_CATALOG[best].stats.cost || 1e9)) best = id;
@@ -500,7 +538,9 @@ function updateCoinDisplays() {
 if (localStorage.getItem("aow_coins") === null) localStorage.setItem("aow_coins", "300"); // saldo inicial
 
 // Escala visual por spriteId (unidades monstruo son más grandes, se reducen)
-const UNIT_SCALE = { zerling: 0.55, larva: 0.48, valkir: 0.62, wormmint: 0.7, xerath: 0.65, kurkor: 0.8, hydralisk: 0.7, ultralisk: 1.3 };
+const UNIT_SCALE = { zerling: 0.55, larva: 0.48, valkir: 0.62, wormmint: 0.7, xerath: 0.65, kurkor: 0.8, hydralisk: 0.7, ultralisk: 1.3,
+  // Sprites craftpix → escala calculada para ~82px de personaje (igual al resto)
+  d_skeleton: 1.26, d_zombie: 1.28, g_apprentice: 1.24, m_hellhound: 1.05 };
 // Escala visual de bases por raza
 const BASE_SCALE = { monsters: 1.2 };
 
@@ -1229,10 +1269,17 @@ function towerTidFor(age, tier) { return 200 + age * 3 + tier; } // existentes
     { tid: 306, name: "Aguja Apocalíptica",  race: "demons", eras: [4],    rarity: "legendary", dmg: 360, cd: 1.1,  range: 520, cost: 1600, upgTier: 3 },
     { tid: 307, name: "Obelisco Rúnico",     race: "magics", eras: [2, 3], rarity: "epic",      dmg: 170, cd: 0.7,  range: 480, cost: 900,  upgTier: 3 },
     { tid: 308, name: "Faro Celestial",      race: "magics", eras: [4],    rarity: "legendary", dmg: 300, cd: 0.55, range: 540, cost: 1500, upgTier: 3 },
+    // ── Cartas de sobre (packOnly): rellenan razas sin torre propia (monsters) y amplían el resto ──
+    { tid: 309, name: "Nido Espinado",       race: "monsters",eras: [1, 2], rarity: "rare",      dmg: 110, cd: 0.95, range: 440, cost: 600,  upgTier: 2, packOnly: true },
+    { tid: 310, name: "Torre de Bilis",      race: "monsters",eras: [3, 4], rarity: "epic",      dmg: 240, cd: 1.0,  range: 490, cost: 1350, upgTier: 3, packOnly: true },
+    { tid: 311, name: "Matriz Fotónica",     race: "aliens",  eras: [2, 3], rarity: "epic",      dmg: 180, cd: 0.75, range: 480, cost: 950,  upgTier: 3, packOnly: true },
+    { tid: 312, name: "Tótem Sepulcral",     race: "deaths",  eras: [2, 3], rarity: "epic",      dmg: 170, cd: 1.0,  range: 470, cost: 880,  upgTier: 3, packOnly: true },
+    { tid: 313, name: "Brasero Infernal",    race: "demons",  eras: [1, 2], rarity: "rare",      dmg: 130, cd: 0.9,  range: 450, cost: 640,  upgTier: 2, packOnly: true },
+    { tid: 314, name: "Cristal Prismático",  race: "magics",  eras: [3, 4], rarity: "epic",      dmg: 210, cd: 0.65, range: 510, cost: 1200, upgTier: 3, packOnly: true },
   ];
   for (const t of NEW) {
     TOWER_CATALOG[t.tid] = { tid: t.tid, name: t.name, icon: "🗼", race: t.race, proc: true,
-      availableEras: t.eras, rarity: t.rarity, dmg: t.dmg, cd: t.cd, range: t.range, cost: t.cost, upgTier: t.upgTier };
+      availableEras: t.eras, rarity: t.rarity, dmg: t.dmg, cd: t.cd, range: t.range, cost: t.cost, upgTier: t.upgTier, packOnly: !!t.packOnly };
     TOWER_IDS.push(t.tid);
   }
 })();
@@ -1299,7 +1346,7 @@ const TOWER_ATTACK_FRAMES = [
 
 // ---- Carga de assets -------------------------------------------------
 const IMG = {}; // cache de imágenes por ruta
-const ASSET_V = "22"; // versión de assets (cache-busting); subir al regenerar sprites
+const ASSET_V = "24"; // versión de assets (cache-busting); subir al regenerar sprites
 let manifest = null;
 
 function loadImage(src, retries) {
